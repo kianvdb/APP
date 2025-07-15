@@ -1,0 +1,2240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Dog Assets bewerken</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="/frontend/src/config.js"></script>
+    <script src="/frontend/src/accountDropdown.js"></script>
+    <!-- CSS Files - Same order as admin-user-models -->
+    <link rel="stylesheet" href="/frontend/css/homepage.css">
+    <link rel="stylesheet" href="/frontend/css/auth-modal.css">
+    <link rel="stylesheet" href="/frontend/css/manageAssets.css" />
+    
+    <link rel="icon" href="/frontend/public/favicon.png" type="image/png">
+    
+    <style>
+        .publish-mode-banner {
+            background: linear-gradient(135deg, #6610f2 0%, #9966ff 100%);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-family: 'Sora', sans-serif;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(102, 16, 242, 0.3);
+        }
+        
+        .publish-mode-banner p {
+            margin: 0.5rem 0;
+            opacity: 0.9;
+        }
+        
+        .publish-info-card {
+            background: rgba(102, 16, 242, 0.1);
+            border: 1px solid rgba(102, 16, 242, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .publish-info-card h4 {
+            color: #9966ff;
+            margin-bottom: 0.5rem;
+        }
+        
+        .publish-info-card p {
+            margin: 0.25rem 0;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        #submitBtn.publish-mode {
+            background: linear-gradient(135deg, #6610f2 0%, #9966ff 100%);
+        }
+        
+        #submitBtn.publish-mode:hover {
+            background: linear-gradient(135deg, #5505e0 0%, #8855ee 100%);
+        }
+        
+        .cancel-publish-btn {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border: 2px solid #dc3545;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Sora', sans-serif;
+            font-weight: 600;
+            margin-left: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .cancel-publish-btn:hover {
+            background: rgba(220, 53, 69, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .form-actions {
+            display: flex;
+            align-items: center;
+            margin-top: 2rem;
+        }
+        
+        /* Image preview section */
+        .image-preview-section {
+            background: rgba(0, 188, 212, 0.05);
+            border: 1px solid rgba(0, 188, 212, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .image-preview-section h5 {
+            color: #00bcd4;
+            margin-bottom: 0.5rem;
+        }
+        
+        .image-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+        
+        .image-preview-item {
+            text-align: center;
+        }
+        
+        .image-preview-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid rgba(0, 188, 212, 0.3);
+        }
+        
+        .image-preview-item p {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        /* Loading and status styles */
+        .loading-spinner {
+            text-align: center;
+            padding: 20px;
+            color: #00bcd4;
+            font-size: 1.1rem;
+        }
+
+        .loading-message {
+            text-align: center;
+            padding: 40px;
+            color: #00bcd4;
+            font-size: 1.1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.6);
+            font-style: italic;
+        }
+
+        .empty-state h3 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+        }
+
+        .empty-state p {
+            margin: 10px 0;
+        }
+
+        .retry-btn {
+            background: #00bcd4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .retry-btn:hover {
+            background: #0097a7;
+        }
+
+        .download-asset {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+            border: 2px solid #28a745;
+            padding: 10px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: all 0.3s ease;
+            margin-top: 0;
+        }
+
+        .download-asset:hover {
+            background: rgba(40, 167, 69, 0.2);
+            border-color: #34ce57;
+            transform: translateY(-1px);
+        }
+
+        .asset-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .asset-buttons > * {
+            flex: 1;
+            min-width: 80px;
+        }
+
+        #submitBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Enhanced image display styles */
+        .asset-preview-admin {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .asset-preview-img-admin {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .asset-preview-img-admin:hover {
+            transform: scale(1.05);
+        }
+
+        .asset-icon-overlay {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 1.2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .image-source-label {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background: rgba(0, 188, 212, 0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .asset-preview-admin.asset-preview-icon-only {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #00bcd4, #0097a7);
+            font-size: 4rem;
+            position: relative;
+        }
+
+        .format-badges-container {
+            margin: 10px 0;
+        }
+
+        .format-badge-small {
+            display: inline-block;
+            padding: 3px 6px;
+            margin: 2px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .format-badge-small.glb {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border: 1px solid #28a745;
+        }
+
+        .format-badge-small.fbx {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid #ffc107;
+        }
+
+        .format-badge-small.obj {
+            background: rgba(108, 117, 125, 0.2);
+            color: #6c757d;
+            border: 1px solid #6c757d;
+        }
+
+        .format-badge-small.usdz {
+            background: rgba(102, 16, 242, 0.2);
+            color: #6610f2;
+            border: 1px solid #6610f2;
+        }
+        
+        /* Asset status indicator on preview image */
+        .asset-status-indicator {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 4px 8px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .asset-status-indicator.at-risk {
+            background: rgba(255, 193, 7, 0.9);
+            color: #000;
+        }
+
+        .asset-status-indicator.deleted {
+            background: rgba(220, 53, 69, 0.9);
+            color: #fff;
+        }
+
+        .status-icon {
+            font-size: 0.9rem;
+        }
+
+        .status-text {
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Format badges with status */
+        .format-badge-small.at-risk {
+            background: rgba(255, 152, 0, 0.2);
+            color: #ff9800;
+            border: 1px solid #ff9800;
+        }
+
+        .format-badge-small.deleted {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+
+        /* Download disabled state */
+        .download-disabled {
+            background: rgba(108, 117, 125, 0.1);
+            color: #6c757d;
+            border: 2px solid #6c757d;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header - Exact same structure as admin-user-models.html -->
+    <header class="header">
+        <div class="logo-section">
+            <a href="homepage.html" class="logo-link">
+                <img src="/frontend/public/logo2dalma.png" alt="Dalma AI Logo" class="logo">
+            </a>
+        </div>
+        
+        <!-- Regular Navigation (Desktop) -->
+        <nav class="nav">
+            <div class="nav-left">
+                <a href="homepage.html">Home</a>
+                <a href="homepage.html#assets">Assets</a>
+                <a href="about.html">About</a>
+                <a href="#rig-animate">Rig & Animate</a>
+                <a href="index.html">Generate</a>
+                <!-- Admin navigation items will be dynamically added here -->
+            </div>
+            <div class="nav-right">
+                <button class="account-btn">Account</button>
+                <!-- Account dropdown will be dynamically added here -->
+            </div>
+        </nav>
+        
+        <!-- Hamburger Menu (Mobile) -->
+        <div class="hamburger" onclick="toggleMobileNav()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        
+        <!-- Mobile Navigation -->
+        <nav class="mobile-nav" id="mobileNav">
+        <a href="homepage.html">Home</a>
+                    <a href="homepage.html#assets">Assets</a>
+                    <a href="about.html" class="active">About</a>
+                    <a href="#rig-animate">Rig & Animate</a>
+                    <a href="index.html">Generate</a>
+            <button class="account-btn">Account</button>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div id="publishModeBanner" style="display: none;" class="publish-mode-banner">
+            <h3>🚀 Publishing User Model to Homepage</h3>
+            <p>You're editing a user-generated model for publication. Make any necessary changes and click "Publish to Homepage".</p>
+        </div>
+        
+        <div id="publishInfoCard" style="display: none;" class="publish-info-card">
+            <h4>📋 Original Model Information</h4>
+            <p><strong>User:</strong> <span id="originalUserInfo">-</span></p>
+            <p><strong>Created:</strong> <span id="originalDateInfo">-</span></p>
+            <p><strong>Source ID:</strong> <span id="sourceIdInfo">-</span></p>
+        </div>
+        
+        <h2 id="pageTitle">3D Dog Assets aanmaken of bewerken</h2>
+       
+        <form id="assetForm" enctype="multipart/form-data">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="name">Asset Naam</label>
+                    <input type="text" id="name" name="name" required placeholder="bv. Golden Retriever">
+                </div>
+                <div class="form-group">
+                    <label for="breed">Hondenras</label>
+                    <input type="text" id="breed" name="breed" required placeholder="bv. Golden Retriever">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="icon">Icon/Emoji</label>
+                    <input type="text" id="icon" name="icon" required placeholder="🐕" maxlength="10">
+                </div>
+                <div class="form-group">
+                    <label for="fileSize">Bestandsgrootte</label>
+                    <input type="text" id="fileSize" name="fileSize" placeholder="Automatisch berekend">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="polygons">Aantal Polygonen</label>
+                    <input type="number" id="polygons" name="polygons" required placeholder="15000" min="100" max="1000000">
+                </div>
+                <div class="form-group">
+                    <label for="popularity">Populariteit (0-100)</label>
+                    <input type="number" max="100" min="0" id="popularity" name="popularity" placeholder="0" value="0">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="tags">Tags (gescheiden door komma's)</label>
+                <input type="text" id="tags" name="tags" required placeholder="realistic, textured, animated">
+            </div>
+
+            <div class="form-group">
+                <label for="description">Beschrijving</label>
+                <textarea id="description" name="description" required placeholder="Beschrijf het 3D model..."></textarea>
+            </div>
+
+            <!-- Image Preview Section for Publish Mode -->
+            <div id="imagePreviewSection" style="display: none;" class="image-preview-section">
+                <h5>📸 Existing Images</h5>
+                <div class="image-preview-grid" id="imagePreviewGrid">
+                    <!-- Images will be populated here -->
+                </div>
+            </div>
+
+            <!-- Multiple Format Upload Section -->
+            <div class="form-group multi-format-section">
+                <label class="section-label">3D Model Bestanden</label>
+                <p class="format-info">Upload je model in verschillende formaten. GLB is verplicht, de andere zijn optioneel.</p>
+                <p id="publishModeFormatInfo" style="display: none; color: #9966ff; margin-bottom: 1rem;">
+                    ℹ️ The user's model files will be automatically transferred. You can upload new versions if needed.
+                </p>
+                
+                <!-- GLB Upload (Required) -->
+                <div class="format-upload-group required">
+                    <label for="modelFileGLB" class="format-label">
+                        <span class="format-name">GLB</span>
+                        <span class="format-badge required-badge">Verplicht</span>
+                        <span id="glbExistingBadge" style="display: none; color: #28a745; margin-left: 0.5rem;">✓ Existing</span>
+                    </label>
+                    <div class="file-upload-area">
+                        <input type="file" id="modelFileGLB" name="modelFileGLB" accept=".glb" required>
+                        <p>Sleep het GLB bestand hierheen of klik om te uploaden</p>
+                    </div>
+                </div>
+
+                <!-- FBX Upload (Optional) -->
+                <div class="format-upload-group optional">
+                    <label for="modelFileFBX" class="format-label">
+                        <span class="format-name">FBX</span>
+                        <span class="format-badge optional-badge">Optioneel</span>
+                        <span id="fbxExistingBadge" style="display: none; color: #28a745; margin-left: 0.5rem;">✓ Existing</span>
+                    </label>
+                    <div class="file-upload-area">
+                        <input type="file" id="modelFileFBX" name="modelFileFBX" accept=".fbx">
+                        <p>FBX formaat - Goed voor animaties</p>
+                    </div>
+                </div>
+
+                <!-- OBJ Upload (Optional) -->
+                <div class="format-upload-group optional">
+                    <label for="modelFileOBJ" class="format-label">
+                        <span class="format-name">OBJ</span>
+                        <span class="format-badge optional-badge">Optioneel</span>
+                        <span id="objExistingBadge" style="display: none; color: #28a745; margin-left: 0.5rem;">✓ Existing</span>
+                    </label>
+                    <div class="file-upload-area">
+                        <input type="file" id="modelFileOBJ" name="modelFileOBJ" accept=".obj">
+                        <p>OBJ formaat - Eenvoudige geometrie</p>
+                    </div>
+                </div>
+
+                <!-- USDZ Upload (Optional) -->
+                <div class="format-upload-group optional">
+                    <label for="modelFileUSDZ" class="format-label">
+                        <span class="format-name">USDZ</span>
+                        <span class="format-badge optional-badge">Optioneel</span>
+                        <span id="usdzExistingBadge" style="display: none; color: #28a745; margin-left: 0.5rem;">✓ Existing</span>
+                    </label>
+                    <div class="file-upload-area">
+                        <input type="file" id="modelFileUSDZ" name="modelFileUSDZ" accept=".usdz">
+                        <p>USDZ formaat - Voor iOS AR</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="previewImage">Preview Afbeelding</label>
+                <div class="file-upload-area">
+                    <input type="file" id="previewImage" name="previewImage" accept="image/*">
+                    <p>Optioneel: Upload een preview afbeelding</p>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" id="submitBtn">Maak het asset aan</button>
+                <button type="button" id="cancelPublishBtn" class="cancel-publish-btn" style="display: none;" onclick="cancelPublish()">Cancel Publishing</button>
+            </div>
+        </form>
+        
+        <div id="message" class="message" style="display: none;"></div>
+        <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+            <i class="fas fa-spinner fa-spin"></i> Uploading...
+        </div>
+    </div>
+
+    <div class="container asset-side" id="assetContainer">
+        <div class="loading-message">
+            <i class="fas fa-spinner fa-spin"></i> Loading assets...
+        </div>
+    </div>
+
+    <!-- Load Auth System First -->
+    <script src="/frontend/src/auth.js"></script>
+
+    <script>
+// Mobile navigation toggle function - Same as admin-user-models.js
+function toggleMobileNav() {
+    const mobileNav = document.getElementById('mobileNav');
+    const hamburger = document.querySelector('.hamburger');
+    mobileNav.classList.toggle('active');
+    hamburger.classList.toggle('active');
+}
+
+// Make toggleMobileNav globally available
+window.toggleMobileNav = toggleMobileNav;
+
+// COMPLETE MANAGE ASSETS JAVASCRIPT with AUTOMATIC STATUS CHECKING
+console.log('🚨 =================================');
+console.log('🚨 MANAGE ASSETS PAGE LOADING...');
+console.log('🚨 =================================');
+
+const API_BASE_URL = `http://${window.location.hostname}:3000/api`;
+let editingAssetId = null;
+let assetsData = [];
+let isPublishMode = false;
+let publishModelData = null;
+let existingModelFiles = {};
+let assetStatusCache = {}; // Cache status checks to avoid repeated calls
+
+// COMPREHENSIVE authentication checking with multiple methods
+function checkAuthentication() {
+    console.log('🔐 ===== AUTHENTICATION CHECK =====');
+    
+    // Method 1: Check AuthManager currentUser
+    if (window.authManager && window.authManager.currentUser) {
+        console.log('✅ Method 1: User authenticated via AuthManager.currentUser:', window.authManager.currentUser);
+        console.log('👤 User details:', {
+            username: window.authManager.currentUser.username,
+            userId: window.authManager.currentUser.userId,
+            isAdmin: window.authManager.currentUser.isAdmin
+        });
+        return true;
+    } else {
+        console.log('❌ Method 1: No currentUser in AuthManager');
+        console.log('🔍 AuthManager.currentUser:', window.authManager?.currentUser);
+    }
+    
+    // Method 2: Check if user data exists in AuthManager
+    if (window.authManager && window.authManager.user) {
+        console.log('✅ Method 2: User authenticated via AuthManager.user:', window.authManager.user);
+        console.log('👤 User details:', {
+            username: window.authManager.user.username,
+            userId: window.authManager.user.userId,
+            isAdmin: window.authManager.user.isAdmin
+        });
+        return true;
+    } else {
+        console.log('❌ Method 2: No user in AuthManager');
+        console.log('🔍 AuthManager.user:', window.authManager?.user);
+    }
+    
+    // Method 3: Check localStorage for user data (fallback)
+    const userData = localStorage.getItem('user');
+    if (userData) {
+        try {
+            const user = JSON.parse(userData);
+            if (user && user.username) {
+                console.log('✅ Method 3: User authenticated via localStorage:', user);
+                console.log('👤 User details:', {
+                    username: user.username,
+                    userId: user.userId,
+                    isAdmin: user.isAdmin
+                });
+                return true;
+            } else {
+                console.log('❌ Method 3: Invalid user data in localStorage:', user);
+            }
+        } catch (e) {
+            console.error('❌ Method 3: Error parsing user data from localStorage:', e);
+        }
+    } else {
+        console.log('❌ Method 3: No user data in localStorage');
+    }
+    
+    // Method 4: Check sessionStorage
+    const sessionUserData = sessionStorage.getItem('user');
+    if (sessionUserData) {
+        try {
+            const user = JSON.parse(sessionUserData);
+            if (user && user.username) {
+                console.log('✅ Method 4: User authenticated via sessionStorage:', user);
+                return true;
+            }
+        } catch (e) {
+            console.error('❌ Method 4: Error parsing user data from sessionStorage:', e);
+        }
+    } else {
+        console.log('❌ Method 4: No user data in sessionStorage');
+    }
+    
+    console.log('❌ ALL AUTHENTICATION METHODS FAILED');
+    console.log('🔍 Complete AuthManager state:', {
+        exists: !!window.authManager,
+        currentUser: window.authManager?.currentUser,
+        user: window.authManager?.user,
+        initialized: window.authManager?.initialized,
+        localStorage: !!localStorage.getItem('user'),
+        sessionStorage: !!sessionStorage.getItem('user')
+    });
+    
+    console.log('🔍 Document cookies:', document.cookie);
+    console.log('=================================');
+    
+    return false;
+}
+
+// Ensure user is authenticated before performing admin actions
+function ensureAuthenticated() {
+    console.log('🛡️ Ensuring authentication...');
+    const isAuthenticated = checkAuthentication();
+    
+    if (!isAuthenticated) {
+        console.log('❌ User not authenticated in ensureAuthenticated');
+        return false;
+    }
+    
+    console.log('✅ Authentication confirmed in ensureAuthenticated');
+    return true;
+}
+
+// NEW: Check for publish workflow
+function checkPublishWorkflow() {
+    console.log('🔍 Checking for publish workflow...');
+    
+    // Check URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const publishModeParam = urlParams.get('publishMode');
+    
+    // Check session storage
+    const pendingModel = sessionStorage.getItem('pendingPublishModel');
+    const workflowActive = sessionStorage.getItem('publishWorkflowActive');
+    
+    if ((publishModeParam === 'true' || workflowActive === 'true') && pendingModel) {
+        try {
+            publishModelData = JSON.parse(pendingModel);
+            isPublishMode = true;
+            
+            console.log('✅ Publish workflow detected!');
+            console.log('📋 Model data:', publishModelData);
+            
+            // Clear the workflow flag but keep the data
+            sessionStorage.removeItem('publishWorkflowActive');
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Error parsing publish model data:', error);
+            sessionStorage.removeItem('pendingPublishModel');
+            sessionStorage.removeItem('publishWorkflowActive');
+        }
+    }
+    
+    console.log('ℹ️ No publish workflow detected');
+    return false;
+}
+
+// NEW: Setup publish mode UI
+function setupPublishMode() {
+    if (!isPublishMode || !publishModelData) return;
+    
+    console.log('🚀 Setting up publish mode UI...');
+    
+    // Show publish mode banner
+    const banner = document.getElementById('publishModeBanner');
+    if (banner) banner.style.display = 'block';
+    
+    // Show publish info card
+    const infoCard = document.getElementById('publishInfoCard');
+    if (infoCard) {
+        infoCard.style.display = 'block';
+        
+        // Populate info
+        const userInfo = document.getElementById('originalUserInfo');
+        const dateInfo = document.getElementById('originalDateInfo');
+        const sourceInfo = document.getElementById('sourceIdInfo');
+        
+        if (userInfo) userInfo.textContent = publishModelData.originalUsername || 'Unknown';
+        if (dateInfo) dateInfo.textContent = publishModelData.createdAt ? new Date(publishModelData.createdAt).toLocaleDateString() : 'Unknown';
+        if (sourceInfo) sourceInfo.textContent = publishModelData.sourceAssetId || 'Unknown';
+    }
+    
+    // Update page title
+    const pageTitle = document.getElementById('pageTitle');
+    if (pageTitle) pageTitle.textContent = 'Publish User Model to Homepage';
+    
+    // Update submit button
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) {
+        submitBtn.textContent = 'Publish to Homepage';
+        submitBtn.classList.add('publish-mode');
+    }
+    
+    // Show cancel button
+    const cancelBtn = document.getElementById('cancelPublishBtn');
+    if (cancelBtn) cancelBtn.style.display = 'inline-block';
+    
+    // Show format info
+    const formatInfo = document.getElementById('publishModeFormatInfo');
+    if (formatInfo) formatInfo.style.display = 'block';
+    
+    // Populate form with model data
+    populateFormWithPublishData();
+    
+    // Show existing images
+    showExistingImages();
+    
+    // Mark existing formats
+    markExistingFormats();
+}
+
+// FIXED: Populate form with publish data - Properly handle model files
+function populateFormWithPublishData() {
+    if (!publishModelData) return;
+    
+    console.log('📝 Populating form with publish data...');
+    console.log('📋 Full publish model data:', publishModelData);
+    
+    // Basic fields
+    document.getElementById('name').value = publishModelData.name || '';
+    document.getElementById('breed').value = publishModelData.breed || '';
+    document.getElementById('icon').value = publishModelData.icon || '🐕';
+    document.getElementById('fileSize').value = publishModelData.fileSize || '';
+    document.getElementById('polygons').value = publishModelData.polygons || 30000;
+    document.getElementById('popularity').value = publishModelData.popularity || 0;
+    document.getElementById('tags').value = (publishModelData.tags || []).join(', ');
+    document.getElementById('description').value = publishModelData.description || '';
+    
+    // CRITICAL FIX: Properly handle model files structure
+    existingModelFiles = {};
+    
+    // First check modelFiles structure
+    if (publishModelData.modelFiles && typeof publishModelData.modelFiles === 'object') {
+        console.log('📋 Found modelFiles structure:', publishModelData.modelFiles);
+        
+        // Copy all formats from modelFiles
+        Object.keys(publishModelData.modelFiles).forEach(format => {
+            if (publishModelData.modelFiles[format] && publishModelData.modelFiles[format].url) {
+                existingModelFiles[format] = publishModelData.modelFiles[format];
+            }
+        });
+    }
+    
+    // If no GLB in modelFiles but has legacy modelFile, use it for GLB
+    if (!existingModelFiles.glb && publishModelData.modelFile && publishModelData.modelFile.url) {
+        console.log('📋 Using legacy modelFile for GLB');
+        existingModelFiles.glb = publishModelData.modelFile;
+    }
+    
+    // CRITICAL: Also include the modelFile in the structure for backend compatibility
+    if (publishModelData.modelFile && publishModelData.modelFile.url) {
+        existingModelFiles.modelFile = publishModelData.modelFile;
+    }
+    
+    console.log('📋 Final existing model files structure:', existingModelFiles);
+    console.log('📋 Has GLB:', !!existingModelFiles.glb);
+    console.log('📋 GLB URL:', existingModelFiles.glb?.url);
+    
+    // CRITICAL: Store preview and original image data in form dataset
+    const form = document.getElementById('assetForm');
+    if (form) {
+        form.dataset.modelId = publishModelData._id;
+        form.dataset.modelFiles = JSON.stringify(existingModelFiles);
+        form.dataset.originalImage = JSON.stringify(publishModelData.originalImage || null);
+        form.dataset.previewImage = JSON.stringify(publishModelData.previewImage || null);
+        
+        // CRITICAL: Store generation parameters in dataset
+        form.dataset.topology = publishModelData.topology || 'triangle';
+        form.dataset.texture = publishModelData.texture !== undefined ? publishModelData.texture : true;
+        form.dataset.symmetry = publishModelData.symmetry || 'auto';
+        form.dataset.pbr = publishModelData.pbr !== undefined ? publishModelData.pbr : false;
+        
+        console.log('📋 Form datasets set:', {
+            modelId: form.dataset.modelId,
+            hasModelFiles: !!form.dataset.modelFiles,
+            hasOriginalImage: !!form.dataset.originalImage,
+            hasPreviewImage: !!form.dataset.previewImage,
+            topology: form.dataset.topology,
+            texture: form.dataset.texture,
+            symmetry: form.dataset.symmetry,
+            pbr: form.dataset.pbr
+        });
+    }
+    
+    // Make file inputs optional since we have existing files
+    const modelFileGLB = document.getElementById('modelFileGLB');
+    if (modelFileGLB && existingModelFiles.glb) {
+        modelFileGLB.removeAttribute('required');
+        console.log('✅ Made GLB input optional since we have existing file');
+    }
+}
+
+// NEW: Show existing images
+function showExistingImages() {
+    if (!publishModelData) return;
+    
+    const hasImages = publishModelData.originalImage || publishModelData.previewImage;
+    if (!hasImages) return;
+    
+    const imageSection = document.getElementById('imagePreviewSection');
+    const imageGrid = document.getElementById('imagePreviewGrid');
+    
+    if (imageSection && imageGrid) {
+        imageSection.style.display = 'block';
+        imageGrid.innerHTML = '';
+        
+        // Show original image
+        if (publishModelData.originalImage && publishModelData.originalImage.url) {
+            const originalItem = document.createElement('div');
+            originalItem.className = 'image-preview-item';
+            originalItem.innerHTML = `
+                <img src="${publishModelData.originalImage.url}" alt="Original Image">
+                <p>Original Input Image</p>
+            `;
+            imageGrid.appendChild(originalItem);
+        }
+        
+        // Show preview image
+        if (publishModelData.previewImage && publishModelData.previewImage.url) {
+            const previewItem = document.createElement('div');
+            previewItem.className = 'image-preview-item';
+            previewItem.innerHTML = `
+                <img src="${publishModelData.previewImage.url}" alt="Preview Image">
+                <p>Preview Image</p>
+            `;
+            imageGrid.appendChild(previewItem);
+        }
+    }
+}
+
+// NEW: Mark existing formats
+function markExistingFormats() {
+    if (!publishModelData) return;
+    
+    const formats = publishModelData.availableFormats || [];
+    
+    formats.forEach(format => {
+        const badge = document.getElementById(`${format}ExistingBadge`);
+        if (badge) {
+            badge.style.display = 'inline';
+        }
+    });
+}
+
+// NEW: Cancel publish workflow
+function cancelPublish() {
+    if (confirm('Are you sure you want to cancel publishing this model?')) {
+        // Clear session storage
+        sessionStorage.removeItem('pendingPublishModel');
+        sessionStorage.removeItem('publishWorkflowActive');
+        
+        // Redirect back to admin user models
+        window.location.href = 'admin-user-models.html';
+    }
+}
+
+// Make cancelPublish globally available
+window.cancelPublish = cancelPublish;
+
+// Check proxy URL status
+async function checkProxyStatus(url, meshyTaskId) {
+    // Check cache first
+    const cacheKey = meshyTaskId || url;
+    if (assetStatusCache[cacheKey] !== undefined) {
+        return assetStatusCache[cacheKey];
+    }
+    
+    try {
+        const response = await fetch(url, {
+            method: 'HEAD',
+            credentials: 'include'
+        });
+        
+        const isActive = response.ok;
+        assetStatusCache[cacheKey] = isActive;
+        return isActive;
+    } catch (error) {
+        console.error('Error checking proxy status:', error);
+        assetStatusCache[cacheKey] = false;
+        return false;
+    }
+}
+
+// Fetch assets from the API with detailed logging
+async function fetchAssets() {
+    try {
+        console.log('📥 ===== FETCHING ASSETS =====');
+        showLoadingMessage(true);
+        
+        console.log('📡 Making request to:', `${API_BASE_URL}/assets`);
+        const response = await fetch(`${API_BASE_URL}/assets`, {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('📡 Response status:', response.status);
+        console.log('📡 Response ok:', response.ok);
+        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ API Error Response:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log('📦 Raw API response:', data);
+        
+        assetsData = data.assets || [];
+        console.log(`📊 Processed ${assetsData.length} assets`);
+        
+        // Log sample assets for debugging
+        if (assetsData.length > 0) {
+            console.log('📋 Sample assets (first 3):');
+            assetsData.slice(0, 3).forEach((asset, index) => {
+                console.log(`  ${index + 1}. ${asset.name}:`, {
+                    id: asset._id,
+                    availableFormats: asset.availableFormats,
+                    hasModelFile: !!asset.modelFile,
+                    hasModelFiles: !!asset.modelFiles,
+                    isMeshy: !!asset.meshyTaskId
+                });
+            });
+        }
+        
+        displayAssets(assetsData);
+        showLoadingMessage(false);
+        
+        if (assetsData.length === 0) {
+            showMessage('Geen assets gevonden. Maak je eerste asset aan!', 'info');
+        }
+        
+        console.log('✅ Assets fetched and displayed successfully');
+        
+    } catch (error) {
+        console.error('❌ CRITICAL ERROR fetching assets:', error);
+        console.error('📍 Stack trace:', error.stack);
+        showMessage('Fout bij het laden van assets: ' + error.message, 'error');
+        showLoadingMessage(false);
+        
+        const assetContainer = document.getElementById('assetContainer');
+        if (assetContainer) {
+            assetContainer.innerHTML = `
+                <div class="empty-state">
+                    <h3>Kon assets niet laden</h3>
+                    <p>Error: ${error.message}</p>
+                    <p>Check je internetverbinding en probeer opnieuw.</p>
+                    <button onclick="fetchAssets()" class="retry-btn">Probeer opnieuw</button>
+                </div>
+            `;
+        }
+    }
+}
+
+function showLoadingMessage(show) {
+    const container = document.getElementById('assetContainer');
+    if (container && show) {
+        console.log('🔄 Showing loading message...');
+        container.innerHTML = '<div class="loading-message"><i class="fas fa-spinner fa-spin"></i> Loading assets...</div>';
+    } else {
+        console.log('✅ Hiding loading message');
+    }
+}
+
+// Display assets with comprehensive format indicators and automatic status checking
+async function displayAssets(assets) {
+    console.log('🎨 ===== DISPLAYING ASSETS =====');
+    console.log(`📊 Displaying ${assets.length} assets`);
+    
+    const assetContainer = document.getElementById('assetContainer');
+    if (!assetContainer) {
+        console.error('❌ Asset container not found!');
+        return;
+    }
+    
+    assetContainer.innerHTML = '';
+    
+    if (assets.length === 0) {
+        console.log('📝 No assets to display - showing empty state');
+        assetContainer.innerHTML = '<div class="empty-state">Nog geen assets. Maak je eerste asset aan!</div>';
+        return;
+    }
+    
+    // First pass: render all assets
+    for (const asset of assets) {
+        const assetElement = await createAssetElement(asset);
+        assetContainer.appendChild(assetElement);
+    }
+    
+    console.log('✅ All assets displayed successfully');
+}
+
+// Create asset element with status indicators
+async function createAssetElement(asset) {
+    console.log(`🎨 Processing asset: ${asset.name}`);
+    
+    const assetElement = document.createElement('div');
+    assetElement.classList.add('asset-item');
+    
+    const fileSize = asset.fileSize || 'Onbekend';
+    const createdDate = asset.createdAt ? new Date(asset.createdAt).toLocaleDateString('nl-NL') : 'Onbekend';
+    
+    // COMPREHENSIVE format detection with detailed logging
+    let availableFormats = [];
+    console.log(`🔍 Detecting formats for ${asset.name}:`);
+    console.log('  - availableFormats:', asset.availableFormats);
+    console.log('  - modelFiles:', asset.modelFiles ? Object.keys(asset.modelFiles) : 'None');
+    console.log('  - modelFile:', !!asset.modelFile);
+    console.log('  - meshyTaskId:', asset.meshyTaskId);
+    
+    // Check availableFormats array first
+    if (asset.availableFormats && Array.isArray(asset.availableFormats) && asset.availableFormats.length > 0) {
+        availableFormats = asset.availableFormats;
+        console.log(`  ✅ Method 1: Found formats from availableFormats: ${availableFormats}`);
+    } else {
+        console.log('  ❌ Method 1: No availableFormats array');
+        
+        // Fallback: Check modelFiles object
+        if (asset.modelFiles && typeof asset.modelFiles === 'object') {
+            availableFormats = Object.keys(asset.modelFiles).filter(format => 
+                asset.modelFiles[format] && asset.modelFiles[format].url
+            );
+            if (availableFormats.length > 0) {
+                console.log(`  ✅ Method 2: Found formats from modelFiles: ${availableFormats}`);
+            } else {
+                console.log('  ❌ Method 2: No valid modelFiles');
+            }
+        }
+        
+        // Fallback: Check legacy modelFile
+        if (availableFormats.length === 0 && asset.modelFile && asset.modelFile.url) {
+            availableFormats = ['glb'];
+            console.log('  ✅ Method 3: Found GLB from legacy modelFile');
+        }
+        
+        // Final fallback: Assume GLB if Meshy generated
+        if (availableFormats.length === 0 && asset.meshyTaskId) {
+            availableFormats = ['glb', 'fbx', 'obj', 'usdz'];
+            console.log('  ✅ Method 4: Meshy asset - assuming all formats');
+        }
+        
+        // Last resort fallback
+        if (availableFormats.length === 0) {
+            availableFormats = ['glb'];
+            console.log('  ⚠️ Method 5: Using fallback GLB format');
+        }
+    }
+    
+    console.log(`  📋 Final formats for ${asset.name}: ${availableFormats}`);
+    
+    // NEW: Check for at-risk formats (files using proxy - too large for Cloudinary)
+    const atRiskFormats = [];
+    const deletedFormats = [];
+    let hasProxyUrls = false;
+    let meshyTaskId = asset.meshyTaskId;
+    
+    if (asset.modelFiles && typeof asset.modelFiles === 'object') {
+        for (const [format, file] of Object.entries(asset.modelFiles)) {
+            if (file && file.url && (
+                file.isProxy || 
+                file.url.includes('/api/proxyModel/') ||
+                file.url.includes('meshy.ai') ||
+                file.url.includes('assets.meshy.ai')
+            )) {
+                atRiskFormats.push(format.toUpperCase());
+                hasProxyUrls = true;
+                console.log(`  ⚠️ Format ${format} is at risk - using proxy/Meshy URL`);
+                
+                // Extract taskId from proxy URL if needed
+                if (!meshyTaskId && file.url.includes('/api/proxyModel/')) {
+                    const match = file.url.match(/\/api\/proxyModel\/([^?]+)/);
+                    if (match) meshyTaskId = match[1];
+                }
+            }
+        }
+    }
+    
+    // Also check legacy modelFile for GLB
+    if (asset.modelFile && asset.modelFile.url && 
+        (asset.modelFile.isProxy ||
+         asset.modelFile.url.includes('/api/proxyModel/') ||
+         asset.modelFile.url.includes('meshy.ai') || 
+         asset.modelFile.url.includes('assets.meshy.ai')) &&
+        !atRiskFormats.includes('GLB')) {
+        atRiskFormats.push('GLB');
+        hasProxyUrls = true;
+        console.log(`  ⚠️ GLB is at risk - using proxy/Meshy URL (legacy)`);
+    }
+    
+    // Also check generationMetadata for proxy formats
+    if (asset.generationMetadata?.proxyFormats && Array.isArray(asset.generationMetadata.proxyFormats)) {
+        asset.generationMetadata.proxyFormats.forEach(format => {
+            const upperFormat = format.toUpperCase();
+            if (!atRiskFormats.includes(upperFormat)) {
+                atRiskFormats.push(upperFormat);
+                hasProxyUrls = true;
+                console.log(`  ⚠️ Format ${format} is at risk - marked as proxy in metadata`);
+            }
+        });
+    }
+    
+    // Check status if has proxy URLs
+    let allDeleted = false;
+    if (hasProxyUrls && meshyTaskId) {
+        // Check if the proxy still works
+        const testUrl = `/api/proxyModel/${meshyTaskId}?format=glb`;
+        const isActive = await checkProxyStatus(testUrl, meshyTaskId);
+        
+        if (!isActive) {
+            allDeleted = true;
+            // All at-risk formats are deleted
+            atRiskFormats.forEach(format => {
+                if (!deletedFormats.includes(format)) {
+                    deletedFormats.push(format);
+                }
+            });
+            console.log(`  ❌ Proxy/Meshy files deleted for ${asset.name}`);
+        }
+    }
+    
+    const formatBadges = availableFormats.map(format => {
+        const isAtRisk = atRiskFormats.includes(format.toUpperCase());
+        const isDeleted = deletedFormats.includes(format.toUpperCase());
+        return `<span class="format-badge-small ${format} ${isDeleted ? 'deleted' : isAtRisk ? 'at-risk' : ''}">${format.toUpperCase()}${isDeleted ? ' ❌' : isAtRisk ? ' ⚠️' : ''}</span>`;
+    }).join('');
+    
+    // Enhanced image handling
+    let imageUrl = null;
+    let imageSource = null;
+    
+    if (asset.originalImage && asset.originalImage.url) {
+        imageUrl = asset.originalImage.url;
+        imageSource = 'originalImage';
+    } else if (asset.inputImage && asset.inputImage.url) {
+        imageUrl = asset.inputImage.url;
+        imageSource = 'inputImage';
+    } else if (asset.sourceImage && asset.sourceImage.url) {
+        imageUrl = asset.sourceImage.url;
+        imageSource = 'sourceImage';
+    } else if (asset.previewImage && asset.previewImage.url) {
+        imageUrl = asset.previewImage.url;
+        imageSource = 'previewImage';
+    }
+    
+    console.log(`  🖼️ Image source for ${asset.name}: ${imageSource || 'None'}`);
+    
+    const hasImage = !!imageUrl;
+    
+    // Create status indicator
+    let statusIndicator = '';
+    if (atRiskFormats.length > 0) {
+        if (allDeleted) {
+            statusIndicator = `
+                <div class="asset-status-indicator deleted">
+                    <span class="status-icon">❌</span>
+                    <span class="status-text">Deleted</span>
+                </div>
+            `;
+        } else {
+            statusIndicator = `
+                <div class="asset-status-indicator at-risk">
+                    <span class="status-icon">⚠️</span>
+                    <span class="status-text">At Risk</span>
+                </div>
+            `;
+        }
+    }
+    
+    let previewSection;
+    if (hasImage) {
+        previewSection = `
+            <div class="asset-preview-admin">
+                <img src="${imageUrl}" 
+                     alt="${asset.name}" 
+                     class="asset-preview-img-admin"
+                     onload="console.log('✅ Admin preview loaded: ${asset.name} from ${imageSource}')"
+                     onerror="console.warn('⚠️ Admin preview failed: ${asset.name}'); this.parentElement.innerHTML='<div class=\\'asset-preview-admin asset-preview-icon-only\\'>${asset.icon || '🐕'}</div>';">
+                <div class="asset-icon-overlay">${asset.icon || '🐕'}</div>
+                <div class="image-source-label">${imageSource}</div>
+                ${statusIndicator}
+            </div>
+        `;
+    } else {
+        previewSection = `
+            <div class="asset-preview-admin asset-preview-icon-only">
+                ${asset.icon || '🐕'}
+                ${statusIndicator}
+            </div>
+        `;
+    }
+    
+    const assetType = asset.isUserGenerated ? 
+        (asset.isPublic ? 'User (Public)' : 'User (Private)') : 
+        'Admin';
+    
+    // Add badge if this was originally user-generated
+    const wasUserGeneratedBadge = asset.wasUserGenerated ? 
+        '<span class="format-badge-small" style="background: rgba(102, 16, 242, 0.2); color: #6610f2; border: 1px solid #6610f2;">Originally User-Generated</span>' : '';
+    
+    assetElement.innerHTML = `
+        ${previewSection}
+        <div class="asset-info">
+            <h3>${asset.name}</h3>
+            <div class="format-badges-container">${formatBadges} ${wasUserGeneratedBadge}</div>
+            <p><strong>Type:</strong> ${assetType}</p>
+            <p><strong>Ras:</strong> ${asset.breed}</p>
+            <p><strong>Bestandsgrootte:</strong> ${fileSize}</p>
+            <p><strong>Polygonen:</strong> ${asset.polygons?.toLocaleString() || '0'}</p>
+            <p><strong>Populariteit:</strong> ${asset.popularity || 0}%</p>
+            <p><strong>Views:</strong> ${asset.views || 0}</p>
+            <p><strong>Downloads:</strong> ${asset.downloads || 0}</p>
+            <p><strong>Aangemaakt:</strong> ${createdDate}</p>
+            <p><strong>Beschrijving:</strong> ${asset.description}</p>
+            <div class="asset-tags">
+                ${(asset.tags || []).map(tag => `<span class="asset-tag">${tag}</span>`).join('')}
+            </div>
+            <div class="asset-buttons">
+                <button class="edit-asset" data-id="${asset._id}">Bewerk</button>
+                <button class="delete-asset" data-id="${asset._id}">Verwijder</button>
+                ${asset.modelFile?.url && !asset.modelFile.url.includes('memory://') && !allDeleted ? 
+                    `<a href="${asset.modelFile.url}" target="_blank" class="download-asset">Download</a>` : 
+                    `<span class="download-disabled">${allDeleted ? 'Model Deleted' : 'Download niet beschikbaar'}</span>`
+                }
+            </div>
+        </div>
+    `;
+    
+    console.log(`✅ Asset ${asset.name} displayed successfully`);
+    return assetElement;
+}
+
+// Verify authentication status with the server
+async function verifyAuthenticationStatus() {
+    try {
+        console.log('🔐 Verifying authentication status with server...');
+        const response = await fetch(`${API_BASE_URL}/auth/me`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('📡 Auth verification response:', response.status);
+        
+        if (response.ok) {
+            const userData = await response.json();
+            console.log('✅ Server confirmed authentication:', userData.user?.username);
+            return true;
+        } else {
+            console.log('❌ Server says not authenticated');
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ Auth verification error:', error);
+        return false;
+    }
+}
+
+// FIXED: Save asset function with proper model file handling and generation parameters
+async function saveAsset(formData, isEdit = false) {
+    try {
+        console.log('💾 ===== SAVING ASSET =====');
+        console.log('📝 Save mode:', isEdit ? 'EDIT' : (isPublishMode ? 'PUBLISH' : 'CREATE'));
+        console.log('📝 Asset ID:', editingAssetId);
+        console.log('🚀 Publish mode:', isPublishMode);
+        
+        // Check authentication first
+        const isAuthenticated = ensureAuthenticated();
+        if (!isAuthenticated) {
+            throw new Error('Authentication required');
+        }
+        
+        console.log('✅ Authentication confirmed for save operation');
+        
+        // Get form element once at the beginning
+        const form = document.getElementById('assetForm');
+        
+        // For publish mode, we need to handle this differently
+        if (isPublishMode && publishModelData) {
+            console.log('🚀 PUBLISH MODE DETECTED - Converting user model to public asset');
+            
+            // Add metadata to form data
+            formData.append('sourceAssetId', publishModelData.sourceAssetId || publishModelData._id);
+            formData.append('wasUserGenerated', 'true');
+            formData.append('isUserGenerated', 'false'); // It's now a public asset
+            formData.append('isPublic', 'true'); // Always public for homepage
+            formData.append('category', 'public'); // Set category to public
+            
+            // CRITICAL: Pass meshyTaskId if available
+            if (publishModelData.meshyTaskId) {
+                formData.append('meshyTaskId', publishModelData.meshyTaskId);
+                console.log('📋 Added meshyTaskId to form data:', publishModelData.meshyTaskId);
+            }
+            
+            // CRITICAL FIX: Add generation parameters from form dataset
+            if (form) {
+                // Add generation parameters
+                formData.append('topology', form.dataset.topology || publishModelData.topology || 'triangle');
+                formData.append('texture', form.dataset.texture || publishModelData.texture || 'true');
+                formData.append('symmetry', form.dataset.symmetry || publishModelData.symmetry || 'auto');
+                formData.append('pbr', form.dataset.pbr || publishModelData.pbr || 'false');
+                
+                console.log('🔺 CRITICAL: Adding generation parameters to form data:', {
+                    topology: form.dataset.topology || publishModelData.topology,
+                    texture: form.dataset.texture || publishModelData.texture,
+                    symmetry: form.dataset.symmetry || publishModelData.symmetry,
+                    pbr: form.dataset.pbr || publishModelData.pbr
+                });
+            }
+            
+            // CRITICAL FIX: Properly prepare existing model files
+            if (existingModelFiles && Object.keys(existingModelFiles).length > 0) {
+                // Create a clean structure for backend
+                const cleanModelFiles = {};
+                
+                // Process each format
+                ['glb', 'fbx', 'obj', 'usdz'].forEach(format => {
+                    if (existingModelFiles[format] && existingModelFiles[format].url) {
+                        cleanModelFiles[format] = existingModelFiles[format];
+                    }
+                });
+                
+                // Special handling for modelFile if it exists
+                if (existingModelFiles.modelFile && existingModelFiles.modelFile.url && !cleanModelFiles.glb) {
+                    cleanModelFiles.glb = existingModelFiles.modelFile;
+                }
+                
+                // Ensure we have at least GLB
+                if (!cleanModelFiles.glb && publishModelData.modelFile && publishModelData.modelFile.url) {
+                    cleanModelFiles.glb = publishModelData.modelFile;
+                }
+                
+                formData.append('existingModelFiles', JSON.stringify(cleanModelFiles));
+                console.log('📋 Added clean model files to form:', cleanModelFiles);
+            } else if (publishModelData && publishModelData.modelFile && publishModelData.modelFile.url) {
+                // Fallback: Use legacy modelFile if no modelFiles structure
+                const fallbackFiles = {
+                    glb: publishModelData.modelFile,
+                    modelFile: publishModelData.modelFile
+                };
+                formData.append('existingModelFiles', JSON.stringify(fallbackFiles));
+                console.log('📋 Using legacy modelFile as fallback:', fallbackFiles);
+            }
+            
+            // Add existing original image metadata (using form variable from above)
+            const existingOriginalImage = form.dataset.originalImage ? 
+                JSON.parse(form.dataset.originalImage) : null;
+            
+            if (existingOriginalImage) {
+                formData.append('existingOriginalImage', JSON.stringify(existingOriginalImage));
+                console.log('📋 Added existing original image to form');
+            }
+            
+            // Add existing preview image metadata (using form variable from above)
+            const existingPreviewImage = form.dataset.previewImage ? 
+                JSON.parse(form.dataset.previewImage) : null;
+                
+            if (existingPreviewImage) {
+                formData.append('existingPreviewImage', JSON.stringify(existingPreviewImage));
+                console.log('📋 Added existing preview image to form');
+            }
+            
+            console.log('📋 All publish metadata appended to form data');
+        }
+        
+        const url = isEdit ? `${API_BASE_URL}/assets/${editingAssetId}` : `${API_BASE_URL}/assets`;
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        console.log('📡 Making request:', {
+            url: url,
+            method: method,
+            hasFormData: !!formData,
+            isPublishMode: isPublishMode
+        });
+        
+        // Log form data contents
+        console.log('📋 Form data contents:');
+        for (let [key, value] of formData.entries()) {
+            if (value instanceof File) {
+                console.log(`  ${key}: File - ${value.name} (${value.size} bytes, ${value.type})`);
+            } else {
+                console.log(`  ${key}: ${value}`);
+            }
+        }
+        
+        // Check cookies before request
+        console.log('🍪 Cookies before request:', document.cookie);
+        
+        const response = await fetch(url, {
+            method: method,
+            body: formData,
+            credentials: 'include',  // CRITICAL: Include credentials for authentication
+            // Don't set Content-Type header - let browser set it for FormData
+        });
+
+        console.log('📡 Save response status:', response.status);
+        console.log('📡 Save response ok:', response.ok);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Save error response:', errorText);
+            
+            let errorData;
+            try {
+                errorData = JSON.parse(errorText);
+            } catch (e) {
+                errorData = { error: errorText };
+            }
+            
+            // If authentication error, try to re-authenticate
+            if (response.status === 401) {
+                console.log('🔐 Authentication failed, showing login modal...');
+                if (window.authManager && window.authManager.showLoginModal) {
+                    window.authManager.showLoginModal();
+                } else {
+                    window.location.href = 'homepage.html';
+                }
+            }
+            
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('✅ Save successful:', result);
+        
+        // Check for upload warnings
+        if (result.uploadWarnings && result.uploadWarnings.length > 0) {
+            console.log('⚠️ Upload warnings received:', result.uploadWarnings);
+            
+            // Enhance the success message with warning details
+            const warningFormats = result.uploadWarnings.map(w => `${w.format} (${w.size})`).join(', ');
+            const baseMessage = isPublishMode ? 
+                'Model successfully published to homepage!' : 
+                (editingAssetId ? 'Asset succesvol bijgewerkt!' : `Asset succesvol aangemaakt met ${result.asset.availableFormats?.length || 1} formaten!`);
+            
+            showMessage(`${baseMessage}\n⚠️ Waarschuwing: ${warningFormats} te groot voor Cloudinary (>10MB) en blijven op Meshy servers.`, 'warning');
+        } else {
+            // Normal success message
+            if (isPublishMode) {
+                showMessage('Model successfully published to homepage! 🎉');
+            } else if (editingAssetId) {
+                showMessage('Asset succesvol bijgewerkt!');
+            } else {
+                showMessage(`Asset succesvol aangemaakt met ${result.asset.availableFormats?.length || 1} formaten!`);
+            }
+        }
+        
+        // If publish mode, clean up session storage
+        if (isPublishMode) {
+            sessionStorage.removeItem('pendingPublishModel');
+            sessionStorage.removeItem('publishWorkflowActive');
+            console.log('🧹 Cleaned up publish workflow data');
+            
+            // Redirect back to admin user models after a delay
+            setTimeout(() => {
+                window.location.href = 'admin-user-models.html';
+            }, 2000);
+        } else {
+            if (!isPublishMode) {
+                resetForm();
+                await fetchAssets();
+            }
+        }
+        
+        return result;
+    } catch (error) {
+        console.error('❌ CRITICAL ERROR saving asset:', error);
+        console.error('📍 Stack trace:', error.stack);
+        throw error;
+    }
+}
+
+// COMPREHENSIVE delete asset function with detailed logging
+async function deleteAsset(assetId) {
+    try {
+        console.log('🗑️ ===== DELETING ASSET =====');
+        console.log('🗑️ Asset ID:', assetId);
+        
+        // Check authentication first
+        const isAuthenticated = ensureAuthenticated();
+        if (!isAuthenticated) {
+            throw new Error('Authentication required');
+        }
+        
+        console.log('✅ Authentication confirmed for delete operation');
+        
+        const url = `${API_BASE_URL}/assets/${assetId}`;
+        console.log('📡 Delete request URL:', url);
+        
+        const response = await fetch(url, {
+            method: 'DELETE',
+            credentials: 'include',  // CRITICAL: Include credentials for authentication
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        console.log('📡 Delete response status:', response.status);
+        console.log('📡 Delete response ok:', response.ok);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Delete error response:', errorText);
+            
+            let errorData;
+            try {
+                errorData = JSON.parse(errorText);
+            } catch (e) {
+                errorData = { error: errorText };
+            }
+            
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('✅ Delete successful:', result);
+        
+        return result;
+    } catch (error) {
+        console.error('❌ CRITICAL ERROR deleting asset:', error);
+        console.error('📍 Stack trace:', error.stack);
+        throw error;
+    }
+}
+
+// Enhanced showMessage function to support warning type
+function showMessage(text, type = 'success') {
+    console.log('📢 Showing message:', { text, type });
+    
+    const messageDiv = document.getElementById('message');
+    if (!messageDiv) return;
+    
+    messageDiv.textContent = text;
+    messageDiv.style.display = 'block';
+    
+    messageDiv.className = 'message';
+    
+    if (type === 'error') {
+        messageDiv.style.background = 'rgba(220, 53, 69, 0.1)';
+        messageDiv.style.color = '#dc3545';
+        messageDiv.style.borderColor = 'rgba(220, 53, 69, 0.3)';
+    } else if (type === 'info') {
+        messageDiv.style.background = 'rgba(255, 193, 7, 0.1)';
+        messageDiv.style.color = '#ffc107';
+        messageDiv.style.borderColor = 'rgba(255, 193, 7, 0.3)';
+    } else if (type === 'warning') {
+        messageDiv.style.background = 'rgba(255, 152, 0, 0.1)';
+        messageDiv.style.color = '#ff9800';
+        messageDiv.style.borderColor = 'rgba(255, 152, 0, 0.3)';
+    } else {
+        messageDiv.style.background = 'rgba(0, 188, 212, 0.1)';
+        messageDiv.style.color = '#00bcd4';
+        messageDiv.style.borderColor = 'rgba(0, 188, 212, 0.3)';
+    }
+
+    // Make the message stay longer for warnings
+    const duration = type === 'warning' ? 8000 : 5000;
+    
+    setTimeout(() => {
+        messageDiv.style.display = 'none';
+        console.log('📢 Message hidden automatically');
+    }, duration);
+}
+
+function showLoading(show) {
+    console.log('🔄 Loading state:', show);
+    
+    const spinner = document.getElementById('loadingSpinner');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (spinner && submitBtn) {
+        if (show) {
+            spinner.style.display = 'block';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Uploading...';
+        } else {
+            spinner.style.display = 'none';
+            submitBtn.disabled = false;
+            submitBtn.textContent = editingAssetId ? 'Werk het asset bij' : (isPublishMode ? 'Publish to Homepage' : 'Maak het asset aan');
+        }
+    }
+}
+
+function resetForm() {
+    console.log('🔄 Resetting form...');
+    
+    const assetForm = document.getElementById('assetForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const fileSize = document.getElementById('fileSize');
+    
+    if (assetForm) assetForm.reset();
+    editingAssetId = null;
+    
+    // Reset submit button text based on mode
+    if (submitBtn) {
+        submitBtn.textContent = isPublishMode ? 'Publish to Homepage' : 'Maak het asset aan';
+    }
+    
+    if (fileSize) fileSize.value = '';
+    
+    console.log('✅ Form reset complete');
+}
+
+function populateFormForEdit(asset) {
+    console.log('✏️ Populating form for edit:', asset.name);
+    
+    const fields = {
+        'name': asset.name || '',
+        'breed': asset.breed || '',
+        'icon': asset.icon || '',
+        'fileSize': asset.fileSize || '',
+        'polygons': asset.polygons || '',
+        'popularity': asset.popularity || 0,
+        'tags': (asset.tags || []).join(', '),
+        'description': asset.description || ''
+    };
+
+    // Safely set form field values
+    Object.keys(fields).forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.value = fields[fieldId];
+            console.log(`  Set ${fieldId}: ${fields[fieldId]}`);
+        }
+    });
+
+    editingAssetId = asset._id;
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) {
+        submitBtn.textContent = 'Werk het asset bij';
+    }
+    
+    // Make GLB file optional for editing
+    const modelFileGLB = document.getElementById('modelFileGLB');
+    if (modelFileGLB) {
+        modelFileGLB.removeAttribute('required');
+        console.log('✅ Made GLB file optional for editing');
+    }
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    console.log('✅ Form populated and scrolled to top');
+}
+
+// Auto-calculate total file size for multiple formats
+function updateTotalFileSize() {
+    let totalSize = 0;
+    const fileInputs = ['modelFileGLB', 'modelFileFBX', 'modelFileOBJ', 'modelFileUSDZ'];
+    
+    fileInputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        const file = input && input.files ? input.files[0] : null;
+        if (file) {
+            totalSize += file.size;
+            console.log(`📁 File ${inputId}: ${file.name} (${file.size} bytes)`);
+        }
+    });
+    
+    const fileSizeField = document.getElementById('fileSize');
+    if (fileSizeField) {
+        if (totalSize > 0) {
+            const sizeInMB = (totalSize / (1024 * 1024)).toFixed(1);
+            fileSizeField.value = `${sizeInMB} MB`;
+            console.log(`📊 Total file size calculated: ${sizeInMB} MB`);
+        } else {
+            fileSizeField.value = '';
+        }
+    }
+}
+
+// FIXED: Proper authentication check with timing
+const checkAuthAndInitialize = async (attempt = 1) => {
+    console.log(`\n🔍 ===== AUTH CHECK ATTEMPT ${attempt} =====`);
+    console.log('⏰ Time:', new Date().toISOString());
+    
+    // First, wait for AuthManager to exist
+    if (!window.authManager) {
+        if (attempt < 100) { // Wait up to 10 seconds
+            console.log(`⏳ AuthManager not ready, waiting... (attempt ${attempt}/100)`);
+            console.log('🔍 Window properties:', Object.keys(window).filter(key => key.includes('auth')));
+            setTimeout(() => checkAuthAndInitialize(attempt + 1), 100);
+            return;
+        } else {
+            console.error('❌ AuthManager failed to load after 10 seconds');
+            console.log('🔍 Final window check:', {
+                hasAuthManager: !!window.authManager,
+                windowKeys: Object.keys(window).slice(0, 20)
+            });
+            
+            // Can't proceed without AuthManager
+            alert('Authentication system failed to load. Please refresh the page.');
+            return;
+        }
+    }
+    
+    console.log('✅ AuthManager found!');
+    console.log('🔍 AuthManager properties:', Object.keys(window.authManager));
+    console.log('🔍 AuthManager state:', {
+        initialized: window.authManager.initialized,
+        authCheckComplete: window.authManager.authCheckComplete,
+        currentUser: window.authManager.currentUser,
+        user: window.authManager.user
+    });
+    
+    // Wait for auth check to complete
+    if (!window.authManager.authCheckComplete) {
+        if (attempt < 50) { // Wait up to 5 seconds for auth check
+            console.log(`⏳ Auth check not complete, waiting... (attempt ${attempt}/50)`);
+            setTimeout(() => checkAuthAndInitialize(attempt + 1), 100);
+            return;
+        } else {
+            console.error('❌ Auth check failed to complete after 5 seconds');
+        }
+    }
+    
+    console.log('✅ Auth check complete, verifying authentication...');
+    
+    // Now check authentication
+    const isAuthenticated = checkAuthentication();
+    
+    if (!isAuthenticated) {
+        console.log('❌ USER NOT AUTHENTICATED');
+        console.log('🚨 Redirecting to homepage...');
+        alert('Please log in to manage assets.');
+        window.location.href = 'homepage.html';
+        return;
+    }
+    
+    console.log('✅ USER IS AUTHENTICATED - PROCEEDING');
+    
+    // Check for publish workflow
+    checkPublishWorkflow();
+    
+    console.log('🎉 Initializing page functionality...');
+    initializePage();
+};
+
+// COMPREHENSIVE DOM initialization with extensive authentication debugging
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚨 ===== DOM CONTENT LOADED =====');
+    console.log('📄 DOM loaded, starting comprehensive authentication check...');
+    console.log('⏰ Timestamp:', new Date().toISOString());
+    
+    // Start checking immediately
+    checkAuthAndInitialize();
+});
+
+function initializePage() {
+    console.log('🚀 ===== INITIALIZING PAGE =====');
+    
+    // Setup publish mode if active
+    setupPublishMode();
+    
+    const assetForm = document.getElementById('assetForm');
+    const assetContainer = document.getElementById('assetContainer');
+    
+    console.log('📋 Found elements:', {
+        assetForm: !!assetForm,
+        assetContainer: !!assetContainer
+    });
+
+    // Form submission with comprehensive logging
+    if (assetForm) {
+        console.log('📝 Setting up form submission handler...');
+        
+        assetForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            console.log('📝 ===== FORM SUBMISSION =====');
+            
+            showLoading(true);
+            
+            try {
+                // Verify authentication with server before proceeding
+                const isServerAuthenticated = await verifyAuthenticationStatus();
+                if (!isServerAuthenticated) {
+                    console.log('❌ Server authentication check failed');
+                    showMessage('Authentication lost. Please log in again.', 'error');
+                    
+                    // Show login modal or redirect
+                    if (window.authManager && window.authManager.showLoginModal) {
+                        window.authManager.showLoginModal();
+                    } else {
+                        sessionStorage.setItem('redirectAfterLogin', window.location.href);
+                        window.location.href = 'homepage.html';
+                    }
+                    showLoading(false);
+                    return;
+                }
+                
+                console.log('✅ Server authentication verified, proceeding with form submission');
+                
+                const formData = new FormData(assetForm);
+                
+                // Validate required fields
+                const requiredFields = ['name', 'breed', 'icon', 'polygons', 'description'];
+                console.log('🔍 Validating required fields...');
+                
+                for (const field of requiredFields) {
+                    const value = formData.get(field);
+                    console.log(`  ${field}: ${value ? 'Present' : 'MISSING'}`);
+                    if (!value) {
+                        throw new Error(`${field} is verplicht`);
+                    }
+                }
+                
+                // Check if GLB file is provided for new assets (unless we have existing files in publish mode)
+                const modelFileGLB = formData.get('modelFileGLB');
+                const hasExistingGLB = isPublishMode && existingModelFiles.glb;
+                
+                console.log('📁 GLB file check:', {
+                    isEdit: !!editingAssetId,
+                    isPublishMode: isPublishMode,
+                    hasFile: !!(modelFileGLB && modelFileGLB.name),
+                    hasExistingGLB: hasExistingGLB,
+                    fileName: modelFileGLB?.name
+                });
+                
+                if (!editingAssetId && !hasExistingGLB && (!modelFileGLB || !modelFileGLB.name)) {
+                    throw new Error('GLB model bestand is verplicht voor nieuwe assets');
+                }
+
+                console.log('✅ Form validation passed, submitting...');
+                const result = await saveAsset(formData, !!editingAssetId);
+                
+                if (isPublishMode) {
+                    showMessage('Model successfully published to homepage! 🎉');
+                    // Redirect back to admin user models after a delay
+                    setTimeout(() => {
+                        window.location.href = 'admin-user-models.html';
+                    }, 2000);
+                } else if (editingAssetId) {
+                    showMessage('Asset succesvol bijgewerkt!');
+                } else {
+                    showMessage(`Asset succesvol aangemaakt met ${result.asset.availableFormats?.length || 1} formaten!`);
+                }
+
+                if (!isPublishMode) {
+                    resetForm();
+                    await fetchAssets();
+                }
+                
+            } catch (error) {
+                console.error('❌ Form submission error:', error);
+                showMessage('Fout bij het opslaan: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        });
+        
+        console.log('✅ Form submission handler set up');
+    } else {
+        console.error('❌ Asset form not found!');
+    }
+
+    // Handle edit, delete, and fix buttons
+    if (assetContainer) {
+        console.log('🎯 Setting up asset container click handlers...');
+        
+        assetContainer.addEventListener('click', async (event) => {
+            const target = event.target;
+            console.log('🖱️ Asset container clicked:', {
+                tagName: target.tagName,
+                className: target.className,
+                dataset: target.dataset
+            });
+            
+            if (target.classList.contains('edit-asset')) {
+                const assetId = target.dataset.id;
+                const asset = assetsData.find(a => a._id === assetId);
+                
+                console.log('✏️ Edit asset clicked:', assetId, asset?.name);
+                
+                if (asset) {
+                    populateFormForEdit(asset);
+                }
+            } else if (target.classList.contains('delete-asset')) {
+                const assetId = target.dataset.id;
+                const asset = assetsData.find(a => a._id === assetId);
+                
+                console.log('🗑️ Delete asset clicked:', assetId, asset?.name);
+                
+                if (confirm(`Weet je zeker dat je "${asset?.name || 'dit asset'}" wilt verwijderen?`)) {
+                    try {
+                        await deleteAsset(assetId);
+                        showMessage('Asset succesvol verwijderd!');
+                        await fetchAssets();
+                    } catch (error) {
+                        showMessage('Fout bij het verwijderen: ' + error.message, 'error');
+                    }
+                }
+            }
+        });
+        
+        console.log('✅ Asset container click handlers set up');
+    } else {
+        console.error('❌ Asset container not found!');
+    }
+
+    // Auto-calculate file size when any model file is selected
+    const fileInputs = ['modelFileGLB', 'modelFileFBX', 'modelFileOBJ', 'modelFileUSDZ'];
+    console.log('📁 Setting up file input handlers...');
+    
+    fileInputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.addEventListener('change', updateTotalFileSize);
+            console.log(`✅ File handler set up for: ${inputId}`);
+        } else {
+            console.warn(`⚠️ File input not found: ${inputId}`);
+        }
+    });
+
+    // Load assets on page load (after authentication check) - but not in publish mode
+    if (!isPublishMode) {
+        console.log('📥 Starting initial asset fetch...');
+        fetchAssets();
+    } else {
+        console.log('🚀 Skipping asset fetch in publish mode');
+        // Hide the asset container in publish mode
+        const assetContainer = document.getElementById('assetContainer');
+        if (assetContainer) {
+            assetContainer.style.display = 'none';
+        }
+    }
+    
+    console.log('✅ PAGE INITIALIZATION COMPLETE');
+}
+
+// Setup admin navigation items
+function setupAdminNavigation() {
+    console.log('🔧 Setting up admin navigation...');
+    
+    if (!window.authManager || !window.authManager.currentUser) {
+        console.log('❌ No user found for admin navigation setup');
+        return;
+    }
+    
+    const user = window.authManager.currentUser;
+    console.log('👤 User for admin nav:', user);
+    
+    if (!user.isAdmin) {
+        console.log('❌ User is not admin, skipping admin navigation');
+        return;
+    }
+    
+    console.log('✅ User is admin, adding admin navigation items');
+    
+    // Add admin items to desktop navigation
+    const navLeft = document.querySelector('.nav-left');
+    if (navLeft) {
+        // Check if admin items already exist
+        if (!navLeft.querySelector('.admin-nav-item')) {
+            // Create admin navigation items
+            const assetManagerLink = document.createElement('a');
+            assetManagerLink.href = 'manageAssets.html';
+            assetManagerLink.textContent = 'Asset Manager';
+            assetManagerLink.classList.add('admin-nav-item');
+            
+            const userModelsLink = document.createElement('a');
+            userModelsLink.href = 'admin-user-models.html';
+            userModelsLink.textContent = 'User Models';
+            userModelsLink.classList.add('admin-nav-item');
+            
+            // Insert admin items before the Generate link
+            const generateLink = navLeft.querySelector('a[href="index.html"]');
+            if (generateLink) {
+                navLeft.insertBefore(userModelsLink, generateLink);
+                navLeft.insertBefore(assetManagerLink, generateLink);
+            } else {
+                // Fallback: append to the end
+                navLeft.appendChild(assetManagerLink);
+                navLeft.appendChild(userModelsLink);
+            }
+            
+            console.log('✅ Admin navigation items added to desktop nav');
+        }
+    }
+    
+    // Add admin items to mobile navigation
+    const mobileNav = document.querySelector('.mobile-nav');
+    if (mobileNav) {
+        // Check if admin items already exist
+        if (!mobileNav.querySelector('.admin-nav-item')) {
+            // Create mobile admin navigation items
+            const mobileAssetManagerLink = document.createElement('a');
+            mobileAssetManagerLink.href = 'manageAssets.html';
+            mobileAssetManagerLink.textContent = 'Asset Manager';
+            mobileAssetManagerLink.classList.add('admin-nav-item');
+            
+            const mobileUserModelsLink = document.createElement('a');
+            mobileUserModelsLink.href = 'admin-user-models.html';
+            mobileUserModelsLink.textContent = 'User Models';
+            mobileUserModelsLink.classList.add('admin-nav-item');
+            
+            // Insert before the account button
+            const accountBtn = mobileNav.querySelector('.account-btn');
+            if (accountBtn) {
+                mobileNav.insertBefore(mobileUserModelsLink, accountBtn);
+                mobileNav.insertBefore(mobileAssetManagerLink, accountBtn);
+            } else {
+                // Fallback: append to the end
+                mobileNav.appendChild(mobileAssetManagerLink);
+                mobileNav.appendChild(mobileUserModelsLink);
+            }
+            
+            console.log('✅ Admin navigation items added to mobile nav');
+        }
+    }
+}
+
+// Setup account dropdown
+function setupAccountDropdown() {
+    console.log('🔧 Setting up account dropdown...');
+    
+    if (!window.authManager || !window.authManager.currentUser) {
+        console.log('❌ No user found for account dropdown setup');
+        return;
+    }
+    
+    const user = window.authManager.currentUser;
+    console.log('👤 User for account dropdown:', user);
+    
+    // Update account button text
+    const accountBtns = document.querySelectorAll('.account-btn');
+    accountBtns.forEach(btn => {
+        if (!btn.querySelector('.account-dropdown')) {
+            btn.textContent = user.username || 'Account';
+            
+            // Create dropdown
+            const dropdown = document.createElement('div');
+            dropdown.classList.add('account-dropdown');
+            dropdown.style.cssText = `
+                position: absolute;
+                top: 100%;
+                right: 0;
+                background: rgba(10, 10, 10, 0.95);
+                border: 1px solid rgba(0, 188, 212, 0.3);
+                border-radius: 8px;
+                margin-top: 0.5rem;
+                padding: 0.5rem;
+                display: none;
+                min-width: 150px;
+                backdrop-filter: blur(20px);
+                z-index: 1001;
+            `;
+            
+            // Add admin badge if user is admin
+            if (user.isAdmin) {
+                const adminBadge = document.createElement('div');
+                adminBadge.style.cssText = `
+                    color: #ff6b6b;
+                    font-size: 0.8rem;
+                    margin-bottom: 0.5rem;
+                    padding: 0.2rem 0.5rem;
+                    background: rgba(255, 107, 107, 0.1);
+                    border-radius: 4px;
+                    text-align: center;
+                `;
+                adminBadge.textContent = 'admin';
+                dropdown.appendChild(adminBadge);
+                
+                // Add "My User Models" link
+                const myModelsLink = document.createElement('a');
+                myModelsLink.href = 'admin-user-models.html';
+                myModelsLink.style.cssText = `
+                    display: block;
+                    color: #00bcd4;
+                    text-decoration: none;
+                    padding: 0.5rem;
+                    border-radius: 4px;
+                    transition: background 0.3s ease;
+                    font-size: 0.9rem;
+                `;
+                myModelsLink.textContent = '❤️ My User Models';
+                myModelsLink.addEventListener('mouseenter', () => {
+                    myModelsLink.style.background = 'rgba(0, 188, 212, 0.1)';
+                });
+                myModelsLink.addEventListener('mouseleave', () => {
+                    myModelsLink.style.background = 'transparent';
+                });
+                dropdown.appendChild(myModelsLink);
+            }
+            
+            // Add logout button
+            const logoutBtn = document.createElement('button');
+            logoutBtn.style.cssText = `
+                width: 100%;
+                background: rgba(0, 188, 212, 0.1);
+                color: #00bcd4;
+                border: 1px solid #00bcd4;
+                padding: 0.5rem;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-family: 'Sora', sans-serif;
+                font-size: 0.9rem;
+                margin-top: 0.5rem;
+            `;
+            logoutBtn.textContent = '🚪 Logout';
+            logoutBtn.addEventListener('click', () => {
+                if (window.authManager && window.authManager.logout) {
+                    window.authManager.logout();
+                } else {
+                    localStorage.removeItem('user');
+                    sessionStorage.removeItem('user');
+                    window.location.href = 'homepage.html';
+                }
+            });
+            logoutBtn.addEventListener('mouseenter', () => {
+                logoutBtn.style.background = 'rgba(0, 188, 212, 0.2)';
+                logoutBtn.style.transform = 'translateY(-1px)';
+            });
+            logoutBtn.addEventListener('mouseleave', () => {
+                logoutBtn.style.background = 'rgba(0, 188, 212, 0.1)';
+                logoutBtn.style.transform = 'translateY(0)';
+            });
+            dropdown.appendChild(logoutBtn);
+            
+            // Position relative parent
+            const navRight = btn.closest('.nav-right');
+            if (navRight) {
+                navRight.style.position = 'relative';
+            }
+            
+            // Add dropdown to button parent
+            btn.parentElement.appendChild(dropdown);
+            
+            // Toggle dropdown on click
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isVisible = dropdown.style.display === 'block';
+                dropdown.style.display = isVisible ? 'none' : 'block';
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', () => {
+                dropdown.style.display = 'none';
+            });
+            
+            console.log('✅ Account dropdown setup complete');
+        }
+    });
+}
+
+// Enhanced initialization function
+function initializeAuthenticatedUI() {
+    console.log('🎨 Initializing authenticated UI...');
+    
+    // Wait a bit for auth to be fully ready
+    setTimeout(() => {
+        setupAdminNavigation();
+        setupAccountDropdown();
+    }, 100);
+}
+
+// Make functions available globally for debugging
+window.debugAuth = checkAuthentication;
+window.debugFetch = fetchAssets;
+window.debugAssets = () => assetsData;
+window.debugPublishMode = () => ({ isPublishMode, publishModelData, existingModelFiles });
+window.setupAdminNavigation = setupAdminNavigation;
+window.setupAccountDropdown = setupAccountDropdown;
+
+console.log('🚨 ===================================');
+console.log('🚨 MANAGE ASSETS SCRIPT LOADED');
+console.log('🚨 ===================================');
+    </script>
+</body>
+</html>

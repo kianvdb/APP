@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DALMA AI - 3D Assets with Dogs</title>
+    <link rel="stylesheet" href="/frontend/css/homepage.css">
+    <link rel="stylesheet" href="/frontend/css/auth-modal.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="/frontend/src/config.js"></script>
+ 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/20.0.0/tween.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <link rel="icon" href="/frontend/public/favicon.png" type="image/png">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+         <div class="logo-section">
+        <a href="homepage.html" class="logo-link">
+            <img src="/frontend/public/logo2dalma.png" alt="Dalma AI Logo" class="logo">
+        </a>
+    </div>
+        <!-- Regular Navigation (Desktop) -->
+        <nav class="nav">
+            <div class="nav-left">
+                <a href="#home" class="active">Home</a>
+                <a href="#assets">Assets</a>
+                <a href="about.html">About</a>
+                <a href="#rig-animate">Rig & Animate</a>
+                <a href="index.html">Generate</a>
+                <!-- Admin navigation items will be dynamically added here -->
+            </div>
+            <div class="nav-right">
+                <button class="account-btn">Account</button>
+                <!-- Account dropdown will be dynamically added here -->
+            </div>
+        </nav>
+        
+        <!-- Hamburger Menu (Mobile) -->
+        <div class="hamburger" onclick="toggleMobileNav()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        
+        <!-- Mobile Navigation -->
+        <nav class="mobile-nav" id="mobileNav">
+            <a href="#home">Home</a>
+            <a href="#assets">Assets</a>
+            <a href="#about">About</a>
+            <a href="#rig-animate">Rig & Animate</a>
+            <a href="index.html">Generate</a>
+            <button class="account-btn">Account</button>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="geometric-pattern"></div>
+        <div class="hero-content">
+            <div class="hero-text">
+                <h2 class="hero-title">Generate 3D dog assets with ease!</h2>
+                <p class="hero-subtitle">Within a few clicks of a button you can generate, rig and animate your own, ready to use dog model!</p>
+                <a href="index.html" class="cta-button">Generate</a>
+            </div>
+            <div class="hero-3d" id="hero3d">
+                <!-- 3D Dog Model will be rendered here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Assets Section -->
+    <section class="assets-section" id="assets">
+        <div class="assets-header">
+            <h2 class="assets-title">Assets</h2>
+            <div class="assets-search">
+                <svg class="assets-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <input type="text" class="assets-search-input" placeholder="Search assets..." id="assetSearchInput">
+            </div>
+        </div>
+        <!-- Dynamic assets will be loaded here by JavaScript -->
+        <div class="assets-grid">
+            <!-- Dynamic assets will be loaded here by JavaScript -->
+        </div>
+    </section>
+
+    <!-- New Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <!-- Download App Section -->
+            <div class="footer-section">
+                <div class="footer-section-header">
+                    <h3 class="footer-title">Download Our App</h3>
+                    <p class="footer-description">Download the Dalma AI app for Android and IOS</p>
+                </div>
+                <div class="footer-section-content">
+                    <div class="footer-spacer"></div>
+                    <div class="app-buttons">
+                        <a href="about.html#download" class="app-button">
+                            <img src="/frontend/public/googleplay.png" alt="Get it on Google Play" class="app-store-img">
+                        </a>
+                        <a href="about.html#download" class="app-button">
+                            <img src="/frontend/public/appstore.png" alt="Download on the App Store" class="app-store-img">
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Logo Section -->
+            <div class="footer-section footer-center-wrapper">
+                <div class="footer-center">
+                    <div class="footer-logo-section">
+                        <img src="/frontend/public/logo2dalma.png" alt="Dalma AI" class="footer-logo">
+                    </div>
+                    <p class="footer-mission">Our purpose is to bring our loyal four footed friend to life from a 2D image to a 3D model</p>
+                </div>
+            </div>
+
+            <!-- Useful Links Section -->
+            <div class="footer-section">
+                <div class="footer-section-header">
+                    <h3 class="footer-title">Useful Links</h3>
+                </div>
+                <div class="footer-section-content">
+                    <ul class="footer-links">
+                        <li><a href="about.html#referral">Referral Program</a></li>
+                        <li><a href="about.html#blog">Blog Posts</a></li>
+                        <li><a href="about.html#newsletter">News Letter</a></li>
+                        <li><a href="about.html#faq">FAQ</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Follow Us Section -->
+            <div class="footer-section">
+                <div class="footer-section-header">
+                    <h3 class="footer-title">Follow Us</h3>
+                </div>
+                <div class="footer-section-content">
+                    <ul class="footer-links">
+                        <li><a href="#facebook">Facebook</a></li>
+                        <li><a href="#twitter">Twitter</a></li>
+                        <li><a href="#instagram">Instagram</a></li>
+                        <li><a href="#youtube">Youtube</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Copyright Section -->
+        <div class="footer-bottom">
+            <div class="footer-divider"></div>
+            <p class="footer-copyright">Copyright 2025 - Dalma AI</p>
+        </div>
+    </footer>
+
+    <!-- Load Scripts in Correct Order -->
+    <!-- Inline loading system fallback to prevent 404 errors -->
+    <script>
+        // Simple loading system fallback
+        window.loadingManager = {
+            components: new Set(),
+            setLoaded: function(component) {
+                this.components.add(component);
+                console.log('✅ Component loaded:', component);
+            },
+            isLoaded: function(component) {
+                return this.components.has(component);
+            },
+            reset: function() {
+                this.components.clear();
+            }
+        };
+    </script>
+     <script src="/frontend/src/loadingSystem.js"></script>
+    <script src="/frontend/src/auth.js"></script>
+    <script src="/frontend/src/accountDropdown.js"></script>
+    <script src="/frontend/src/pageTransitionLoader.js"></script>
+    <script src="/frontend/src/homepage.js"></script>
+</body>
+</html>

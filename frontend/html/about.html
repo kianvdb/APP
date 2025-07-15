@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Dalma AI - Transform Dogs Into 3D Models</title>
+    <link rel="icon" href="/frontend/public/favicon.png" type="image/png">
+    <link rel="stylesheet" href="/frontend/css/about.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="/frontend/src/config.js"></script>
+    <script>
+        // Ensure config is loaded before proceeding
+        console.log('🔧 Config loaded:', window.APP_CONFIG ? 'YES' : 'NO');
+    </script>
+</head>
+<body>
+    <!-- Geometric Pattern Background -->
+    <div class="geometric-pattern"></div>
+    
+    <!-- Page Content Wrapper -->
+    <div class="page-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-section">
+                <a href="#home" class="logo-link">
+                    <img src="/frontend/public/logo2dalma.png" alt="Dalma AI Logo" class="logo">
+                </a>
+            </div>
+            
+            <!-- Desktop Navigation -->
+            <nav class="nav">
+                <div class="nav-left">
+                    <a href="homepage.html">Home</a>
+                    <a href="homepage.html#assets">Assets</a>
+                    <a href="#about" class="active">About</a>
+                    <a href="#rig-animate">Rig & Animate</a>
+                    <a href="index.html">Generate</a>
+                    <!-- Admin navigation items will be dynamically added here by accountDropdown.js -->
+                </div>
+                <div class="nav-right">
+                    <button class="account-btn">Account</button>
+                </div>
+            </nav>
+            
+            <!-- Mobile Hamburger -->
+            <div class="hamburger" onclick="toggleMobileNav()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            
+            <!-- Mobile Navigation -->
+            <nav class="mobile-nav" id="mobileNav">
+                <a href="homepage.html">Home</a>
+                <a href="homepage.html#assets">Assets</a>
+                <a href="#about" class="active">About</a>
+                <a href="#rig-animate">Rig & Animate</a>
+                <a href="index.html">Generate</a>
+                <button class="account-btn">Account</button>
+            </nav>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero about-hero">
+            <div class="hero-bg-animation">
+                <div class="glow-orb orb-1"></div>
+                <div class="glow-orb orb-2"></div>
+                <div class="glow-orb orb-3"></div>
+            </div>
+            <div class="hero-content about-hero-content">
+                <div class="hero-text-full">
+                    <span class="hero-badge">Transforming Ideas into Reality</span>
+                    <h1 class="hero-title">Pioneering AI-Driven 3D Creation</h1>
+                    <p class="hero-subtitle">At Dalma AI, we're on a mission to democratize 3D content creation. Our cutting-edge technology transforms simple photographs into professional-grade 3D models, making advanced 3D modeling accessible to everyone.</p>
+                    <div class="hero-stats">
+                        <div class="stat-item">
+                            <span class="stat-number">50K+</span>
+                            <span class="stat-label">Models Created</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">5 Min</span>
+                            <span class="stat-label">Average Generation Time</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">98%</span>
+                            <span class="stat-label">Customer Satisfaction</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section class="about-section" id="about">
+            <div class="section-container">
+                <h2 class="section-title">About Dalma AI</h2>
+                <div class="about-content">
+                    <div class="about-text">
+                        <p>Dalma AI revolutionizes 3D asset creation by turning simple 2D photographs of dogs into high-quality, game-ready 3D models. Built specifically for game developers and 3D enthusiasts, our cutting-edge AI technology delivers professional-grade dog assets in minutes, not hours.</p>
+                        <p>Whether you're creating the next indie game sensation, populating a virtual world, or experimenting with 3D art, Dalma AI provides the tools you need to bring canine companions to life.</p>
+                    </div>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">⚡</div>
+                            <h3>Lightning Fast</h3>
+                            <p>From photo to 3D model in under 5 minutes</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">🎮</div>
+                            <h3>Game Ready</h3>
+                            <p>Industry-standard formats (GLB, FBX, OBJ, USDZ)</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">🎨</div>
+                            <h3>Customizable</h3>
+                            <p>Control topology, polycount, textures, and PBR</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">🌟</div>
+                            <h3>No Experience Required</h3>
+                            <p>Intuitive interface for everyone</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Referral Section -->
+        <section class="referral-section" id="referral">
+            <div class="section-container">
+                <h2 class="section-title">Referral Program</h2>
+                <div class="referral-content">
+                    <h3>Share the Love, Earn Rewards</h3>
+                    <p>Love creating with Dalma AI? Spread the word and earn benefits for both you and your friends!</p>
+                    <div class="referral-steps">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <p>Share your unique referral code with friends and colleagues</p>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <p>They get 20% off their first month</p>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <p>You receive 1 free month for every 3 successful referrals</p>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-number">4</div>
+                            <p>Unlock exclusive beta features as a top referrer</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Blog Section -->
+        <section class="blog-section" id="blog">
+            <div class="section-container">
+                <h2 class="section-title">Latest Insights from the Pack</h2>
+                <div class="blog-grid">
+                    <article class="blog-card">
+                        <h3>From Fetch to Fantasy: Creating Mythical Dog Breeds</h3>
+                        <p>Discover how game developers are using Dalma AI to create unique fantasy creatures based on real dog breeds.</p>
+                        <a href="#" class="blog-link">Read More →</a>
+                    </article>
+                    <article class="blog-card">
+                        <h3>Optimizing 3D Dog Models for Mobile Performance</h3>
+                        <p>Learn the best practices for reducing polygon count while maintaining visual quality in your dog assets.</p>
+                        <a href="#" class="blog-link">Read More →</a>
+                    </article>
+                    <article class="blog-card">
+                        <h3>The Science Behind 2D to 3D: How Dalma AI Works</h3>
+                        <p>A deep dive into the AI technology that powers our revolutionary photo-to-3D conversion process.</p>
+                        <a href="#" class="blog-link">Read More →</a>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="faq-section" id="faq">
+            <div class="section-container">
+                <h2 class="section-title">Frequently Asked Questions</h2>
+                <div class="faq-container">
+                    <div class="faq-item">
+                        <h3>What image formats does Dalma AI accept?</h3>
+                        <p>We support JPG, PNG, and WEBP formats up to 10MB. For best results, use clear, well-lit photos with the dog as the main subject.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>Can I use the generated models commercially?</h3>
+                        <p>Yes! All models generated with a paid subscription include a commercial license for use in games, animations, and other projects.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>What 3D formats can I export?</h3>
+                        <p>Dalma AI supports GLB, FBX, OBJ, and USDZ formats, compatible with all major 3D software and game engines.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>How accurate are the generated models?</h3>
+                        <p>Our AI captures the general shape, proportions, and characteristics of the dog in your photo. While not photogrammetry-level accurate, models are perfect for stylized games and applications.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Download Section -->
+        <section class="download-section" id="download">
+            <div class="section-container">
+                <h2 class="section-title">Download Dalma AI</h2>
+                <div class="download-content">
+                    <p class="download-description">Create Anywhere, Anytime. Take the power of AI-generated 3D dog models wherever you go.</p>
+                    <div class="download-features">
+                        <div class="download-feature">
+                            <span class="feature-icon">📸</span>
+                            <span>Instant photo capture and upload</span>
+                        </div>
+                        <div class="download-feature">
+                            <span class="feature-icon">⚡</span>
+                            <span>Real-time generation progress</span>
+                        </div>
+                        <div class="download-feature">
+                            <span class="feature-icon">☁️</span>
+                            <span>Cloud library of all your creations</span>
+                        </div>
+                        <div class="download-feature">
+                            <span class="feature-icon">📤</span>
+                            <span>Direct export to your favorite 3D software</span>
+                        </div>
+                    </div>
+                    <div class="app-buttons-section">
+                        <a href="#" class="app-button">
+                            <img src="/frontend/public/googleplay.png" alt="Get it on Google Play" class="app-store-img">
+                        </a>
+                        <a href="#" class="app-button">
+                            <img src="/frontend/public/appstore.png" alt="Download on the App Store" class="app-store-img">
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <!-- Download App Section -->
+                <div class="footer-section">
+                    <div class="footer-section-header">
+                        <h3 class="footer-title">Download Our App</h3>
+                        <p class="footer-description">Download the Dalma AI app for Android and iOS</p>
+                    </div>
+                    <div class="footer-section-content">
+                        <div class="footer-spacer"></div>
+                        <div class="app-buttons">
+                            <a href="#download" class="app-button">
+                                <img src="/frontend/public/googleplay.png" alt="Get it on Google Play" class="app-store-img">
+                            </a>
+                            <a href="#download" class="app-button">
+                                <img src="/frontend/public/appstore.png" alt="Download on the App Store" class="app-store-img">
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Center Logo Section -->
+                <div class="footer-section footer-center-wrapper">
+                    <div class="footer-center">
+                        <div class="footer-logo-section">
+                            <img src="/frontend/public/logo2dalma.png" alt="Dalma AI" class="footer-logo">
+                        </div>
+                        <p class="footer-mission">Our purpose is to bring our loyal four footed friend to life from a 2D image to a 3D model</p>
+                    </div>
+                </div>
+
+                <!-- Useful Links Section -->
+                <div class="footer-section">
+                    <div class="footer-section-header">
+                        <h3 class="footer-title">Useful Links</h3>
+                    </div>
+                    <div class="footer-section-content">
+                        <ul class="footer-links">
+                            <li><a href="#referral">Referral Program</a></li>
+                            <li><a href="#blog">Blog Posts</a></li>
+                            <li><a href="#newsletter">Newsletter</a></li>
+                            <li><a href="#faq">FAQ</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Follow Us Section -->
+                <div class="footer-section">
+                    <div class="footer-section-header">
+                        <h3 class="footer-title">Follow Us</h3>
+                    </div>
+                    <div class="footer-section-content">
+                        <ul class="footer-links">
+                            <li><a href="#facebook">Facebook</a></li>
+                            <li><a href="#twitter">Twitter</a></li>
+                            <li><a href="#instagram">Instagram</a></li>
+                            <li><a href="#youtube">Youtube</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Copyright Section -->
+            <div class="footer-bottom">
+                <div class="footer-divider"></div>
+                <p class="footer-copyright">Copyright 2025 - Dalma AI</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- FIXED: Add missing scripts for account dropdown functionality -->
+
+    <script src="/frontend/src/auth.js"></script>
+    <script src="/frontend/src/accountDropdown.js"></script>
+    <script src="/frontend/src/about.js"></script>
+</body>
+</html>
