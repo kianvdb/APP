@@ -43,13 +43,13 @@
     console.log('🔧 Homepage API URL:', window.DALMA_CONFIG.API_BASE_URL);
 
     console.log('🚀 Model Configuration:');
-    console.log('🚀 Will load: /frontend/models/dog6.glb');
+    console.log('🚀 Will load: /models/dog6.glb');
     console.log('🚀 Will create wireframe version with controls');
 
     // Create our own namespace to avoid conflicts
     window.HOMEPAGE_3D_CONFIG = {
         useSingleModel: true,
-        modelPath: '/frontend/models/dog6.glb'
+        modelPath: '/models/dog6.glb'
     };
 
     // Override MODEL_PATHS completely
@@ -244,7 +244,7 @@
     function loadWireframeModel() {
         console.log('🎯 ===== LOADING WIREFRAME MODEL =====');
         
-        const modelPath = MODEL_PATHS.main || '/frontend/models/dog6.glb';
+        const modelPath = MODEL_PATHS.main || '/models/dog6.glb';
         console.log('🔄 Loading model from:', modelPath);
         
         if (!THREE.GLTFLoader) {

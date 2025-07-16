@@ -144,7 +144,7 @@ class AuthManager {
             // For truly protected pages, redirect to homepage and show modal
             sessionStorage.setItem('redirectAfterLogin', window.location.href);
             sessionStorage.setItem('showLoginModal', 'true');
-            window.location.replace('homepage.html');
+            window.location.replace('html/homepage.html');
         } else if (this.protectedPages.includes(currentPage) && this.user) {
             console.log('✅ Authorized access to protected page:', currentPage);
         }
@@ -571,7 +571,7 @@ class AuthManager {
             sessionStorage.removeItem('redirectAfterLogin');
             
             // Redirect to homepage after logout
-            window.location.href = 'homepage.html';
+            window.location.href = 'html/homepage.html';
         } catch (error) {
             console.error('❌ Logout error:', error);
         }

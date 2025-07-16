@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">3D Model Converter</string>
+    <string name="title_activity_main">3D Model Converter</string>
+    <string name="package_name">co.nomiva.app</string>
+    <string name="custom_url_scheme">co.nomiva.app</string>
+</resources>

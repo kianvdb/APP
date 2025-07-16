@@ -173,7 +173,7 @@ function showAccountMenu(user, buttonElement) {
                 Asset Manager
             </a>
         ` : ''}
-        <a href="homepage.html#assets" style="display: block; color: #00bcd4; text-decoration: none; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: all 0.2s ease;">
+        <a href="html/homepage.html#assets" style="display: block; color: #00bcd4; text-decoration: none; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: all 0.2s ease;">
             View All Assets
         </a>
         <a href="#" onclick="navigateToLikedAssets(event)" style="display: block; color: #00bcd4; text-decoration: none; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: all 0.2s ease;">
