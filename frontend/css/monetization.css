@@ -1,0 +1,823 @@
+/* Monetization CSS - DALMA AI Mobile App
+   Credits system, ad modals, and pricing interfaces
+   €4.99 for 10 generations MVP strategy
+*/
+
+/* ========================================
+   GENERATION PROGRESS MODAL WITH ADS
+   ======================================== */
+
+.generation-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s ease;
+}
+
+.generation-modal.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.generation-content {
+    background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+    border: 1px solid rgba(0, 188, 212, 0.3);
+    border-radius: 20px;
+    padding: 2.5rem;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 188, 212, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.generation-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 188, 212, 0.1),
+        transparent
+    );
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    50% { left: 100%; }
+    100% { left: 100%; }
+}
+
+.generation-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 2rem;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.generation-spinner {
+    width: 80px;
+    height: 80px;
+    border: 4px solid rgba(0, 188, 212, 0.2);
+    border-top: 4px solid #00bcd4;
+    border-radius: 50%;
+    animation: generationSpin 1.5s linear infinite;
+    margin: 0 auto 2rem;
+    position: relative;
+}
+
+.generation-spinner::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    background: radial-gradient(circle, #00bcd4, #0097a7);
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(0, 188, 212, 0.8);
+    animation: innerPulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes generationSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes innerPulse {
+    0% { 
+        transform: translate(-50%, -50%) scale(0.8);
+        box-shadow: 0 0 20px rgba(0, 188, 212, 0.8);
+    }
+    100% { 
+        transform: translate(-50%, -50%) scale(1.2);
+        box-shadow: 0 0 30px rgba(0, 188, 212, 1);
+    }
+}
+
+.generation-progress {
+    width: 100%;
+    height: 8px;
+    background: rgba(0, 188, 212, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    box-shadow: inset 0 0 10px rgba(0, 188, 212, 0.2);
+}
+
+.generation-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #00bcd4, #00e5ff, #00bcd4);
+    background-size: 200% 100%;
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.5s ease;
+    animation: progressFlow 2s ease-in-out infinite;
+}
+
+@keyframes progressFlow {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.generation-time {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+    font-family: 'Inter', sans-serif;
+}
+
+/* ========================================
+   AD BOOST SECTION
+   ======================================== */
+
+.ad-boost-container {
+    background: rgba(0, 188, 212, 0.05);
+    border: 1px solid rgba(0, 188, 212, 0.2);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.ad-boost-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #00bcd4, #00e5ff, #00bcd4);
+    background-size: 200% 100%;
+    animation: gradientFlow 3s ease-in-out infinite;
+}
+
+@keyframes gradientFlow {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.ad-boost-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #00bcd4;
+    margin-bottom: 0.5rem;
+}
+
+.ad-boost-subtitle {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.4;
+}
+
+.watch-ad-btn {
+    background: linear-gradient(135deg, #00bcd4, #00e5ff);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    font-family: 'Sora', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    margin-bottom: 1rem;
+    box-shadow: 0 8px 25px rgba(0, 188, 212, 0.4);
+    position: relative;
+    overflow: hidden;
+}
+
+.watch-ad-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    transition: left 0.6s ease;
+}
+
+.watch-ad-btn:hover::before {
+    left: 100%;
+}
+
+.watch-ad-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(0, 188, 212, 0.6);
+}
+
+.watch-ad-btn:active {
+    transform: translateY(0);
+}
+
+.ad-rewards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ad-reward-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.8rem;
+}
+
+.ad-reward-check {
+    color: #00bcd4;
+    font-weight: bold;
+    width: 16px;
+    text-align: center;
+}
+
+/* ========================================
+   PRICING MODAL
+   ======================================== */
+
+.pricing-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s ease;
+}
+
+.pricing-modal.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.pricing-content {
+    background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+    border: 1px solid rgba(0, 188, 212, 0.3);
+    border-radius: 20px;
+    padding: 2.5rem;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 188, 212, 0.3);
+    position: relative;
+    overflow: hidden;
+    transform: scale(0.9);
+    transition: transform 0.4s ease;
+}
+
+.pricing-modal.visible .pricing-content {
+    transform: scale(1);
+}
+
+.pricing-close {
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 2rem;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.pricing-close:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.pricing-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.pricing-subtitle {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1rem;
+    margin-bottom: 2rem;
+    line-height: 1.4;
+}
+
+/* ========================================
+   PRICING CARD
+   ======================================== */
+
+.pricing-card {
+    background: rgba(0, 188, 212, 0.05);
+    border: 2px solid rgba(0, 188, 212, 0.3);
+    border-radius: 20px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.pricing-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #00bcd4, #00e5ff, #00bcd4);
+    background-size: 200% 100%;
+    animation: gradientFlow 3s ease-in-out infinite;
+}
+
+.pricing-badge {
+    position: absolute;
+    top: -1px;
+    right: 1.5rem;
+    background: linear-gradient(135deg, #00bcd4, #00e5ff);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0 0 12px 12px;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.4);
+}
+
+.pricing-amount {
+    font-family: 'Sora', sans-serif;
+    font-size: 3rem;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+}
+
+.pricing-credits {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #00bcd4;
+    margin-bottom: 0.5rem;
+}
+
+.pricing-value {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+}
+
+.buy-pack-btn {
+    background: linear-gradient(135deg, #00bcd4, #00e5ff);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    padding: 1.2rem 2rem;
+    font-family: 'Sora', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 8px 30px rgba(0, 188, 212, 0.5);
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.buy-pack-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    transition: left 0.6s ease;
+}
+
+.buy-pack-btn:hover::before {
+    left: 100%;
+}
+
+.buy-pack-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(0, 188, 212, 0.7);
+}
+
+.buy-pack-btn:active {
+    transform: translateY(-1px);
+}
+
+.pricing-features {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    text-align: left;
+}
+
+.pricing-feature {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.pricing-feature-check {
+    color: #00bcd4;
+    font-weight: bold;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+
+.pricing-footer {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+    font-style: italic;
+    margin-top: 1rem;
+    line-height: 1.4;
+}
+
+/* ========================================
+   CREDITS COUNTER ANIMATIONS
+   ======================================== */
+
+.credits-count.updating {
+    animation: creditsUpdate 0.8s ease-out;
+}
+
+@keyframes creditsUpdate {
+    0% {
+        transform: scale(1);
+        color: #00bcd4;
+    }
+    50% {
+        transform: scale(1.3);
+        color: #00e5ff;
+        text-shadow: 0 0 20px rgba(0, 229, 255, 0.8);
+    }
+    100% {
+        transform: scale(1);
+        color: #00bcd4;
+    }
+}
+
+.credits-container.low-credits {
+    border-color: rgba(255, 193, 7, 0.6);
+    background: rgba(255, 193, 7, 0.1);
+    animation: lowCreditsWarning 2s ease-in-out infinite;
+}
+
+.credits-container.low-credits .credits-icon,
+.credits-container.low-credits .credits-count {
+    color: #ffc107;
+}
+
+@keyframes lowCreditsWarning {
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(255, 193, 7, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 25px rgba(255, 193, 7, 0.5);
+    }
+}
+
+.credits-container.no-credits {
+    border-color: rgba(220, 53, 69, 0.6);
+    background: rgba(220, 53, 69, 0.1);
+    animation: noCreditsAlert 1.5s ease-in-out infinite;
+}
+
+.credits-container.no-credits .credits-icon,
+.credits-container.no-credits .credits-count {
+    color: #dc3545;
+}
+
+@keyframes noCreditsAlert {
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(220, 53, 69, 0.3);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(220, 53, 69, 0.6);
+        transform: scale(1.05);
+    }
+}
+
+/* ========================================
+   PURCHASE SUCCESS ANIMATION
+   ======================================== */
+
+.purchase-success {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 2rem;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(40, 167, 69, 0.4);
+    z-index: 15000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, -50%) scale(0.5);
+    transition: all 0.5s ease;
+}
+
+.purchase-success.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.purchase-success-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: successBounce 0.8s ease-out;
+}
+
+@keyframes successBounce {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.purchase-success-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.purchase-success-subtitle {
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+/* ========================================
+   ERROR STATES
+   ======================================== */
+
+.payment-error {
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-top: 1rem;
+    color: #dc3545;
+    font-size: 0.9rem;
+    text-align: center;
+    animation: errorShake 0.5s ease-in-out;
+}
+
+@keyframes errorShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.insufficient-credits {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1rem;
+    color: #ffc107;
+    text-align: center;
+    animation: insufficientPulse 2s ease-in-out infinite;
+}
+
+@keyframes insufficientPulse {
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(255, 193, 7, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 25px rgba(255, 193, 7, 0.5);
+    }
+}
+
+.insufficient-credits h3 {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.insufficient-credits p {
+    margin-bottom: 1rem;
+    opacity: 0.9;
+}
+
+/* ========================================
+   FREE TIER MESSAGING
+   ======================================== */
+
+.free-tier-badge {
+    background: rgba(0, 188, 212, 0.1);
+    border: 1px solid rgba(0, 188, 212, 0.3);
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    color: #00bcd4;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin: 1rem auto;
+    display: inline-block;
+    backdrop-filter: blur(10px);
+}
+
+.free-generation-left {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    margin: 1rem;
+    text-align: center;
+    color: #ffc107;
+}
+
+.free-generation-left h4 {
+    font-family: 'Sora', sans-serif;
+    margin-bottom: 0.5rem;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 480px) {
+    .generation-content,
+    .pricing-content {
+        padding: 2rem 1.5rem;
+        max-width: 95%;
+    }
+    
+    .pricing-amount {
+        font-size: 2.5rem;
+    }
+    
+    .pricing-title {
+        font-size: 1.5rem;
+    }
+    
+    .generation-title {
+        font-size: 1.3rem;
+    }
+    
+    .buy-pack-btn {
+        padding: 1rem 1.5rem;
+        font-size: 1rem;
+    }
+    
+    .watch-ad-btn {
+        padding: 0.8rem 1.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .generation-spinner {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .ad-boost-container {
+        padding: 1rem;
+    }
+    
+    .pricing-card {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 360px) {
+    .generation-content,
+    .pricing-content {
+        padding: 1.5rem 1rem;
+    }
+    
+    .pricing-amount {
+        font-size: 2rem;
+    }
+    
+    .generation-title,
+    .pricing-title {
+        font-size: 1.2rem;
+    }
+    
+    .buy-pack-btn,
+    .watch-ad-btn {
+        padding: 0.8rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .pricing-features {
+        gap: 0.6rem;
+    }
+    
+    .pricing-feature {
+        font-size: 0.85rem;
+    }
+}
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .generation-spinner,
+    .orbital-ring-1,
+    .orbital-ring-2,
+    .orbital-ring-3,
+    .loading-center-dot,
+    .generation-progress-bar,
+    .creditsUpdate,
+    .lowCreditsWarning,
+    .noCreditsAlert,
+    .successBounce {
+        animation: none !important;
+    }
+}
+
+/* Focus states for accessibility */
+.buy-pack-btn:focus,
+.watch-ad-btn:focus,
+.pricing-close:focus {
+    outline: 2px solid #00bcd4;
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .pricing-card,
+    .ad-boost-container {
+        border-width: 3px;
+    }
+    
+    .buy-pack-btn,
+    .watch-ad-btn {
+        border: 2px solid white;
+    }
+}

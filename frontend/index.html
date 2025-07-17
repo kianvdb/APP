@@ -3,187 +3,318 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DALMA AI - 3D Assets with Dogs</title>
+    <title>DALMA AI - Mobile App</title>
+    
+    <!-- Existing CSS files -->
     <link rel="stylesheet" href="css/homepage.css">
+    <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/auth-modal.css">
+    <link rel="stylesheet" href="css/view-asset.css">
+    <link rel="stylesheet" href="css/about.css">
+    
+    <!-- Mobile app wrapper CSS -->
+    <link rel="stylesheet" href="css/mobile-app.css">
+    <link rel="stylesheet" href="css/monetization.css">
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Scripts -->
     <script src="src/config.js"></script>
- 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/20.0.0/tween.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
     <link rel="icon" href="public/favicon.png" type="image/png">
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-         <div class="logo-section">
-        <a href="homepage.html" class="logo-link">
-            <img src="public/logo2dalma.png" alt="Dalma AI Logo" class="logo">
-        </a>
-    </div>
-        <!-- Regular Navigation (Desktop) -->
-        <nav class="nav">
-            <div class="nav-left">
-                <a href="#home" class="active">Home</a>
+    <!-- Check if user is authenticated, if not show homepage directly -->
+    <div id="publicHomepage">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-section">
+                <a href="index.html" class="logo-link">
+                    <img src="public/logo2dalma.png" alt="Dalma AI Logo" class="logo">
+                </a>
+            </div>
+            <!-- Regular Navigation (Desktop) -->
+            <nav class="nav">
+                <div class="nav-left">
+                    <a href="#home" class="active">Home</a>
+                    <a href="#assets">Assets</a>
+                    <a href="html/about.html">About</a>
+                    <a href="#rig-animate">Rig & Animate</a>
+                    <a href="#" id="generateLink">Generate</a>
+                </div>
+                <div class="nav-right">
+                    <button class="account-btn">Account</button>
+                </div>
+            </nav>
+            
+            <!-- Hamburger Menu (Mobile) -->
+            <div class="hamburger" onclick="toggleMobileNav()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            
+            <!-- Mobile Navigation -->
+            <nav class="mobile-nav" id="mobileNav">
+                <a href="#home">Home</a>
                 <a href="#assets">Assets</a>
-                <a href="html/about.html">About</a>
+                <a href="#about">About</a>
                 <a href="#rig-animate">Rig & Animate</a>
-                <a href="html/index.html">Generate</a>
-                <!-- Admin navigation items will be dynamically added here -->
-            </div>
-            <div class="nav-right">
+                <a href="#" id="mobileGenerateLink">Generate</a>
                 <button class="account-btn">Account</button>
-                <!-- Account dropdown will be dynamically added here -->
-            </div>
-        </nav>
-        
-        <!-- Hamburger Menu (Mobile) -->
-        <div class="hamburger" onclick="toggleMobileNav()">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-        
-        <!-- Mobile Navigation -->
-        <nav class="mobile-nav" id="mobileNav">
-            <a href="#home">Home</a>
-            <a href="#assets">Assets</a>
-            <a href="#about">About</a>
-            <a href="#rig-animate">Rig & Animate</a>
-            <a href="index.html">Generate</a>
-            <button class="account-btn">Account</button>
-        </nav>
-    </header>
+            </nav>
+        </header>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="geometric-pattern"></div>
-        <div class="hero-content">
-            <div class="hero-text">
-                <h2 class="hero-title">Generate 3D dog assets with ease!</h2>
-                <p class="hero-subtitle">Within a few clicks of a button you can generate, rig and animate your own, ready to use dog model!</p>
-                <a href="index.html" class="cta-button">Generate</a>
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="geometric-pattern"></div>
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h2 class="hero-title">Generate 3D dog assets with ease!</h2>
+                    <p class="hero-subtitle">Within a few clicks of a button you can generate, rig and animate your own, ready to use dog model!</p>
+                    <a href="#" class="cta-button" id="heroGenerateBtn">Generate</a>
+                </div>
+                <div class="hero-3d" id="hero3d">
+                    <!-- 3D Dog Model will be rendered here -->
+                </div>
             </div>
-            <div class="hero-3d" id="hero3d">
-                <!-- 3D Dog Model will be rendered here -->
-            </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Assets Section -->
-    <section class="assets-section" id="assets">
-        <div class="assets-header">
-            <h2 class="assets-title">Assets</h2>
-            <div class="assets-search">
-                <svg class="assets-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.35-4.35"></path>
+        <!-- Assets Section -->
+        <section class="assets-section">
+            <div class="assets-header">
+                <h2 class="assets-title">Featured Models</h2>
+                <div class="assets-search">
+                    <svg class="assets-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" class="assets-search-input" placeholder="Search models..." id="assetSearchInput">
+                </div>
+            </div>
+            <div class="assets-grid" id="homepageAssetsGrid">
+                <div class="loading-assets">Loading assets...</div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Authenticated Mobile App Container (hidden by default) -->
+    <div class="app-container" id="appContainer" style="display: none;">
+        <!-- App Header with Credits -->
+        <header class="app-header">
+            <img src="public/logo2dalma.png" alt="Dalma AI" class="app-logo">
+            
+            <div class="header-credits">
+                <div class="credits-container" id="creditsContainer">
+                    <svg class="credits-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91 2.28.6 4.18 1.58 4.18 3.91 0 1.82-1.11 2.91-3.12 3.16z"/>
+                    </svg>
+                    <span class="credits-count" id="creditsCount">0</span>
+                </div>
+                
+                <button class="buy-credits-btn" id="buyCreditsBtn">
+                    Buy Credits
+                </button>
+                
+                <button class="account-btn" id="accountBtn">
+                    Account
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="app-main" id="appMain">
+            <!-- Content sections will be loaded here -->
+            <div class="app-section active" id="homeSection">
+                <!-- Homepage content will be loaded here -->
+            </div>
+            
+            <div class="app-section" id="generateSection">
+                <!-- Generate content will be loaded here -->
+            </div>
+            
+            <div class="app-section" id="assetsSection">
+                <!-- Assets content will be loaded here -->
+            </div>
+            
+            <div class="app-section" id="accountSection">
+                <!-- Account content will be loaded here -->
+            </div>
+            
+            <div class="app-section" id="aboutSection">
+                <!-- About content will be loaded here -->
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-section="home">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
                 </svg>
-                <input type="text" class="assets-search-input" placeholder="Search assets..." id="assetSearchInput">
-            </div>
-        </div>
-        <!-- Dynamic assets will be loaded here by JavaScript -->
-        <div class="assets-grid">
-            <!-- Dynamic assets will be loaded here by JavaScript -->
-        </div>
-    </section>
+                <span class="nav-label">Home</span>
+            </button>
+            
+            <button class="nav-item" data-section="generate">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                <span class="nav-label">Generate</span>
+            </button>
+            
+            <button class="nav-item" data-section="assets">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/>
+                </svg>
+                <span class="nav-label">Assets</span>
+            </button>
+            
+            <button class="nav-item" data-section="account">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 7.5V9M15 11.5C15.8 11.5 16.5 12.2 16.5 13S15.8 14.5 15 14.5 13.5 13.8 13.5 13 14.2 11.5 15 11.5M5 6C5.8 6 6.5 6.7 6.5 7.5S5.8 9 5 9 3.5 8.3 3.5 7.5 4.2 6 5 6M5 11.5C5.8 11.5 6.5 12.2 6.5 13S5.8 14.5 5 14.5 3.5 13.8 3.5 13 4.2 11.5 5 11.5M12 15C8.7 15 8 17.3 8 18V20H16V18C16 17.3 15.3 15 12 15Z"/>
+                </svg>
+                <span class="nav-label">Account</span>
+            </button>
+            
+            <button class="nav-item" data-section="about">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"/>
+                </svg>
+                <span class="nav-label">About</span>
+            </button>
+        </nav>
+    </div>
 
-    <!-- New Footer -->
-    <footer class="footer">
-        <div class="footer-content">
-            <!-- Download App Section -->
-            <div class="footer-section">
-                <div class="footer-section-header">
-                    <h3 class="footer-title">Download Our App</h3>
-                    <p class="footer-description">Download the Dalma AI app for Android and IOS</p>
-                </div>
-                <div class="footer-section-content">
-                    <div class="footer-spacer"></div>
-                    <div class="app-buttons">
-                        <a href="about.html#download" class="app-button">
-                            <img src="public/googleplay.png" alt="Get it on Google Play" class="app-store-img">
-                        </a>
-                        <a href="about.html#download" class="app-button">
-                            <img src="public/appstore.png" alt="Download on the App Store" class="app-store-img">
-                        </a>
-                    </div>
-                </div>
-            </div>
+    
 
-            <!-- Center Logo Section -->
-            <div class="footer-section footer-center-wrapper">
-                <div class="footer-center">
-                    <div class="footer-logo-section">
-                        <img src="public/logo2dalma.png" alt="Dalma AI" class="footer-logo">
-                    </div>
-                    <p class="footer-mission">Our purpose is to bring our loyal four footed friend to life from a 2D image to a 3D model</p>
-                </div>
-            </div>
+    <!-- Auth Modal (reuse existing auth system) -->
+    <div class="auth-overlay" id="authOverlay">
+        <!-- Auth modal content will be inserted here by auth.js -->
+    </div>
 
-            <!-- Useful Links Section -->
-            <div class="footer-section">
-                <div class="footer-section-header">
-                    <h3 class="footer-title">Useful Links</h3>
-                </div>
-                <div class="footer-section-content">
-                    <ul class="footer-links">
-                        <li><a href="html/about.html#referral">Referral Program</a></li>
-                        <li><a href="html/about.html#blog">Blog Posts</a></li>
-                        <li><a href="html/about.html#newsletter">News Letter</a></li>
-                        <li><a href="html/about.html#faq">FAQ</a></li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Follow Us Section -->
-            <div class="footer-section">
-                <div class="footer-section-header">
-                    <h3 class="footer-title">Follow Us</h3>
-                </div>
-                <div class="footer-section-content">
-                    <ul class="footer-links">
-                        <li><a href="#facebook">Facebook</a></li>
-                        <li><a href="#twitter">Twitter</a></li>
-                        <li><a href="#instagram">Instagram</a></li>
-                        <li><a href="#youtube">Youtube</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Copyright Section -->
-        <div class="footer-bottom">
-            <div class="footer-divider"></div>
-            <p class="footer-copyright">Copyright 2025 - Dalma AI</p>
-        </div>
-    </footer>
-
-    <!-- Load Scripts in Correct Order -->
-    <!-- Inline loading system fallback to prevent 404 errors -->
-    <script>
-        // Simple loading system fallback
-        window.loadingManager = {
-            components: new Set(),
-            setLoaded: function(component) {
-                this.components.add(component);
-                console.log('✅ Component loaded:', component);
-            },
-            isLoaded: function(component) {
-                return this.components.has(component);
-            },
-            reset: function() {
-                this.components.clear();
-            }
-        };
-    </script>
-     <script src="src/loadingSystem.js"></script>
+    <!-- Load existing scripts -->
+    <script src="src/LoadingSystem.js"></script>
     <script src="src/auth.js"></script>
     <script src="src/accountDropdown.js"></script>
     <script src="src/pageTransitionLoader.js"></script>
     <script src="src/homepage.js"></script>
+    
+    <!-- Load mobile app scripts -->
+    <script src="src/mobile-monetization.js"></script>
+    <script src="src/app-navigation.js"></script>
+    
+    <!-- Initialize the app -->
+    <script>
+        // Mobile navigation toggle function
+        function toggleMobileNav() {
+            const mobileNav = document.getElementById('mobileNav');
+            const hamburger = document.querySelector('.hamburger');
+            
+            if (mobileNav) {
+                mobileNav.classList.toggle('active');
+            }
+            
+            if (hamburger) {
+                hamburger.classList.toggle('active');
+            }
+        }
+        
+        // Check authentication and show appropriate interface
+        async function initializeApp() {
+            console.log('🚀 Initializing app...');
+            
+            // Wait for auth manager to be ready
+            await new Promise(resolve => {
+                if (window.authManager?.isInitialized) {
+                    resolve();
+                } else {
+                    const checkAuth = setInterval(() => {
+                        if (window.authManager?.isInitialized) {
+                            clearInterval(checkAuth);
+                            resolve();
+                        }
+                    }, 100);
+                }
+            });
+            
+            const isAuthenticated = window.authManager?.isAuthenticated();
+            console.log('🔐 User authenticated:', isAuthenticated);
+            
+            if (isAuthenticated) {
+                // Show mobile app interface
+                document.getElementById('publicHomepage').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'flex';
+                
+                // Initialize mobile app navigation
+                if (window.AppNavigation) {
+                    window.AppNavigation.init();
+                }
+                
+                // Initialize monetization
+                if (window.MobileMonetization) {
+                    // Already initialized in mobile-monetization.js
+                }
+            } else {
+                // Show public homepage
+                document.getElementById('publicHomepage').style.display = 'block';
+                document.getElementById('appContainer').style.display = 'none';
+                
+                // Setup generate button handlers for unauthenticated users
+                setupPublicGenerateHandlers();
+            }
+        }
+        
+        function setupPublicGenerateHandlers() {
+            const generateBtns = [
+                document.getElementById('generateLink'),
+                document.getElementById('mobileGenerateLink'),
+                document.getElementById('heroGenerateBtn')
+            ];
+            
+            generateBtns.forEach(btn => {
+                if (btn) {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        console.log('🔐 Generate clicked - showing login modal');
+                        if (window.authManager) {
+                            sessionStorage.setItem('redirectAfterLogin', 'generate');
+                            window.authManager.showLoginModal();
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Global loadSection function for compatibility
+        window.loadSection = function(sectionName) {
+            if (window.AppNavigation) {
+                window.AppNavigation.navigateToSection(sectionName);
+            } else {
+                console.error('❌ AppNavigation not available');
+            }
+        };
+        
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📱 DOM loaded, initializing app...');
+            
+            // Small delay to ensure all scripts are loaded
+            setTimeout(initializeApp, 500);
+        });
+        
+        // Listen for auth state changes
+        window.addEventListener('authStateChange', function() {
+            console.log('🔄 Auth state changed, reinitializing app...');
+            setTimeout(initializeApp, 100);
+        });
+    </script>
 </body>
 </html>
