@@ -28,16 +28,34 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     
-    <link rel="icon" href="public/favicon.png" type="image/png">
+    <link rel="icon" href="public/con.png" type="image/png">
 </head>
 <body>
-    <!-- Check if user is authenticated, if not show homepage directly -->
-    <div id="publicHomepage">
+    <!-- Premium Loading Screen -->
+    <div class="app-loading-screen" id="appLoadingScreen">
+        <img src="public/threely3.png" alt="Dalma AI" class="loading-logo">
+        <p class="loading-subtitle">Transforming photos into 3D magic</p>
+        
+        <div class="loading-spinner-container">
+            <div class="orbital-ring orbital-ring-1"></div>
+            <div class="orbital-ring orbital-ring-2"></div>
+            <div class="orbital-ring orbital-ring-3"></div>
+            <div class="loading-center-dot"></div>
+        </div>
+        
+        <div class="loading-progress">
+            <div class="loading-progress-bar" id="loadingProgressBar"></div>
+        </div>
+        <div class="loading-text" id="loadingText">Initializing...</div>
+    </div>
+
+    <!-- Public Homepage (for unauthenticated users) -->
+    <div id="publicHomepage" style="display: none;">
         <!-- Header -->
         <header class="header">
             <div class="logo-section">
                 <a href="index.html" class="logo-link">
-                    <img src="public/logo2dalma.png" alt="Dalma AI Logo" class="logo">
+                    <img src="public/threely3.png" alt="Dalma AI Logo" class="logo">
                 </a>
             </div>
             <!-- Regular Navigation (Desktop) -->
@@ -87,30 +105,14 @@
             </div>
         </section>
 
-        <!-- Assets Section -->
-        <section class="assets-section">
-            <div class="assets-header">
-                <h2 class="assets-title">Featured Models</h2>
-                <div class="assets-search">
-                    <svg class="assets-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.35-4.35"></path>
-                    </svg>
-                    <input type="text" class="assets-search-input" placeholder="Search models..." id="assetSearchInput">
-                </div>
-            </div>
-            <div class="assets-grid" id="homepageAssetsGrid">
-                <div class="loading-assets">Loading assets...</div>
-            </div>
-        </section>
-
+       
     </div>
 
     <!-- Authenticated Mobile App Container (hidden by default) -->
     <div class="app-container" id="appContainer" style="display: none;">
         <!-- App Header with Credits -->
         <header class="app-header">
-            <img src="public/logo2dalma.png" alt="Dalma AI" class="app-logo">
+            <img src="public/con.png" alt="Dalma AI" class="app-logo">
             
             <div class="header-credits">
                 <div class="credits-container" id="creditsContainer">
@@ -193,26 +195,26 @@
         </nav>
     </div>
 
-    
-
     <!-- Auth Modal (reuse existing auth system) -->
     <div class="auth-overlay" id="authOverlay">
         <!-- Auth modal content will be inserted here by auth.js -->
     </div>
 
     <!-- Load existing scripts -->
-    <script src="src/LoadingSystem.js"></script>
+
     <script src="src/auth.js"></script>
     <script src="src/accountDropdown.js"></script>
-    <script src="src/pageTransitionLoader.js"></script>
-    <script src="src/homepage.js"></script>
-    
+    <script src="src/homepage.js"></script>  
     <!-- Load mobile app scripts -->
-    <script src="src/mobile-monetization.js"></script>
+    <script src="src/monetization.js"></script>
+    <script src="src/mobile-3d-viewer.js"></script>
     <script src="src/app-navigation.js"></script>
-    
     <!-- Initialize the app -->
     <script>
+        // App initialization state
+        let appInitialized = false;
+        let loadingProgress = 0;
+
         // Mobile navigation toggle function
         function toggleMobileNav() {
             const mobileNav = document.getElementById('mobileNav');
@@ -226,50 +228,112 @@
                 hamburger.classList.toggle('active');
             }
         }
-        
+
+        // Enhanced loading screen with smooth progression
+        function updateLoadingScreen(progress, text) {
+            const progressBar = document.getElementById('loadingProgressBar');
+            const loadingText = document.getElementById('loadingText');
+            
+            if (progressBar) {
+                progressBar.style.width = `${progress}%`;
+            }
+            
+            if (loadingText) {
+                loadingText.textContent = text;
+            }
+            
+            loadingProgress = progress;
+        }
+
+        // Hide loading screen with smooth animation
+        function hideLoadingScreen() {
+            const loadingScreen = document.getElementById('appLoadingScreen');
+            if (loadingScreen) {
+                loadingScreen.classList.add('hidden');
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 800);
+            }
+        }
+
         // Check authentication and show appropriate interface
         async function initializeApp() {
+            if (appInitialized) return;
+            
             console.log('🚀 Initializing app...');
+            updateLoadingScreen(20, 'Checking authentication...');
             
             // Wait for auth manager to be ready
             await new Promise(resolve => {
-                if (window.authManager?.isInitialized) {
-                    resolve();
-                } else {
-                    const checkAuth = setInterval(() => {
-                        if (window.authManager?.isInitialized) {
-                            clearInterval(checkAuth);
-                            resolve();
-                        }
-                    }, 100);
-                }
+                let attempts = 0;
+                const maxAttempts = 50; // 5 seconds max wait
+                
+                const checkAuth = setInterval(() => {
+                    attempts++;
+                    if (window.authManager?.isInitialized || attempts >= maxAttempts) {
+                        clearInterval(checkAuth);
+                        resolve();
+                    }
+                }, 100);
             });
+            
+            updateLoadingScreen(50, 'Loading interface...');
             
             const isAuthenticated = window.authManager?.isAuthenticated();
             console.log('🔐 User authenticated:', isAuthenticated);
             
             if (isAuthenticated) {
                 // Show mobile app interface
+                updateLoadingScreen(70, 'Setting up mobile app...');
+                
                 document.getElementById('publicHomepage').style.display = 'none';
                 document.getElementById('appContainer').style.display = 'flex';
                 
                 // Initialize mobile app navigation
+                updateLoadingScreen(85, 'Loading sections...');
+                
                 if (window.AppNavigation) {
-                    window.AppNavigation.init();
+                    await new Promise(resolve => {
+                        setTimeout(() => {
+                            window.AppNavigation.init();
+                            resolve();
+                        }, 300);
+                    });
                 }
                 
                 // Initialize monetization
                 if (window.MobileMonetization) {
                     // Already initialized in mobile-monetization.js
                 }
+                
+                updateLoadingScreen(100, 'Ready!');
+                
             } else {
                 // Show public homepage
+                updateLoadingScreen(70, 'Loading homepage...');
+                
                 document.getElementById('publicHomepage').style.display = 'block';
                 document.getElementById('appContainer').style.display = 'none';
                 
                 // Setup generate button handlers for unauthenticated users
                 setupPublicGenerateHandlers();
+                
+                // Initialize public homepage 3D viewer
+                updateLoadingScreen(85, 'Loading 3D viewer...');
+                setTimeout(() => {
+                    if (window.init3D && typeof window.init3D === 'function') {
+                        window.init3D();
+                    }
+                }, 500);
+                
+                updateLoadingScreen(100, 'Welcome!');
             }
+            
+            // Hide loading screen after a brief pause
+            setTimeout(() => {
+                hideLoadingScreen();
+                appInitialized = true;
+            }, 1000);
         }
         
         function setupPublicGenerateHandlers() {
@@ -304,16 +368,33 @@
         
         // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('📱 DOM loaded, initializing app...');
+            console.log('📱 DOM loaded, showing loading screen...');
             
-            // Small delay to ensure all scripts are loaded
-            setTimeout(initializeApp, 500);
+            // Show loading screen immediately
+            updateLoadingScreen(10, 'Loading application...');
+            
+            // Start initialization after brief delay
+            setTimeout(initializeApp, 300);
         });
         
         // Listen for auth state changes
         window.addEventListener('authStateChange', function() {
             console.log('🔄 Auth state changed, reinitializing app...');
+            appInitialized = false;
             setTimeout(initializeApp, 100);
+        });
+
+        // Handle window resize for 3D viewers
+        window.addEventListener('resize', function() {
+            // Trigger resize events for any active 3D scenes
+            if (window.camera && window.renderer) {
+                const container = window.renderer.domElement.parentElement;
+                if (container && container.offsetWidth > 0) {
+                    window.camera.aspect = container.offsetWidth / container.offsetHeight;
+                    window.camera.updateProjectionMatrix();
+                    window.renderer.setSize(container.offsetWidth, container.offsetHeight);
+                }
+            }
         });
     </script>
 </body>

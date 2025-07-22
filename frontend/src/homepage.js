@@ -1,4 +1,4 @@
-// homepage.js - Homepage specific functionality
+// homepage.js - Homepage 3D functionality only - CLEANED VERSION
 (function() {
     'use strict';
     
@@ -42,28 +42,51 @@
 
     console.log('🔧 Homepage API URL:', window.DALMA_CONFIG.API_BASE_URL);
 
+    // FIXED: Smart model path detection based on current location
+    function getModelPaths() {
+        const currentPath = window.location.pathname;
+        const isInHtmlFolder = currentPath.includes('/html/');
+        
+        console.log('📍 Current path:', currentPath);
+        console.log('📍 Is in html folder:', isInHtmlFolder);
+        
+        // Return different path arrays based on location
+        if (isInHtmlFolder) {
+            // We're in frontend/html/ folder
+            return [
+                '../models/dog6.glb',        // Go up one level to frontend/models/
+                '../../models/dog6.glb',     // In case models is at root level
+                './models/dog6.glb',         // Alternative relative
+                '/models/dog6.glb',          // Absolute from server root
+                '../public/models/dog6.glb'  // If in public folder
+            ];
+        } else {
+            // We're in frontend/ root (index.html)
+            return [
+                'models/dog6.glb',           // Direct relative path
+                './models/dog6.glb',         // Explicit relative
+                '/models/dog6.glb',          // Absolute from server root
+                'public/models/dog6.glb',    // If in public folder
+                '../models/dog6.glb'         // If up one level
+            ];
+        }
+    }
+
     console.log('🚀 Model Configuration:');
-    console.log('🚀 Will load: /models/dog6.glb');
-    console.log('🚀 Will create wireframe version with controls');
+    const modelPaths = getModelPaths();
+    console.log('🚀 Will try paths:', modelPaths);
 
     // Create our own namespace to avoid conflicts
     window.HOMEPAGE_3D_CONFIG = {
         useSingleModel: true,
-        modelPath: '/models/dog6.glb'
+        modelPaths: modelPaths
     };
 
     // Override MODEL_PATHS completely
     if (typeof MODEL_PATHS === 'undefined') {
         var MODEL_PATHS = {};
     }
-    MODEL_PATHS.main = window.HOMEPAGE_3D_CONFIG.modelPath;
-
-    // Like functionality tracking
-    const HomepageAssets = {
-        likedAssets: new Set(),
-        isLoadingLikes: false,
-        allAssets: []
-    };
+    MODEL_PATHS.main = modelPaths[0]; // Use first path as default
 
     // 3D Scene initialization
     function init3D() {
@@ -244,8 +267,8 @@
     function loadWireframeModel() {
         console.log('🎯 ===== LOADING WIREFRAME MODEL =====');
         
-        const modelPath = MODEL_PATHS.main || '/models/dog6.glb';
-        console.log('🔄 Loading model from:', modelPath);
+        const modelPaths = window.HOMEPAGE_3D_CONFIG.modelPaths;
+        console.log('🔄 Will try loading model from paths:', modelPaths);
         
         if (!THREE.GLTFLoader) {
             console.error('❌ GLTFLoader not available');
@@ -255,97 +278,113 @@
         
         const loader = new THREE.GLTFLoader();
         
-        loader.load(
-            modelPath,
-            (gltf) => {
-                console.log('✅ Model loaded successfully');
-                
-                Homepage3D.greyModel = gltf.scene;
-                
-                // Center and scale the model - RESTORED ORIGINAL SCALE
-                const box = new THREE.Box3().setFromObject(Homepage3D.greyModel);
-                const center = box.getCenter(new THREE.Vector3());
-                const size = box.getSize(new THREE.Vector3());
-                
-                // Scale to fit viewport nicely - RESTORED TO 7
-                const maxDim = Math.max(size.x, size.y, size.z);
-                const scale = 7 / maxDim;
-                Homepage3D.greyModel.scale.multiplyScalar(scale);
-                
-                // Position model ON THE GRID
-                Homepage3D.greyModel.position.x = -center.x * scale;
-                Homepage3D.greyModel.position.z = -center.z * scale;
-                
-                // Calculate Y position so bottom of model sits on grid
-                const scaledBox = new THREE.Box3().setFromObject(Homepage3D.greyModel);
-                const bottomY = scaledBox.min.y;
-                Homepage3D.greyModel.position.y = -0.5 - bottomY; // Grid is at -0.5
-                
-                console.log('🎨 Converting to wireframe...');
-                
-                // Convert to wireframe
-                let meshCount = 0;
-                Homepage3D.greyModel.traverse((child) => {
-                    if (child.isMesh) {
-                        meshCount++;
-                        
-                    // Store original geometry reference
-                    const geometry = child.geometry;
-                    
-                    // Create new grey base material
-                    child.material = new THREE.MeshStandardMaterial({ 
-                        color: 0x404040,  // Darker grey for subtlety
-                        metalness: 0.1,
-                        roughness: 0.8,
-                        transparent: true,
-                        opacity: 0.3, // Semi-transparent base
-                        envMapIntensity: 0.3
-                    });
-                    
-                    // Add wireframe overlay with enhanced visibility
-                    const wireframeGeometry = new THREE.WireframeGeometry(geometry);
-                    const wireframeMaterial = new THREE.LineBasicMaterial({ 
-                        color: 0x00bcd4,  // Cyan wireframe
-                        transparent: true,
-                        opacity: 1.0, // Full opacity for wireframe
-                        linewidth: 1
-                    });
-                    const wireframe = new THREE.LineSegments(wireframeGeometry, wireframeMaterial);
-                    
-                    // Add subtle emissive glow to wireframe
-                    wireframe.material.emissive = new THREE.Color(0x003344);
-                    wireframe.material.emissiveIntensity = 0.2;
-                    
-                    child.add(wireframe);
-                        
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                    }
-                });
-                
-                Homepage3D.scene.add(Homepage3D.greyModel);
-                
-                // Store base Y position for animation
-                Homepage3D.greyModel.userData.baseY = Homepage3D.greyModel.position.y;
-                Homepage3D.modelLoaded = true;
-                
-                console.log(`✅ Wireframe model created: ${meshCount} meshes converted`);
-                console.log('✅ Model is now visible and ready');
-                
-                // IMPORTANT: Notify loading system that model is ready
-                if (window.loadingManager) {
-                    window.loadingManager.setLoaded('model3d');
-                }
-            },
-            (progress) => {
-                const percent = (progress.loaded / progress.total * 100).toFixed(1);
-                console.log(`📊 Loading model: ${percent}%`);
-            },
-            (error) => {
-                console.error('❌ Error loading model:', error);
+        // Function to try loading models from different paths
+        function tryLoadModel(pathIndex = 0) {
+            if (pathIndex >= modelPaths.length) {
+                console.log('⚠️ All model paths failed, creating fallback model');
                 createFallbackModel();
+                return;
             }
-        );
+
+            const modelPath = modelPaths[pathIndex];
+            console.log(`🔄 Trying to load model from: ${modelPath} (attempt ${pathIndex + 1}/${modelPaths.length})`);
+            
+            loader.load(
+                modelPath,
+                (gltf) => {
+                    console.log('✅ Model loaded successfully from:', modelPath);
+                    
+                    Homepage3D.greyModel = gltf.scene;
+                    
+                    // Center and scale the model - RESTORED ORIGINAL SCALE
+                    const box = new THREE.Box3().setFromObject(Homepage3D.greyModel);
+                    const center = box.getCenter(new THREE.Vector3());
+                    const size = box.getSize(new THREE.Vector3());
+                    
+                    // Scale to fit viewport nicely - RESTORED TO 7
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    const scale = 7 / maxDim;
+                    Homepage3D.greyModel.scale.multiplyScalar(scale);
+                    
+                    // Position model ON THE GRID
+                    Homepage3D.greyModel.position.x = -center.x * scale;
+                    Homepage3D.greyModel.position.z = -center.z * scale;
+                    
+                    // Calculate Y position so bottom of model sits on grid
+                    const scaledBox = new THREE.Box3().setFromObject(Homepage3D.greyModel);
+                    const bottomY = scaledBox.min.y;
+                    Homepage3D.greyModel.position.y = -0.5 - bottomY; // Grid is at -0.5
+                    
+                    console.log('🎨 Converting to wireframe...');
+                    
+                    // Convert to wireframe
+                    let meshCount = 0;
+                    Homepage3D.greyModel.traverse((child) => {
+                        if (child.isMesh) {
+                            meshCount++;
+                            
+                            // Store original geometry reference
+                            const geometry = child.geometry;
+                            
+                            // Create new grey base material
+                            child.material = new THREE.MeshStandardMaterial({ 
+                                color: 0x404040,  // Darker grey for subtlety
+                                metalness: 0.1,
+                                roughness: 0.8,
+                                transparent: true,
+                                opacity: 0.3, // Semi-transparent base
+                                envMapIntensity: 0.3
+                            });
+                            
+                            // Add wireframe overlay with enhanced visibility
+                            const wireframeGeometry = new THREE.WireframeGeometry(geometry);
+                            const wireframeMaterial = new THREE.LineBasicMaterial({ 
+                                color: 0x00bcd4,  // Cyan wireframe
+                                transparent: true,
+                                opacity: 1.0, // Full opacity for wireframe
+                                linewidth: 1
+                            });
+                            const wireframe = new THREE.LineSegments(wireframeGeometry, wireframeMaterial);
+                            
+                            // Add subtle emissive glow to wireframe
+                            wireframe.material.emissive = new THREE.Color(0x003344);
+                            wireframe.material.emissiveIntensity = 0.2;
+                            
+                            child.add(wireframe);
+                                
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+                    
+                    Homepage3D.scene.add(Homepage3D.greyModel);
+                    
+                    // Store base Y position for animation
+                    Homepage3D.greyModel.userData.baseY = Homepage3D.greyModel.position.y;
+                    Homepage3D.modelLoaded = true;
+                    
+                    console.log(`✅ Wireframe model created: ${meshCount} meshes converted`);
+                    console.log('✅ Model is now visible and ready');
+                    
+                    // IMPORTANT: Notify loading system that model is ready
+                    if (window.loadingManager) {
+                        window.loadingManager.setLoaded('model3d');
+                    }
+                },
+                (progress) => {
+                    const percent = (progress.loaded / progress.total * 100).toFixed(1);
+                    console.log(`📊 Loading model: ${percent}%`);
+                },
+                (error) => {
+                    console.log(`❌ Failed to load ${modelPath}:`, error.message || error);
+                    // Try next path
+                    tryLoadModel(pathIndex + 1);
+                }
+            );
+        }
+
+        // Start trying to load the model
+        tryLoadModel();
     }
 
     function createFallbackModel() {
@@ -612,26 +651,7 @@
         Homepage3D.renderer.setSize(containerRect.width, containerRect.height);
     }
 
-    // Asset Management Functions
-    async function loadAssetsFromAPI() {
-        try {
-            console.log('🔄 Loading assets from API...');
-            const response = await fetch(`${window.DALMA_CONFIG.API_BASE_URL}/assets?limit=8&sortBy=popularity&sortOrder=desc`);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            console.log('✅ Assets loaded:', data.assets?.length || 0);
-            HomepageAssets.allAssets = data.assets || [];
-            return HomepageAssets.allAssets;
-        } catch (error) {
-            console.error('❌ Error loading assets:', error);
-            return [];
-        }
-    }
-
+    // Keep checkAuthentication function in case other parts of the app need it
     async function checkAuthentication() {
         try {
             const response = await fetch(`${window.DALMA_CONFIG.API_BASE_URL}/auth/me`, {
@@ -644,277 +664,6 @@
             console.error('❌ Auth check error:', error);
             return false;
         }
-    }
-
-    async function loadUserLikedAssets() {
-        if (HomepageAssets.isLoadingLikes) return;
-        
-        try {
-            HomepageAssets.isLoadingLikes = true;
-            
-            const isAuthenticated = await checkAuthentication();
-            if (!isAuthenticated) {
-                HomepageAssets.likedAssets.clear();
-                return;
-            }
-            
-            const response = await fetch(`${window.DALMA_CONFIG.API_BASE_URL}/auth/liked-assets`, {
-                method: 'GET',
-                credentials: 'include'
-            });
-            
-            if (!response.ok) {
-                HomepageAssets.likedAssets.clear();
-                return;
-            }
-            
-            const data = await response.json();
-            const likedAssetsList = data.assets || [];
-            
-            HomepageAssets.likedAssets.clear();
-            likedAssetsList.forEach(asset => {
-                HomepageAssets.likedAssets.add(asset._id);
-            });
-            
-            console.log('💖 Loaded', HomepageAssets.likedAssets.size, 'liked assets');
-            updateAllLikeButtons();
-            
-        } catch (error) {
-            console.error('❌ Error loading liked assets:', error);
-            HomepageAssets.likedAssets.clear();
-        } finally {
-            HomepageAssets.isLoadingLikes = false;
-        }
-    }
-
-    function updateAllLikeButtons() {
-        document.querySelectorAll('.asset-like-button').forEach(button => {
-            const assetId = button.getAttribute('data-asset-id');
-            if (assetId && HomepageAssets.likedAssets.has(assetId)) {
-                button.classList.add('liked');
-                button.title = 'Remove from liked models';
-            } else {
-                button.classList.remove('liked');
-                button.title = 'Add to liked models';
-            }
-        });
-    }
-
-    async function handleLikeClick(event, assetId, assetName) {
-        event.stopPropagation();
-        
-        const likeButton = event.currentTarget;
-        if (likeButton.classList.contains('loading')) return;
-        
-        const isAuthenticated = await checkAuthentication();
-        if (!isAuthenticated) {
-            console.log('❌ User not authenticated, showing login modal');
-            if (window.authManager) {
-                window.authManager.showLoginModal();
-            } else {
-                window.location.href = 'login.html';
-            }
-            return;
-        }
-        
-        likeButton.classList.add('loading');
-        
-        try {
-            const response = await fetch(`${window.DALMA_CONFIG.API_BASE_URL}/auth/like-asset`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ assetId: assetId })
-            });
-            
-            if (!response.ok) throw new Error('Failed to update like status');
-            
-            const data = await response.json();
-            const isLiked = data.isLiked;
-            
-            if (isLiked) {
-                HomepageAssets.likedAssets.add(assetId);
-                likeButton.classList.add('liked');
-                likeButton.title = 'Remove from liked models';
-            } else {
-                HomepageAssets.likedAssets.delete(assetId);
-                likeButton.classList.remove('liked');
-                likeButton.title = 'Add to liked models';
-            }
-            
-            const message = isLiked 
-                ? `Added "${assetName}" to your liked models ❤️` 
-                : `Removed "${assetName}" from your liked models`;
-            showFeedback(message, 'success');
-            
-        } catch (error) {
-            console.error('❌ Like error:', error);
-            showFeedback('Failed to update like status. Please try again.', 'error');
-        } finally {
-            likeButton.classList.remove('loading');
-        }
-    }
-
-    function showFeedback(message, type = 'success') {
-        const existingFeedback = document.querySelector('.like-feedback-message');
-        if (existingFeedback) existingFeedback.remove();
-        
-        const feedback = document.createElement('div');
-        feedback.className = `like-feedback-message ${type}`;
-        feedback.textContent = message;
-        feedback.style.cssText = `
-            position: fixed; top: 20px; right: 20px;
-            background: ${type === 'success' ? 'rgba(0, 188, 212, 0.9)' : 'rgba(220, 38, 127, 0.9)'};
-            color: white; padding: 1rem 1.5rem; border-radius: 8px;
-            font-family: 'Sora', sans-serif; font-weight: 500; z-index: 10000;
-            opacity: 0; transform: translateX(100%); transition: all 0.3s ease;
-        `;
-        
-        document.body.appendChild(feedback);
-        
-        setTimeout(() => {
-            feedback.style.opacity = '1';
-            feedback.style.transform = 'translateX(0)';
-        }, 10);
-        
-        setTimeout(() => {
-            feedback.style.opacity = '0';
-            feedback.style.transform = 'translateX(100%)';
-            setTimeout(() => feedback.remove(), 300);
-        }, 3000);
-    }
-
-    function createAssetCard(asset) {
-        const assetCard = document.createElement('div');
-        assetCard.classList.add('asset-card');
-        assetCard.setAttribute('data-asset-id', asset._id);
-        
-        let imageUrl = null;
-        if (asset.originalImage?.url) imageUrl = asset.originalImage.url;
-        else if (asset.inputImage?.url) imageUrl = asset.inputImage.url;
-        else if (asset.previewImage?.url) imageUrl = asset.previewImage.url;
-        
-        const isLiked = HomepageAssets.likedAssets.has(asset._id);
-        
-        assetCard.innerHTML = `
-            ${imageUrl ? `
-                <div class="asset-preview">
-                    <img src="${imageUrl}" alt="${asset.name}" class="asset-preview-img" 
-                         onerror="this.parentElement.innerHTML = '<div class=\\'asset-icon\\'>${asset.icon || '🐕'}</div>';">
-                    <button class="asset-like-button ${isLiked ? 'liked' : ''}" data-asset-id="${asset._id}"
-                            title="${isLiked ? 'Remove from liked models' : 'Add to liked models'}">
-                        <svg class="heart-icon" viewBox="0 0 24 24" width="18" height="18">
-                            <path class="heart-outline" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="2"/>
-                            <path class="heart-filled" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" opacity="${isLiked ? '1' : '0'}"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="asset-info">
-                    <h3 class="asset-name">${asset.name}</h3>
-                    <div class="asset-stats">
-                        <small>${asset.views || 0} views • ${asset.downloads || 0} downloads</small>
-                    </div>
-                </div>
-            ` : `
-                <div class="asset-icon">${asset.icon || '🐕'}</div>
-                <h3 class="asset-name">${asset.name}</h3>
-                <div class="asset-stats">
-                    <small>${asset.views || 0} views • ${asset.downloads || 0} downloads</small>
-                </div>
-            `}
-        `;
-        
-        // Add click handler for card
-        assetCard.addEventListener('click', function(e) {
-            if (!e.target.closest('.asset-like-button')) {
-                viewAssetFromHomepage(asset._id);
-            }
-        });
-        
-        // Add like button handler
-        const likeButton = assetCard.querySelector('.asset-like-button');
-        if (likeButton) {
-            likeButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                handleLikeClick(e, asset._id, asset.name);
-            });
-        }
-        
-        return assetCard;
-    }
-
-    function viewAssetFromHomepage(assetId) {
-        console.log('🎯 Viewing asset from homepage:', assetId);
-        sessionStorage.setItem('lastAssetsPage', 'homepage');
-        window.location.href = `view-asset.html?id=${assetId}&from=homepage`;
-    }
-
-    async function renderAssetsSection() {
-        const assetsGrid = document.querySelector('.assets-grid');
-        if (!assetsGrid) return;
-        
-        console.log('🔄 Loading assets section...');
-        assetsGrid.innerHTML = '<div class="loading-assets">Loading assets...</div>';
-        
-        try {
-            await loadUserLikedAssets();
-            const assets = await loadAssetsFromAPI();
-            
-            assetsGrid.innerHTML = '';
-            
-            if (assets.length === 0) {
-                assetsGrid.innerHTML = '<div class="no-assets"><p>No assets available.</p></div>';
-                return;
-            }
-            
-            assets.forEach(asset => {
-                const assetCard = createAssetCard(asset);
-                assetsGrid.appendChild(assetCard);
-            });
-            
-            console.log('✅ Assets rendered successfully');
-            
-            // Notify loading system
-            if (window.loadingManager) {
-                window.loadingManager.setLoaded('assets');
-            }
-            
-        } catch (error) {
-            console.error('❌ Error loading assets:', error);
-            assetsGrid.innerHTML = '<div class="error-assets"><p>Error loading assets.</p></div>';
-            
-            // Still notify loading system to prevent hang
-            if (window.loadingManager) {
-                window.loadingManager.setLoaded('assets');
-            }
-        }
-    }
-
-    function setupSearchFunctionality() {
-        const searchInput = document.getElementById('assetSearchInput');
-        if (!searchInput) return;
-        
-        let searchTimeout;
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            const searchTerm = e.target.value.toLowerCase().trim();
-            
-            searchTimeout = setTimeout(() => {
-                const filteredAssets = searchTerm === '' ? HomepageAssets.allAssets :
-                    HomepageAssets.allAssets.filter(asset => 
-                        asset.name.toLowerCase().includes(searchTerm) ||
-                        (asset.tags && asset.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
-                    );
-                
-                const assetsGrid = document.querySelector('.assets-grid');
-                if (assetsGrid) {
-                    assetsGrid.innerHTML = '';
-                    filteredAssets.forEach(asset => {
-                        assetsGrid.appendChild(createAssetCard(asset));
-                    });
-                }
-            }, 300);
-        });
     }
 
     // Mobile navigation toggle
@@ -944,24 +693,6 @@
         // Initialize 3D scene
         init3D();
         
-        // Load assets
-        renderAssetsSection();
-        
-        // Setup search
-        setupSearchFunctionality();
-        
-        // Auth state change handler for likes
-        window.addEventListener('authStateChange', async () => {
-            console.log('🔄 Auth state changed, reloading liked assets...');
-            await loadUserLikedAssets();
-        });
-        
-        window.addEventListener('userLoggedOut', () => {
-            console.log('🔄 User logged out, clearing liked assets...');
-            HomepageAssets.likedAssets.clear();
-            updateAllLikeButtons();
-        });
-        
         // Notify loading system that page is ready
         if (window.loadingManager) {
             window.loadingManager.setLoaded('page');
@@ -971,11 +702,9 @@
     });
 
     // Make functions globally available
-    window.viewAssetFromHomepage = viewAssetFromHomepage;
-    window.renderAssetsSection = renderAssetsSection;
     window.checkAuthentication = checkAuthentication;
     window.Homepage3D = Homepage3D;
-    window.HomepageAssets = HomepageAssets;
+    window.init3D = init3D; // Export init3D for external use
 
     console.log('✅ Homepage.js loaded successfully');
 

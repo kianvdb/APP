@@ -1,6 +1,6 @@
 // app-navigation.js - DALMA AI Mobile App Navigation
 // Handles section switching, content loading, and smooth transitions
-// Based on the existing page-navigation.js structure
+// Fixed version with proper method calls and 3D model loading
 
 class AppNavigation {
     constructor() {
@@ -16,7 +16,7 @@ class AppNavigation {
         console.log('🎯 Setting up app navigation...');
         
         this.setupBottomNavigation();
-        this.loadSection('home'); // Load home section by default
+        this.loadSectionContent('home'); // Fixed: Call loadSectionContent instead of loadSection
         
         console.log('✅ App navigation ready');
     }
@@ -165,7 +165,7 @@ class AppNavigation {
                         <p class="hero-subtitle">Within a few clicks of a button you can generate, rig and animate your own, ready to use dog model!</p>
                         <button class="cta-button" onclick="window.AppNavigation.navigateToSection('generate')">Generate</button>
                     </div>
-                    <div class="hero-3d" id="hero3d">
+                    <div class="hero-3d" id="appHero3d">
                         <!-- 3D Dog Model will be rendered here -->
                     </div>
                 </div>
@@ -399,7 +399,7 @@ class AppNavigation {
                         ⚙️ Settings
                     </button>
                     
-                    <button onclick="this.handleLogout()" 
+                    <button onclick="window.AppNavigation.handleLogout()" 
                             style="background: rgba(220,53,69,0.1); border: 1px solid rgba(220,53,69,0.3); border-radius: 12px; padding: 1rem; color: #dc3545; text-align: left; font-family: 'Sora', sans-serif; cursor: pointer; transition: all 0.3s ease;">
                         🚪 Logout
                     </button>
@@ -513,33 +513,48 @@ class AppNavigation {
     }
 
     async initializeHome() {
-        // Initialize 3D viewer if needed
-        if (window.init3D && typeof window.init3D === 'function') {
-            setTimeout(() => {
-                window.init3D();
-            }, 100);
-        }
-
-        // Load featured assets
-        await this.loadFeaturedAssets();
-    }
+    console.log('🎯 Initializing home section 3D viewer...');
+    setTimeout(() => {
+        window.Mobile3D.init('appHero3d');  // <-- Use the clean 3D viewer
+    }, 500);
+    await this.loadFeaturedAssets();
+}
+  
 
     async initializeGenerate() {
         // Load all the generate page scripts
-        if (window.initGenerate && typeof window.initGenerate === 'function') {
-            setTimeout(() => {
+        console.log('🎯 Initializing generate section...');
+        
+        // Wait for DOM to be ready then initialize generate functionality
+        setTimeout(() => {
+            if (window.initGenerate && typeof window.initGenerate === 'function') {
                 window.initGenerate();
-            }, 100);
+            } else {
+                console.log('⚠️ initGenerate function not available, setting up basic functionality');
+                this.setupBasicGenerate();
+            }
+        }, 200);
+    }
+
+    setupBasicGenerate() {
+        // Basic generate setup if the main script isn't available
+        const generateBtn = document.getElementById('generateBtn');
+        if (generateBtn) {
+            generateBtn.addEventListener('click', () => {
+                alert('Generate functionality will be connected to your existing generate.js system');
+            });
         }
     }
 
     async initializeAssets() {
         // Load assets from API
+        console.log('🎯 Initializing assets section...');
         await this.loadAllAssets();
     }
 
     async initializeAccount() {
         // Update account stats
+        console.log('🎯 Initializing account section...');
         this.updateAccountStats();
     }
 
@@ -548,16 +563,33 @@ class AppNavigation {
         if (!grid) return;
 
         try {
+            // Show loading state
+            grid.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #00bcd4;">
+                    <div class="section-loading-spinner" style="width: 40px; height: 40px; margin: 0 auto 1rem;"></div>
+                    <p>Loading featured models...</p>
+                </div>
+            `;
+
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
             // This would normally fetch from your API
-            // For now, show placeholder
+            // For now, show placeholder content
             grid.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: rgba(255,255,255,0.6);">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🐕</div>
-                    <p>Featured models will be loaded here</p>
+                    <h3 style="color: white; margin-bottom: 0.5rem;">Featured Models Coming Soon</h3>
+                    <p>Beautiful 3D dog models will be showcased here</p>
                 </div>
             `;
         } catch (error) {
             console.error('Error loading featured assets:', error);
+            grid.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #dc3545;">
+                    <p>Error loading featured models</p>
+                </div>
+            `;
         }
     }
 
@@ -566,16 +598,37 @@ class AppNavigation {
         if (!grid) return;
 
         try {
-            // This would normally fetch from your API
-            // For now, show placeholder
+            // Show loading state
             grid.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: rgba(255,255,255,0.6);">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
-                    <p>All assets will be loaded here</p>
+                <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #00bcd4;">
+                    <div class="section-loading-spinner" style="width: 40px; height: 40px; margin: 0 auto 1rem;"></div>
+                    <p>Loading your models...</p>
+                </div>
+            `;
+
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // This would normally fetch from your API
+            // For now, show placeholder content
+            grid.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 2rem; color: rgba(255,255,255,0.6);">
+                    <div style="font-size: 4rem; margin-bottom: 1.5rem;">🔍</div>
+                    <h3 style="color: white; margin-bottom: 1rem; font-family: 'Sora', sans-serif;">No Models Yet</h3>
+                    <p style="margin-bottom: 2rem; line-height: 1.6;">Start creating your first 3D dog model by uploading a photo!</p>
+                    <button onclick="window.AppNavigation.navigateToSection('generate')" 
+                            style="background: #00bcd4; color: white; border: none; padding: 1rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        Create First Model
+                    </button>
                 </div>
             `;
         } catch (error) {
             console.error('Error loading assets:', error);
+            grid.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #dc3545;">
+                    <p>Error loading models</p>
+                </div>
+            `;
         }
     }
 
@@ -586,11 +639,13 @@ class AppNavigation {
         
         if (creditsCount && window.MobileMonetization) {
             creditsCount.textContent = window.MobileMonetization.getUserCredits();
+        } else if (creditsCount) {
+            creditsCount.textContent = '10'; // Default value
         }
         
         if (modelsCount) {
             // This would normally come from user data
-            modelsCount.textContent = '12';
+            modelsCount.textContent = '0';
         }
     }
 
