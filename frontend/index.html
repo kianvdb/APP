@@ -49,85 +49,26 @@
         <div class="loading-text" id="loadingText">Initializing...</div>
     </div>
 
-    <!-- Public Homepage (for unauthenticated users) -->
-    <div id="publicHomepage" style="display: none;">
-        <!-- Header -->
-        <header class="header">
-            <div class="logo-section">
-                <a href="index.html" class="logo-link">
-                    <img src="public/threely3.png" alt="Dalma AI Logo" class="logo">
-                </a>
-            </div>
-            <!-- Regular Navigation (Desktop) -->
-            <nav class="nav">
-                <div class="nav-left">
-                    <a href="#home" class="active">Home</a>
-                    <a href="#assets">Assets</a>
-                    <a href="html/about.html">About</a>
-                    <a href="#rig-animate">Rig & Animate</a>
-                    <a href="#" id="generateLink">Generate</a>
-                </div>
-                <div class="nav-right">
-                    <button class="account-btn">Account</button>
-                </div>
-            </nav>
-            
-            <!-- Hamburger Menu (Mobile) -->
-            <div class="hamburger" onclick="toggleMobileNav()">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-            
-            <!-- Mobile Navigation -->
-            <nav class="mobile-nav" id="mobileNav">
-                <a href="#home">Home</a>
-                <a href="#assets">Assets</a>
-                <a href="#about">About</a>
-                <a href="#rig-animate">Rig & Animate</a>
-                <a href="#" id="mobileGenerateLink">Generate</a>
-                <button class="account-btn">Account</button>
-            </nav>
-        </header>
-
-        <!-- Hero Section -->
-        <section class="hero">
-            <div class="geometric-pattern"></div>
-            <div class="hero-content">
-                <div class="hero-text">
-                    <h2 class="hero-title">Generate 3D dog assets with ease!</h2>
-                    <p class="hero-subtitle">Within a few clicks of a button you can generate, rig and animate your own, ready to use dog model!</p>
-                    <a href="#" class="cta-button" id="heroGenerateBtn">Generate</a>
-                </div>
-                <div class="hero-3d" id="hero3d">
-                    <!-- 3D Dog Model will be rendered here -->
-                </div>
-            </div>
-        </section>
-
-       
-    </div>
-
-    <!-- Authenticated Mobile App Container (hidden by default) -->
+    <!-- Main App Container (for everyone) -->
     <div class="app-container" id="appContainer" style="display: none;">
         <!-- App Header with Credits -->
         <header class="app-header">
             <img src="public/con.png" alt="Dalma AI" class="app-logo">
             
             <div class="header-credits">
-                <div class="credits-container" id="creditsContainer">
+                <div class="credits-container" id="creditsContainer" style="display: none;">
                     <svg class="credits-icon" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91 2.28.6 4.18 1.58 4.18 3.91 0 1.82-1.11 2.91-3.12 3.16z"/>
                     </svg>
                     <span class="credits-count" id="creditsCount">0</span>
                 </div>
                 
-                <button class="buy-credits-btn" id="buyCreditsBtn">
+                <button class="buy-credits-btn" id="buyCreditsBtn" style="display: none;">
                     Buy Credits
                 </button>
                 
                 <button class="account-btn" id="accountBtn">
-                    Account
+                    <span class="account-btn-text">Login</span>
                 </button>
             </div>
         </header>
@@ -201,10 +142,9 @@
     </div>
 
     <!-- Load existing scripts -->
-
     <script src="src/auth.js"></script>
     <script src="src/accountDropdown.js"></script>
-    <script src="src/homepage.js"></script>  
+    <!-- Remove homepage.js from here since we'll initialize 3D differently -->
     <!-- Load mobile app scripts -->
     <script src="src/monetization.js"></script>
     <script src="src/mobile-3d-viewer.js"></script>
@@ -215,17 +155,31 @@
         let appInitialized = false;
         let loadingProgress = 0;
 
-        // Mobile navigation toggle function
-        function toggleMobileNav() {
-            const mobileNav = document.getElementById('mobileNav');
-            const hamburger = document.querySelector('.hamburger');
+        // Update UI based on auth state
+        function updateUIForAuthState(isAuthenticated) {
+            const creditsContainer = document.getElementById('creditsContainer');
+            const buyCreditsBtn = document.getElementById('buyCreditsBtn');
+            const accountBtn = document.getElementById('accountBtn');
+            const accountBtnText = accountBtn?.querySelector('.account-btn-text');
             
-            if (mobileNav) {
-                mobileNav.classList.toggle('active');
-            }
-            
-            if (hamburger) {
-                hamburger.classList.toggle('active');
+            if (isAuthenticated) {
+                // Show authenticated UI elements
+                if (creditsContainer) creditsContainer.style.display = 'flex';
+                if (buyCreditsBtn) buyCreditsBtn.style.display = 'block';
+                if (accountBtnText) accountBtnText.textContent = 'Account';
+                
+                // Update credits display
+                if (window.MobileMonetization) {
+                    const creditsCount = document.getElementById('creditsCount');
+                    if (creditsCount) {
+                        creditsCount.textContent = window.MobileMonetization.getUserCredits();
+                    }
+                }
+            } else {
+                // Show unauthenticated UI
+                if (creditsContainer) creditsContainer.style.display = 'none';
+                if (buyCreditsBtn) buyCreditsBtn.style.display = 'none';
+                if (accountBtnText) accountBtnText.textContent = 'Login';
             }
         }
 
@@ -256,17 +210,17 @@
             }
         }
 
-        // Check authentication and show appropriate interface
+        // Check authentication and initialize app
         async function initializeApp() {
             if (appInitialized) return;
             
             console.log('🚀 Initializing app...');
-            updateLoadingScreen(20, 'Checking authentication...');
+            updateLoadingScreen(20, 'Loading interface...');
             
             // Wait for auth manager to be ready
             await new Promise(resolve => {
                 let attempts = 0;
-                const maxAttempts = 50; // 5 seconds max wait
+                const maxAttempts = 50;
                 
                 const checkAuth = setInterval(() => {
                     attempts++;
@@ -277,84 +231,92 @@
                 }, 100);
             });
             
-            updateLoadingScreen(50, 'Loading interface...');
+            updateLoadingScreen(50, 'Setting up app...');
             
+            // Show the app container for everyone
+            document.getElementById('appContainer').style.display = 'flex';
+            
+            // Check authentication status
             const isAuthenticated = window.authManager?.isAuthenticated();
             console.log('🔐 User authenticated:', isAuthenticated);
             
-            if (isAuthenticated) {
-                // Show mobile app interface
-                updateLoadingScreen(70, 'Setting up mobile app...');
-                
-                document.getElementById('publicHomepage').style.display = 'none';
-                document.getElementById('appContainer').style.display = 'flex';
-                
-                // Initialize mobile app navigation
-                updateLoadingScreen(85, 'Loading sections...');
-                
-                if (window.AppNavigation) {
-                    await new Promise(resolve => {
-                        setTimeout(() => {
-                            window.AppNavigation.init();
-                            resolve();
-                        }, 300);
-                    });
-                }
-                
-                // Initialize monetization
-                if (window.MobileMonetization) {
-                    // Already initialized in mobile-monetization.js
-                }
-                
-                updateLoadingScreen(100, 'Ready!');
-                
-            } else {
-                // Show public homepage
-                updateLoadingScreen(70, 'Loading homepage...');
-                
-                document.getElementById('publicHomepage').style.display = 'block';
-                document.getElementById('appContainer').style.display = 'none';
-                
-                // Setup generate button handlers for unauthenticated users
-                setupPublicGenerateHandlers();
-                
-                // Initialize public homepage 3D viewer
-                updateLoadingScreen(85, 'Loading 3D viewer...');
-                setTimeout(() => {
-                    if (window.init3D && typeof window.init3D === 'function') {
-                        window.init3D();
-                    }
-                }, 500);
-                
-                updateLoadingScreen(100, 'Welcome!');
+            // Update UI based on auth state
+            updateUIForAuthState(isAuthenticated);
+            
+            // Initialize app navigation
+            updateLoadingScreen(70, 'Loading sections...');
+            
+            if (window.AppNavigation) {
+                await new Promise(resolve => {
+                    setTimeout(() => {
+                        window.AppNavigation.init();
+                        resolve();
+                    }, 300);
+                });
             }
             
-            // Hide loading screen after a brief pause
+            // Setup restricted navigation
+            setupRestrictedNavigation(isAuthenticated);
+            
+            // Setup account button handler
+            setupAccountButton();
+            
+            updateLoadingScreen(100, 'Ready!');
+            
+            // Hide loading screen
             setTimeout(() => {
                 hideLoadingScreen();
                 appInitialized = true;
             }, 1000);
         }
         
-        function setupPublicGenerateHandlers() {
-            const generateBtns = [
-                document.getElementById('generateLink'),
-                document.getElementById('mobileGenerateLink'),
-                document.getElementById('heroGenerateBtn')
-            ];
+        // Setup navigation with restrictions
+        function setupRestrictedNavigation(isAuthenticated) {
+            // Sections that require authentication
+            const restrictedSections = ['generate', 'assets'];
             
-            generateBtns.forEach(btn => {
-                if (btn) {
-                    btn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        console.log('🔐 Generate clicked - showing login modal');
-                        if (window.authManager) {
-                            sessionStorage.setItem('redirectAfterLogin', 'generate');
-                            window.authManager.showLoginModal();
-                        }
-                    });
+            // Override navigation for restricted sections
+            const originalNavigate = window.AppNavigation.navigateToSection;
+            window.AppNavigation.navigateToSection = function(sectionName) {
+                if (!window.authManager?.isAuthenticated() && restrictedSections.includes(sectionName)) {
+                    console.log('🔐 Section requires authentication:', sectionName);
+                    sessionStorage.setItem('redirectAfterLogin', sectionName);
+                    window.authManager.showLoginModal();
+                    return;
                 }
-            });
+                
+                // Account section special handling
+                if (sectionName === 'account' && !window.authManager?.isAuthenticated()) {
+                    window.authManager.showLoginModal();
+                    return;
+                }
+                
+                originalNavigate.call(this, sectionName);
+            };
+        }
+        
+        // Setup account button
+        function setupAccountButton() {
+            const accountBtn = document.getElementById('accountBtn');
+            if (accountBtn) {
+                accountBtn.addEventListener('click', () => {
+                    if (window.authManager?.isAuthenticated()) {
+                        window.AppNavigation.navigateToSection('account');
+                    } else {
+                        window.authManager.showLoginModal();
+                    }
+                });
+            }
+            
+            // Buy credits button
+            const buyCreditsBtn = document.getElementById('buyCreditsBtn');
+            if (buyCreditsBtn) {
+                buyCreditsBtn.addEventListener('click', () => {
+                    if (window.MobileMonetization) {
+                        window.MobileMonetization.showPricingModal();
+                    }
+                });
+            }
         }
         
         // Global loadSection function for compatibility
@@ -379,14 +341,28 @@
         
         // Listen for auth state changes
         window.addEventListener('authStateChange', function() {
-            console.log('🔄 Auth state changed, reinitializing app...');
-            appInitialized = false;
-            setTimeout(initializeApp, 100);
+            console.log('🔄 Auth state changed, updating UI...');
+            const isAuthenticated = window.authManager?.isAuthenticated();
+            updateUIForAuthState(isAuthenticated);
+            setupRestrictedNavigation(isAuthenticated);
+            
+            // Handle redirect after login
+            if (isAuthenticated) {
+                const redirect = sessionStorage.getItem('redirectAfterLogin');
+                if (redirect) {
+                    sessionStorage.removeItem('redirectAfterLogin');
+                    setTimeout(() => {
+                        window.AppNavigation.navigateToSection(redirect);
+                    }, 500);
+                }
+            }
         });
 
-        // Handle window resize for 3D viewers
+        // Disable homepage.js navigation updates since we're using mobile navigation
+        window.disableHomepageNav = true;
+
+        // Handle window resize
         window.addEventListener('resize', function() {
-            // Trigger resize events for any active 3D scenes
             if (window.camera && window.renderer) {
                 const container = window.renderer.domElement.parentElement;
                 if (container && container.offsetWidth > 0) {
