@@ -161,10 +161,10 @@ class AppNavigation {
                 <div class="hero-3d" id="appHero3d">
                     <!-- 3D Dog Model will be rendered here -->
                 </div>
-                <div class="hero-content">
+                <div class="hero-content" style="padding: 0.5rem; padding-top: 0.25rem;">
                     <div class="hero-text">
-                        <h2 class="hero-title">From picture to<br>3D with ease!</h2>
-                        <p class="hero-subtitle">Within a few clicks of a button you can generate, rig and animate your own, ready to use 3D model!</p>
+                        <h2 class="hero-title" style="margin-bottom: 0.4rem; line-height: 1.05;">From picture to<br>3D with ease!</h2>
+                        <p class="hero-subtitle" style="margin-bottom: 1rem; line-height: 1.1; font-size: 0.8rem;">Within a few clicks of a button you can generate, rig and animate your own, ready to use 3D model!</p>
                         <button class="cta-button" onclick="window.AppNavigation.navigateToSection('generate')">GENERATE</button>
                     </div>
                 </div>

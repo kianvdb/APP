@@ -257,8 +257,8 @@ button, .button, .btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 1rem;
-    padding-top: 0.5rem; /* Minimal space from top */
+    padding: 0.5rem;
+    padding-top: 0.25rem; /* Even less top padding */
 }
 
 .hero-text {
@@ -270,10 +270,10 @@ button, .button, .btn {
 
 .hero-title {
     font-family: 'Sora', sans-serif;
-    font-size: 2.2rem;
+    font-size: 2rem;
     font-weight: 700;
-    line-height: 1.1;
-    margin-bottom: 0.5rem;
+    line-height: 1.05;
+    margin-bottom: 0.1rem;
     margin-top: 0;
     color: white;
     text-align: center;
@@ -281,10 +281,10 @@ button, .button, .btn {
 
 .hero-subtitle {
     font-family: 'Inter', sans-serif;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.8);
-    margin-bottom: 1.5rem;
-    line-height: 1.4;
+    margin-bottom: 0.4rem;
+    line-height: 1.15;
     font-weight: 400;
     text-align: center;
 }
@@ -292,11 +292,11 @@ button, .button, .btn {
 .cta-button {
     background: transparent;
     color: #00bcd4;
-    padding: 0.8rem 2.5rem;
+    padding: 0.6rem 2rem;
     border: 2px solid #00bcd4;
     border-radius: 50px;
     font-family: 'Sora', sans-serif;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -326,22 +326,24 @@ button, .button, .btn {
 /* Mobile-specific adjustments */
 @media (max-width: 768px) {
     .hero-content {
-        padding: 1rem;
-        padding-top: 0; /* No extra padding on mobile */
+        padding: 0.5rem;
+        padding-top: 0;
     }
     
     .hero-title {
-        font-size: 1.8rem;
+        font-size: 1.6rem;
+        margin-bottom: 0.08rem;
     }
     
     .hero-subtitle {
-        font-size: 0.85rem;
-        margin-bottom: 1.2rem;
+        font-size: 0.75rem;
+        margin-bottom: 0.35rem;
+        line-height: 1.1;
     }
     
     .cta-button {
-        padding: 0.7rem 2rem;
-        font-size: 0.95rem;
+        padding: 0.5rem 1.5rem;
+        font-size: 0.85rem;
     }
 }
 

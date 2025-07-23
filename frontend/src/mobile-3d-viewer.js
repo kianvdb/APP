@@ -1,4 +1,4 @@
-// mobile-3d-viewer.js - Fixed 3D Viewer with error handling and shader fixes
+// mobile-3d-viewer.js - Fixed 3D Viewer with better model proportions and restricted controls
 
 (function() {
     'use strict';
@@ -86,18 +86,19 @@
         
         console.log(`📐 FULL VIEWPORT: ${width}x${height}`);
         
-        Mobile3D.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000); // Wide FOV
-        Mobile3D.camera.position.set(6, 3.5, 8); // Higher Y position to look at chest/middle
-        Mobile3D.camera.lookAt(0, 1.5, 0); // Look at chest/middle area of model
+        // Adjusted camera for better model presentation
+        Mobile3D.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+        Mobile3D.camera.position.set(3, 8, 4); // Much closer position for zoom effect
+        Mobile3D.camera.lookAt(0, -2, 0); // Steeper downward angle
         
         // Renderer setup with better error handling
         try {
             Mobile3D.renderer = new THREE.WebGLRenderer({ 
                 antialias: true,
                 alpha: true,
-                powerPreference: "default", // Changed from high-performance to avoid issues
-                precision: "mediump", // Changed from highp to mediump for compatibility
-                stencil: false, // Disable stencil buffer to save memory
+                powerPreference: "default",
+                precision: "mediump",
+                stencil: false,
                 depth: true
             });
             
@@ -117,7 +118,7 @@
             Mobile3D.renderer.domElement.style.width = '100vw';
             Mobile3D.renderer.domElement.style.height = '100vh';
             Mobile3D.renderer.domElement.style.display = 'block';
-            Mobile3D.renderer.domElement.style.zIndex = '1'; // Below UI elements
+            Mobile3D.renderer.domElement.style.zIndex = '1';
             
             console.log('✅ WebGL renderer created successfully');
             
@@ -133,9 +134,9 @@
         Mobile3D.pmremGenerator = new THREE.PMREMGenerator(Mobile3D.renderer);
         
         // Initialize components
-        setupControls();
-        createFullScreenGrid(); // Restored full-screen vibrant grid
-        setupSimpleLighting(); // Simplified lighting
+        setupRestrictedControls(); // Changed to restricted controls
+        createFullScreenGrid();
+        setupSimpleLighting();
         loadDogModel();
         startAnimation();
         
@@ -174,7 +175,8 @@
         container.appendChild(canvas);
     }
 
-    function setupControls() {
+    // Setup restricted controls - only horizontal rotation
+    function setupRestrictedControls() {
         if (!THREE.OrbitControls || !Mobile3D.camera || !Mobile3D.renderer) {
             console.log('⚠️ OrbitControls not available or missing dependencies');
             return;
@@ -185,13 +187,17 @@
             Mobile3D.controls.enableDamping = true;
             Mobile3D.controls.dampingFactor = 0.05;
             Mobile3D.controls.autoRotate = false;
-            Mobile3D.controls.target.set(0, 1.5, 0); // Look at chest/middle area
-            Mobile3D.controls.minPolarAngle = Math.PI * 0.2;
-            Mobile3D.controls.maxPolarAngle = Math.PI * 0.8;
-            Mobile3D.controls.minDistance = 5;
-            Mobile3D.controls.maxDistance = 50;
+            Mobile3D.controls.target.set(0, -2, 0); // Steeper tilt target
             
-            console.log('✅ Controls initialized');
+            // Restrict controls - only horizontal rotation
+            Mobile3D.controls.enableZoom = false; // Disable zoom
+            Mobile3D.controls.enablePan = false; // Disable panning
+            Mobile3D.controls.minPolarAngle = Math.PI * 0.5; // Lock vertical rotation
+            Mobile3D.controls.maxPolarAngle = Math.PI * 0.5; // Lock vertical rotation
+            Mobile3D.controls.minAzimuthAngle = -Infinity; // Allow full horizontal rotation
+            Mobile3D.controls.maxAzimuthAngle = Infinity; // Allow full horizontal rotation
+            
+            console.log('✅ Restricted controls initialized - horizontal rotation only');
         } catch (error) {
             console.error('❌ Error setting up controls:', error);
         }
@@ -279,7 +285,7 @@
             gridGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
             
             const mainGrid = new THREE.LineSegments(gridGeometry, gridMaterial);
-            mainGrid.position.y = -0.5;
+            mainGrid.position.y = -6; // Moved grid much lower
             Mobile3D.gridGroup.add(mainGrid);
             
             // ONLY add the original subtle secondary grids - NO RADIAL PATTERNS
@@ -298,7 +304,7 @@
                 );
                 layerGrid.material.opacity = layer.opacity;
                 layerGrid.material.transparent = true;
-                layerGrid.position.y = layer.y;
+                layerGrid.position.y = layer.y - 5.5; // Adjusted for much lower grid position
                 Mobile3D.gridGroup.add(layerGrid);
             });
             
@@ -406,21 +412,22 @@
         try {
             Mobile3D.dogModel = model;
             
-            // Scale and position
+            // Scale and position - SMALLER MODEL
             const box = new THREE.Box3().setFromObject(Mobile3D.dogModel);
             const center = box.getCenter(new THREE.Vector3());
             const size = box.getSize(new THREE.Vector3());
             
             const maxDim = Math.max(size.x, size.y, size.z);
-            const scale = 7 / maxDim;
+            const scale = 7 / maxDim; // Back to original scale from version 12
             Mobile3D.dogModel.scale.multiplyScalar(scale);
             
+            // Center the model horizontally
             Mobile3D.dogModel.position.x = -center.x * scale;
             Mobile3D.dogModel.position.z = -center.z * scale;
             
-            // Position on grid - NORMAL positioning for better camera view
+            // Position on grid with adjusted height
             const scaledBox = new THREE.Box3().setFromObject(Mobile3D.dogModel);
-            Mobile3D.dogModel.position.y = -0.5 - scaledBox.min.y; // Back to normal positioning
+            Mobile3D.dogModel.position.y = -6 - scaledBox.min.y; // Model sits on much lower grid
             
             // Convert to wireframe with error handling
             let meshCount = 0;
@@ -482,8 +489,8 @@
                 opacity: 1.0
             });
             
-            // Body
-            const bodyGeometry = new THREE.SphereGeometry(1.2, 16, 12);
+            // Body - smaller proportions
+            const bodyGeometry = new THREE.SphereGeometry(0.8, 16, 12); // Reduced from 1.2
             bodyGeometry.scale(1.5, 0.8, 0.9);
             const body = new THREE.Mesh(bodyGeometry, material);
             const bodyWireframe = new THREE.LineSegments(
@@ -493,10 +500,10 @@
             body.add(bodyWireframe);
             group.add(body);
             
-            // Head
-            const headGeometry = new THREE.SphereGeometry(0.7, 12, 10);
+            // Head - smaller
+            const headGeometry = new THREE.SphereGeometry(0.5, 12, 10); // Reduced from 0.7
             const head = new THREE.Mesh(headGeometry, material);
-            head.position.set(1.8, 0.3, 0);
+            head.position.set(1.2, 0.2, 0); // Adjusted position
             const headWireframe = new THREE.LineSegments(
                 new THREE.WireframeGeometry(headGeometry), 
                 wireframeMaterial
@@ -504,11 +511,11 @@
             head.add(headWireframe);
             group.add(head);
             
-            // Legs (simplified)
-            const legGeometry = new THREE.CylinderGeometry(0.15, 0.15, 1.2, 8);
+            // Legs - smaller
+            const legGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8); // Reduced from 1.2
             const positions = [
-                [0.8, -1, -0.4], [0.8, -1, 0.4],
-                [-0.8, -1, -0.4], [-0.8, -1, 0.4]
+                [0.5, -0.7, -0.3], [0.5, -0.7, 0.3],
+                [-0.5, -0.7, -0.3], [-0.5, -0.7, 0.3]
             ];
             
             positions.forEach(pos => {
@@ -524,7 +531,7 @@
             
             // Position on grid
             const groupBox = new THREE.Box3().setFromObject(group);
-            group.position.y = -0.5 - groupBox.min.y;
+            group.position.y = -6 - groupBox.min.y; // Adjusted for much lower grid
             group.userData.baseY = group.position.y;
             
             Mobile3D.scene.add(group);
@@ -560,14 +567,10 @@
                     });
                 }
                 
-                // Rotate and float dog
+                // Only rotate dog horizontally, no floating
                 if (Mobile3D.dogModel) {
-                    Mobile3D.dogModel.rotation.y -= 0.003;
-                    
-                    if (Mobile3D.dogModel.userData.baseY !== undefined) {
-                        Mobile3D.dogModel.position.y = Mobile3D.dogModel.userData.baseY + 
-                            Math.sin(time * 0.6) * 0.03;
-                    }
+                    Mobile3D.dogModel.rotation.y -= 0.003; // Horizontal rotation only
+                    // No vertical movement - keeps model grounded
                 }
                 
                 if (Mobile3D.renderer && Mobile3D.scene && Mobile3D.camera) {
