@@ -1,6 +1,5 @@
 // app-navigation.js - DALMA AI Mobile App Navigation
-// Handles section switching, content loading, and smooth transitions
-// Fixed version with proper method calls and 3D model loading
+// Updated version with properly styled home section
 
 class AppNavigation {
     constructor() {
@@ -16,7 +15,7 @@ class AppNavigation {
         console.log('🎯 Setting up app navigation...');
         
         this.setupBottomNavigation();
-        this.loadSectionContent('home'); // Fixed: Call loadSectionContent instead of loadSection
+        this.loadSectionContent('home');
         
         console.log('✅ App navigation ready');
     }
@@ -154,32 +153,20 @@ class AppNavigation {
     }
 
     async loadHomeContent() {
-        // Load homepage content without the header/footer
+        // Updated home content with better layout matching the design
         return `
             <!-- Hero Section -->
             <section class="hero">
                 <div class="geometric-pattern"></div>
+                <div class="hero-3d" id="appHero3d">
+                    <!-- 3D Dog Model will be rendered here -->
+                </div>
                 <div class="hero-content">
                     <div class="hero-text">
-                        <h2 class="hero-title">Generate 3D dog assets with ease!</h2>
-                        <p class="hero-subtitle">Within a few clicks of a button you can generate, rig and animate your own, ready to use dog model!</p>
-                        <button class="cta-button" onclick="window.AppNavigation.navigateToSection('generate')">Generate</button>
+                        <h2 class="hero-title">From picture to<br>3D with ease!</h2>
+                        <p class="hero-subtitle">Within a few clicks of a button you can generate, rig and animate your own, ready to use 3D model!</p>
+                        <button class="cta-button" onclick="window.AppNavigation.navigateToSection('generate')">GENERATE</button>
                     </div>
-                    <div class="hero-3d" id="appHero3d">
-                        <!-- 3D Dog Model will be rendered here -->
-                    </div>
-                </div>
-            </section>
-
-            <!-- Recent Assets Preview -->
-            <section class="assets-section" style="padding: 3rem 1rem;">
-                <div class="assets-header">
-                    <h2 class="assets-title">Featured Models</h2>
-                    <button class="cta-button" onclick="window.AppNavigation.navigateToSection('assets')" 
-                            style="padding: 0.6rem 1.2rem; font-size: 0.9rem;">View All</button>
-                </div>
-                <div class="assets-grid" id="featuredAssetsGrid">
-                    <!-- Featured assets will be loaded here -->
                 </div>
             </section>
         `;
@@ -366,6 +353,25 @@ class AppNavigation {
     }
 
     async loadAccountContent() {
+        // Check if user is authenticated
+        const isAuthenticated = window.authManager?.isAuthenticated();
+        
+        if (!isAuthenticated) {
+            // Show login prompt for non-authenticated users
+            return `
+                <div class="account-section" style="padding: 2rem 1rem; text-align: center;">
+                    <div style="font-size: 4rem; margin-bottom: 1.5rem;">🔒</div>
+                    <h2 style="font-family: 'Sora', sans-serif; color: white; margin-bottom: 1rem;">Account Access Required</h2>
+                    <p style="color: rgba(255,255,255,0.7); margin-bottom: 2rem;">Please log in to access your account settings and view your models.</p>
+                    <button onclick="window.authManager.showLoginModal()" 
+                            style="background: #00bcd4; color: white; border: none; padding: 1rem 2rem; border-radius: 50px; font-family: 'Sora', sans-serif; font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;">
+                        Login
+                    </button>
+                </div>
+            `;
+        }
+        
+        // Original account content for authenticated users
         return `
             <div class="account-section" style="padding: 2rem 1rem;">
                 <div class="account-header" style="text-align: center; margin-bottom: 2rem;">
@@ -513,13 +519,18 @@ class AppNavigation {
     }
 
     async initializeHome() {
-    console.log('🎯 Initializing home section 3D viewer...');
-    setTimeout(() => {
-        window.Mobile3D.init('appHero3d');  // <-- Use the clean 3D viewer
-    }, 500);
-    await this.loadFeaturedAssets();
-}
-  
+        console.log('🎯 Initializing home section 3D viewer...');
+        // Wait a bit for DOM to be fully ready
+        setTimeout(() => {
+            const container = document.getElementById('appHero3d');
+            if (container) {
+                console.log('✅ Found appHero3d container, initializing 3D...');
+                window.Mobile3D.init('appHero3d');
+            } else {
+                console.error('❌ appHero3d container not found!');
+            }
+        }, 500);
+    }
 
     async initializeGenerate() {
         // Load all the generate page scripts
@@ -556,41 +567,6 @@ class AppNavigation {
         // Update account stats
         console.log('🎯 Initializing account section...');
         this.updateAccountStats();
-    }
-
-    async loadFeaturedAssets() {
-        const grid = document.getElementById('featuredAssetsGrid');
-        if (!grid) return;
-
-        try {
-            // Show loading state
-            grid.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #00bcd4;">
-                    <div class="section-loading-spinner" style="width: 40px; height: 40px; margin: 0 auto 1rem;"></div>
-                    <p>Loading featured models...</p>
-                </div>
-            `;
-
-            // Simulate API call delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // This would normally fetch from your API
-            // For now, show placeholder content
-            grid.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: rgba(255,255,255,0.6);">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">🐕</div>
-                    <h3 style="color: white; margin-bottom: 0.5rem;">Featured Models Coming Soon</h3>
-                    <p>Beautiful 3D dog models will be showcased here</p>
-                </div>
-            `;
-        } catch (error) {
-            console.error('Error loading featured assets:', error);
-            grid.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #dc3545;">
-                    <p>Error loading featured models</p>
-                </div>
-            `;
-        }
     }
 
     async loadAllAssets() {

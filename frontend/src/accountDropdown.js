@@ -415,6 +415,14 @@ function setupAccountButtonHandlers() {
 function updateNavigationForUser(user) {
     console.log('🔄 Updating navigation for user:', user ? (user.username || user.email) : 'guest');
     
+    // Check if we're in mobile app mode
+    if (window.isMobileApp || window.disableHomepageNav || document.querySelector('.bottom-nav')) {
+        console.log('📱 Mobile app interface detected, skipping desktop nav update');
+        // Still update account button text for mobile
+        updateAccountButtonText(user);
+        return;
+    }
+    
     const nav = document.querySelector('.nav');
     const navLeft = document.querySelector('.nav-left');
     const mobileNav = document.querySelector('.mobile-nav');

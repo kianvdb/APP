@@ -640,3 +640,46 @@ button, .button, .btn {
 .app-loading-screen {
     z-index: 99999;
 }
+/* Add these rules to your mobile-app.css file */
+
+/* Ensure sections fill entire space */
+.app-section {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(100%);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent; /* Changed from #0a0a0a */
+}
+
+/* Fix the main area to extend to bottom nav */
+.app-main {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #0a0a0a;
+    padding-bottom: 0; /* Remove padding */
+}
+
+/* Ensure bottom nav sits at very bottom */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(0, 188, 212, 0.2);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0.5rem 0;
+    z-index: 2000;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+}
