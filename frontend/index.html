@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DALMA AI - Mobile App</title>
+    <title>Dalma AI - Mobile App</title>
     
     <!-- Existing CSS files -->
     <link rel="stylesheet" href="css/homepage.css">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/auth-modal.css">
     <link rel="stylesheet" href="css/view-asset.css">
-    <link rel="stylesheet" href="css/about.css">
     
-    <!-- Mobile app wrapper CSS -->
+    <!-- Enhanced Mobile app wrapper CSS with assets integration -->
     <link rel="stylesheet" href="css/mobile-app.css">
     <link rel="stylesheet" href="css/monetization.css">
     
@@ -34,7 +33,7 @@
     <!-- Premium Loading Screen -->
     <div class="app-loading-screen" id="appLoadingScreen">
         <img src="public/threely3.png" alt="Dalma AI" class="loading-logo">
-        <p class="loading-subtitle">Transforming photos into 3D magic</p>
+        <p class="loading-subtitle">Transforming pictures into 3D magic</p>
         
         <div class="loading-spinner-container">
             <div class="orbital-ring orbital-ring-1"></div>
@@ -49,7 +48,7 @@
         <div class="loading-text" id="loadingText">Initializing...</div>
     </div>
 
-    <!-- Main App Container (for everyone) -->
+    <!-- Main App Container -->
     <div class="app-container" id="appContainer" style="display: none;">
         <!-- App Header with Credits -->
         <header class="app-header">
@@ -97,7 +96,7 @@
             </div>
         </main>
 
-        <!-- Bottom Navigation -->
+        <!-- Enhanced Bottom Navigation with Assets -->
         <nav class="bottom-nav">
             <button class="nav-item active" data-section="home">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -115,7 +114,7 @@
             
             <button class="nav-item" data-section="assets">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/>
+                    <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2z"/>
                 </svg>
                 <span class="nav-label">Assets</span>
             </button>
@@ -141,14 +140,59 @@
         <!-- Auth modal content will be inserted here by auth.js -->
     </div>
 
-    <!-- Load existing scripts -->
+    <!-- Pricing Modal for Mobile Monetization -->
+    <div class="pricing-modal" id="pricingModal">
+        <div class="pricing-modal-content">
+            <div class="pricing-header">
+                <h3>Buy Credits</h3>
+                <button class="pricing-close" id="pricingClose">&times;</button>
+            </div>
+            <div class="pricing-body">
+                <div class="credit-pack">
+                    <div class="pack-popular">Most Popular</div>
+                    <div class="pack-title">Creator Pack</div>
+                    <div class="pack-price">€4.99</div>
+                    <div class="pack-credits">10 Generations</div>
+                    <div class="pack-features">
+                        <div class="feature">✓ High-quality 3D models</div>
+                        <div class="feature">✓ Multiple export formats</div>
+                        <div class="feature">✓ Commercial license</div>
+                        <div class="feature">✓ Priority processing</div>
+                    </div>
+                    <button class="pack-buy-btn" id="buyPackBtn">Buy 10 Credits</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generation Modal -->
+    <div class="generation-modal" id="generationModal">
+        <div class="generation-modal-content">
+            <div class="generation-header">
+                <h3>🎨 Creating Your 3D Model</h3>
+            </div>
+            <div class="generation-body">
+                <div class="generation-progress-container">
+                    <div class="generation-progress-bar" id="generationProgressBar"></div>
+                </div>
+                <div class="generation-time" id="generationTime">Estimated time: 5:00</div>
+                <div class="generation-ad-section">
+                    <p>Want faster processing?</p>
+                    <button class="watch-ad-btn" id="watchAdBtn">📺 Watch Ad for Speed Boost</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="src/auth.js"></script>
-    <script src="src/accountDropdown.js"></script>
-    <!-- Remove homepage.js from here since we'll initialize 3D differently -->
-    <!-- Load mobile app scripts -->
+    <script src="src/mobile-auth-enhancer.js"></script>
     <script src="src/monetization.js"></script>
     <script src="src/mobile-3d-viewer.js"></script>
+    
+    <!-- Enhanced App Navigation with Assets Integration -->
     <script src="src/app-navigation.js"></script>
+    
     <!-- Initialize the app -->
     <script>
         // App initialization state
@@ -214,7 +258,7 @@
         async function initializeApp() {
             if (appInitialized) return;
             
-            console.log('🚀 Initializing app...');
+            console.log('🚀 Initializing app with assets integration...');
             updateLoadingScreen(20, 'Loading interface...');
             
             // Wait for auth manager to be ready
@@ -243,7 +287,7 @@
             // Update UI based on auth state
             updateUIForAuthState(isAuthenticated);
             
-            // Initialize app navigation
+            // Initialize app navigation with assets
             updateLoadingScreen(70, 'Loading sections...');
             
             if (window.AppNavigation) {
@@ -372,6 +416,14 @@
                 }
             }
         });
+
+        // Debug functions for development
+        window.debugAppNavigation = () => window.AppNavigation;
+        window.debugAssetsData = () => window.AppNavigation?.assetsData;
+        window.debugLoadAssets = () => window.AppNavigation?.loadAllAssets();
+        window.debugReloadAssets = () => window.AppNavigation?.reloadSection('assets');
+        
+        console.log('🎯 Mobile app with assets integration initialized');
     </script>
 </body>
 </html>

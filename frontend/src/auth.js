@@ -1,8 +1,11 @@
-// Frontend Authentication System for DALMA AI - Modal Only Version
+// Complete Enhanced Authentication System for DALMA AI
+// Supports both web and mobile app usage with modal-only approach
+
 class AuthManager {
     constructor() {
         this.user = null;
         this.isInitialized = false;
+        this.initialized = false; // Backward compatibility
         
         // DISABLE account dropdown functionality - let main.js handle it
         this.accountDropdownDisabled = true;
@@ -57,7 +60,7 @@ class AuthManager {
         // Set currentUser for backward compatibility
         this.currentUser = this.user;
         
-        // UPDATED: Handle protected pages with modal instead of redirect
+        // Handle protected pages with modal instead of redirect
         this.handleProtectedPageAccess();
         
         // Set up event listeners
@@ -65,6 +68,15 @@ class AuthManager {
         
         this.isInitialized = true;
         this.initialized = true; // For backward compatibility
+        
+        // Dispatch auth ready event
+        window.dispatchEvent(new CustomEvent('authManagerReady', {
+            detail: { 
+                authenticated: !!this.user,
+                user: this.user 
+            }
+        }));
+        
         console.log('✅ AuthManager initialized');
     }
 
@@ -92,6 +104,9 @@ class AuthManager {
                 this.authCheckComplete = true;
                 this.updateUI();
                 console.log('✅ User authenticated:', this.user.username);
+                
+                // Dispatch auth state change event
+                this.dispatchAuthStateChange();
                 return true;
             } else {
                 // Only log error details if it's not a 401 (which is expected when not logged in)
@@ -104,6 +119,9 @@ class AuthManager {
                 this.authCheckComplete = true;
                 this.updateUI();
                 console.log('ℹ️ User not authenticated');
+                
+                // Dispatch auth state change event
+                this.dispatchAuthStateChange();
                 return false;
             }
         } catch (error) {
@@ -112,8 +130,21 @@ class AuthManager {
             this.currentUser = null;
             this.authCheckComplete = true;
             this.updateUI();
+            
+            // Dispatch auth state change event
+            this.dispatchAuthStateChange();
             return false;
         }
+    }
+
+    // Dispatch auth state change event
+    dispatchAuthStateChange() {
+        window.dispatchEvent(new CustomEvent('authStateChange', {
+            detail: { 
+                authenticated: !!this.user,
+                user: this.user 
+            }
+        }));
     }
 
     // Wait for auth check to complete
@@ -130,7 +161,7 @@ class AuthManager {
         return false;
     }
 
-    // UPDATED: Handle protected page access with modal instead of redirect
+    // Handle protected page access with modal instead of redirect
     handleProtectedPageAccess() {
         const currentPage = window.location.pathname.split('/').pop() || 'index.html';
         
@@ -158,7 +189,7 @@ class AuthManager {
         }
     }
 
-    // Create login modal - UPDATED to remove "go to login page" link
+    // Create login modal - Enhanced for mobile
     createLoginModal() {
         const modalHTML = `
             <div id="auth-modal" class="auth-modal" style="display: none;">
@@ -207,7 +238,7 @@ class AuthManager {
         this.loginModal = document.getElementById('auth-modal');
     }
 
-    // DISABLED: Create account dropdown - let main.js handle this
+    // Create account dropdown (disabled)
     createAccountDropdown() {
         if (this.accountDropdownDisabled) {
             console.log('🚫 Auth manager account dropdown disabled - using main.js blue shadow dropdown');
@@ -241,67 +272,15 @@ class AuthManager {
         this.accountDropdown = document.getElementById('account-dropdown');
     }
 
-    // UPDATED: Set up event listeners - DISABLED account dropdown functionality
+    // Set up event listeners
     setupEventListeners() {
-        // DISABLED: Account dropdown functionality - let main.js handle this
-        if (!this.accountDropdownDisabled) {
-            // Account button dropdown toggle
-            const accountBtn = document.querySelector('.account-btn');
-            if (accountBtn) {
-                accountBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.toggleAccountDropdown();
-                });
-            }
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (this.accountDropdown && !this.accountDropdown.contains(e.target) && !e.target.closest('.account-btn')) {
-                    this.hideAccountDropdown();
-                }
-            });
-
-            // UPDATED: Auth action button shows modal instead of redirecting to login.html
-            const authActionBtn = document.getElementById('auth-action-btn');
-            if (authActionBtn) {
-                authActionBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    if (this.user) {
-                        this.logout();
-                    } else {
-                        this.hideAccountDropdown();
-                        // Store current page if it's a protected page
-                        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-                        if (this.protectedPages.includes(currentPage)) {
-                            sessionStorage.setItem('redirectAfterLogin', window.location.href);
-                        }
-                        this.showLoginModal();
-                    }
-                });
-            }
-
-            // Liked assets button
-            const likedAssetsBtn = document.getElementById('liked-assets-btn');
-            if (likedAssetsBtn) {
-                likedAssetsBtn.addEventListener('click', (e) => {
-                    if (!this.user) {
-                        e.preventDefault();
-                        sessionStorage.setItem('redirectAfterLogin', 'liked-assets.html');
-                        this.showLoginModal();
-                    }
-                    this.hideAccountDropdown();
-                });
-            }
-        }
-
-        // Modal event listeners - KEEP THESE
+        // Modal event listeners
         this.setupModalEventListeners();
 
-        // Protect generate button - KEEP THIS
+        // Protect generate button
         this.protectGenerateButton();
 
-        // Setup asset click handlers - KEEP THIS
+        // Setup asset click handlers
         this.setupAssetClickHandlers();
     }
 
@@ -342,6 +321,13 @@ class AuthManager {
             overlay.addEventListener('click', () => this.hideLoginModal());
         }
 
+        // Escape key to close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.loginModal && this.loginModal.style.display === 'flex') {
+                this.hideLoginModal();
+            }
+        });
+
         // Modal form handlers
         const modalLoginForm = document.getElementById('modal-login-form');
         const modalRegisterForm = document.getElementById('modal-register-form');
@@ -359,6 +345,7 @@ class AuthManager {
     showLoginModal() {
         if (this.loginModal) {
             this.loginModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
             this.clearModalMessages();
             
             setTimeout(() => {
@@ -371,29 +358,9 @@ class AuthManager {
     hideLoginModal() {
         if (this.loginModal) {
             this.loginModal.style.display = 'none';
+            document.body.style.overflow = ''; // Restore scrolling
             this.clearModalMessages();
         }
-    }
-
-    // DISABLED: Show/hide account dropdown - let main.js handle this
-    toggleAccountDropdown() {
-        console.log('🚫 Account dropdown disabled - using main.js blue shadow dropdown');
-        return;
-    }
-
-    hideAccountDropdown() {
-        console.log('🚫 Account dropdown disabled - using main.js blue shadow dropdown');
-        return;
-    }
-
-    showAccountMenu() {
-        console.log('🚫 Account menu disabled - using main.js blue shadow dropdown');
-        return;
-    }
-
-    closeAccountMenu() {
-        console.log('🚫 Account menu disabled - using main.js blue shadow dropdown');
-        return;
     }
 
     // Handle modal login
@@ -426,6 +393,9 @@ class AuthManager {
                 this.currentUser = data.user; // For backward compatibility
                 this.updateUI();
                 this.showModalMessage('modalLoginMessage', 'Login successful! Redirecting...', 'success');
+                
+                // Dispatch auth state change event
+                this.dispatchAuthStateChange();
                 
                 // Wait longer to ensure cookie is set
                 await new Promise(resolve => setTimeout(resolve, 1500));
@@ -511,6 +481,9 @@ class AuthManager {
                 this.updateUI();
                 this.showModalMessage('modalRegisterMessage', 'Account created successfully! Redirecting...', 'success');
                 
+                // Dispatch auth state change event
+                this.dispatchAuthStateChange();
+                
                 // Wait longer to ensure cookie is set
                 await new Promise(resolve => setTimeout(resolve, 1500));
                 
@@ -566,6 +539,9 @@ class AuthManager {
             this.updateUI();
             console.log('✅ User logged out');
             
+            // Dispatch auth state change event
+            this.dispatchAuthStateChange();
+            
             // Clear any stored auth data
             localStorage.removeItem('dalma_user');
             sessionStorage.removeItem('redirectAfterLogin');
@@ -583,7 +559,7 @@ class AuthManager {
         this.updateAdminNavigation();
     }
 
-    // DISABLED: Update account dropdown - let main.js handle this
+    // Update account dropdown
     updateAccountDropdown() {
         if (this.accountDropdownDisabled) {
             console.log('🚫 Account dropdown update disabled - using main.js blue shadow dropdown');
@@ -760,6 +736,13 @@ class AuthManager {
             messageEl.textContent = message;
             messageEl.className = `auth-message ${type}`;
             messageEl.style.display = 'block';
+            
+            // Auto-hide success messages after 3 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    messageEl.style.display = 'none';
+                }, 3000);
+            }
         }
     }
 
@@ -800,6 +783,10 @@ class AuthManager {
         return this.user;
     }
 
+    getCurrentUser() {
+        return this.user; // For backward compatibility
+    }
+
     async requireAuth(callback) {
         const isAuthenticated = await this.waitForAuthCheck();
         if (isAuthenticated) {
@@ -809,6 +796,12 @@ class AuthManager {
             sessionStorage.setItem('redirectAfterLogin', window.location.href);
             this.showLoginModal();
         }
+    }
+
+    // Method to refresh auth status
+    async refreshAuthStatus() {
+        await this.checkAuthStatus();
+        return this.isAuthenticated();
     }
 }
 
@@ -820,4 +813,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Make it globally available immediately
     window.authManager = authManager;
+    
+    console.log('🚀 Auth manager created and globally available');
 });
+
+// Export for module usage
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = AuthManager;
+}
