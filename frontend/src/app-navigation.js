@@ -1,5 +1,5 @@
 // app-navigation.js - DALMA AI Mobile App Navigation
-// Updated version with properly styled home section
+// Updated version with properly styled home section and streamlined about content
 
 class AppNavigation {
     constructor() {
@@ -67,12 +67,11 @@ class AppNavigation {
             return;
         }
 
-        // Hide current section
-        const currentSectionElement = document.querySelector('.app-section.active');
-        if (currentSectionElement) {
-            currentSectionElement.classList.remove('active');
-            currentSectionElement.classList.add('prev');
-        }
+        // Hide all sections first
+        document.querySelectorAll('.app-section').forEach(section => {
+            section.classList.remove('active');
+            section.style.display = 'none'; // Force hide
+        });
 
         // Load content if not already loaded
         if (!this.loadedSections.has(sectionName)) {
@@ -81,22 +80,23 @@ class AppNavigation {
 
         // Show new section
         setTimeout(() => {
-            sectionElement.classList.remove('prev');
+            sectionElement.style.display = 'block'; // Force show
             sectionElement.classList.add('active');
             
-            // Clean up prev class from other sections
-            setTimeout(() => {
-                document.querySelectorAll('.app-section.prev').forEach(section => {
-                    section.classList.remove('prev');
-                });
-            }, 400);
+            // Scroll to top of new section
+            sectionElement.scrollTop = 0;
+            
+            console.log(`✅ Section displayed: ${sectionName}`);
         }, 50);
     }
 
     async loadSectionContent(sectionName) {
         const sectionElement = document.getElementById(`${sectionName}Section`);
         
-        if (!sectionElement) return;
+        if (!sectionElement) {
+            console.error(`❌ Section element not found: ${sectionName}Section`);
+            return;
+        }
 
         // Show loading state
         sectionElement.innerHTML = `
@@ -131,6 +131,16 @@ class AppNavigation {
 
             sectionElement.innerHTML = `<div class="section-content">${content}</div>`;
             
+            // Debug log for about section
+            if (sectionName === 'about') {
+                console.log('📄 About content loaded, innerHTML length:', sectionElement.innerHTML.length);
+                console.log('📏 Section dimensions:', {
+                    width: sectionElement.offsetWidth,
+                    height: sectionElement.offsetHeight,
+                    display: window.getComputedStyle(sectionElement).display
+                });
+            }
+            
             // Initialize section-specific functionality
             await this.initializeSectionFunctionality(sectionName);
             
@@ -153,7 +163,7 @@ class AppNavigation {
     }
 
     async loadHomeContent() {
-        // Updated home content with better layout matching the design
+        // Updated home content with your current layout
         return `
             <!-- Hero Section -->
             <section class="hero">
@@ -416,85 +426,197 @@ class AppNavigation {
 
     async loadAboutContent() {
         return `
-            <!-- About Hero Section -->
-            <section class="about-hero" style="min-height: 60vh; background: linear-gradient(135deg, rgba(0, 188, 212, 0.05) 0%, rgba(0, 0, 0, 0) 100%); position: relative; padding: 4rem 2rem;">
-                <div class="hero-bg-animation">
-                    <div class="glow-orb orb-1"></div>
-                    <div class="glow-orb orb-2"></div>
-                    <div class="glow-orb orb-3"></div>
-                </div>
-                <div class="hero-content about-hero-content">
-                    <div class="hero-text-full">
-                        <span class="hero-badge">Transforming Ideas into Reality</span>
-                        <h1 class="hero-title">Pioneering AI-Driven 3D Creation</h1>
-                        <p class="hero-subtitle">At Dalma AI, we're on a mission to democratize 3D content creation. Our cutting-edge technology transforms simple photographs into professional-grade 3D models.</p>
-                        <div class="hero-stats">
-                            <div class="stat-item">
-                                <span class="stat-number">50K+</span>
-                                <span class="stat-label">Models Created</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-number">5 Min</span>
-                                <span class="stat-label">Average Generation Time</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-number">98%</span>
-                                <span class="stat-label">Customer Satisfaction</span>
-                            </div>
-                        </div>
+            <!-- About Section with Premium Animations -->
+            <div class="about-container" style="height: 100%; overflow-y: auto; overflow-x: hidden; background: #0a0a0a; position: relative;">
+                <!-- Animated Background - Fixed position -->
+                <div class="animated-bg" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none;">
+                    <div class="particle-field" id="particleField" style="position: absolute; width: 100%; height: 100%;">
+                        <!-- Particles will be added via JS -->
                     </div>
+                    <div class="gradient-orb orb-1" style="position: absolute; width: 300px; height: 300px; background: radial-gradient(circle, rgba(0,188,212,0.3) 0%, transparent 70%); top: 10%; left: -150px; filter: blur(40px); animation: float-1 15s ease-in-out infinite;"></div>
+                    <div class="gradient-orb orb-2" style="position: absolute; width: 400px; height: 400px; background: radial-gradient(circle, rgba(0,229,255,0.2) 0%, transparent 70%); bottom: 10%; right: -200px; filter: blur(50px); animation: float-2 20s ease-in-out infinite;"></div>
+                    <div class="gradient-orb orb-3" style="position: absolute; width: 350px; height: 350px; background: radial-gradient(circle, rgba(0,151,167,0.25) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%, -50%); filter: blur(45px); animation: float-3 18s ease-in-out infinite;"></div>
                 </div>
-            </section>
 
-            <!-- Features Section -->
-            <section class="about-section" style="padding: 3rem 1rem;">
-                <div class="section-container">
-                    <h2 class="section-title">Why Choose Dalma AI?</h2>
-                    <div class="features-grid">
-                        <div class="feature-card">
-                            <div class="feature-icon">⚡</div>
-                            <h3>Lightning Fast</h3>
-                            <p>From photo to 3D model in under 5 minutes</p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🎮</div>
-                            <h3>Game Ready</h3>
-                            <p>Industry-standard formats (GLB, FBX, OBJ, USDZ)</p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🎨</div>
-                            <h3>Customizable</h3>
-                            <p>Control topology, polycount, textures, and PBR</p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🌟</div>
-                            <h3>No Experience Required</h3>
-                            <p>Intuitive interface for everyone</p>
-                        </div>
+                <!-- Scrollable Content -->
+                <div style="position: relative; z-index: 1; padding: 1rem; padding-bottom: 6rem; min-height: 100%;">
+                    <!-- Header -->
+                    <div style="text-align: center; margin-bottom: 2rem; padding-top: 1rem;">
+                        <h1 style="font-family: 'Sora', sans-serif; font-size: 2.5rem; font-weight: 700; color: white; margin-bottom: 0.5rem; text-shadow: 0 0 30px rgba(0,188,212,0.5);">About Threely</h1>
+                        <p style="color: rgba(255,255,255,0.8); font-size: 1rem; line-height: 1.4; max-width: 500px; margin: 0 auto;">Transform any picture into a professional 3D model with cutting-edge AI technology.</p>
                     </div>
-                </div>
-            </section>
 
-            <!-- FAQ Section -->
-            <section class="faq-section" style="padding: 3rem 1rem; background: rgba(255, 255, 255, 0.02);">
-                <div class="section-container">
-                    <h2 class="section-title">Frequently Asked Questions</h2>
-                    <div class="faq-container">
-                        <div class="faq-item">
-                            <h3>What image formats does Dalma AI accept?</h3>
-                            <p>We support JPG, PNG, and WEBP formats up to 10MB. For best results, use clear, well-lit photos with the dog as the main subject.</p>
+                    <!-- Stats with animation -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin-bottom: 2rem;">
+                        <div class="stat-card" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.3); border-radius: 12px; padding: 1.2rem 0.5rem; text-align: center; backdrop-filter: blur(10px); animation: fadeInUp 0.6s ease-out 0.1s forwards; opacity: 0;">
+                            <div class="stat-number" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: #00bcd4; margin-bottom: 0.3rem;" data-target="50000">0</div>
+                            <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">Models Created</div>
                         </div>
-                        <div class="faq-item">
-                            <h3>Can I use the generated models commercially?</h3>
-                            <p>Yes! All models generated with purchased credits include a commercial license for use in games, animations, and other projects.</p>
+                        <div class="stat-card" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.3); border-radius: 12px; padding: 1.2rem 0.5rem; text-align: center; backdrop-filter: blur(10px); animation: fadeInUp 0.6s ease-out 0.2s forwards; opacity: 0;">
+                            <div class="stat-number" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: #00bcd4; margin-bottom: 0.3rem;" data-target="5">0</div>
+                            <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">Min Generation</div>
                         </div>
-                        <div class="faq-item">
-                            <h3>What 3D formats can I export?</h3>
-                            <p>Dalma AI supports GLB, FBX, OBJ, and USDZ formats, compatible with all major 3D software and game engines.</p>
+                        <div class="stat-card" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.3); border-radius: 12px; padding: 1.2rem 0.5rem; text-align: center; backdrop-filter: blur(10px); animation: fadeInUp 0.6s ease-out 0.3s forwards; opacity: 0;">
+                            <div class="stat-number" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: #00bcd4; margin-bottom: 0.3rem;" data-target="98">0</div>
+                            <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">% Satisfaction</div>
                         </div>
                     </div>
+
+                    <!-- How It Works -->
+                    <div style="background: rgba(255,255,255,0.05); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; backdrop-filter: blur(10px);">
+                        <h2 style="font-family: 'Sora', sans-serif; font-size: 1.5rem; color: white; margin-bottom: 1.2rem; text-align: center;">How It Works</h2>
+                        <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                            <div class="step-item" style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 12px; animation: slideInLeft 0.5s ease-out 0.4s forwards; opacity: 0; transform: translateX(-20px);">
+                                <div style="background: #00bcd4; color: #0a0a0a; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 1.1rem;">1</div>
+                                <div>
+                                    <h3 style="color: white; font-size: 1rem; margin-bottom: 0.2rem; font-weight: 600;">Upload Photo</h3>
+                                    <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0; line-height: 1.3;">Take or select a clear picture of any object</p>
+                                </div>
+                            </div>
+                            <div class="step-item" style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 12px; animation: slideInLeft 0.5s ease-out 0.5s forwards; opacity: 0; transform: translateX(-20px);">
+                                <div style="background: #00bcd4; color: #0a0a0a; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 1.1rem;">2</div>
+                                <div>
+                                    <h3 style="color: white; font-size: 1rem; margin-bottom: 0.2rem; font-weight: 600;">AI Processing</h3>
+                                    <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0; line-height: 1.3;">Our AI analyzes and creates a 3D model</p>
+                                </div>
+                            </div>
+                            <div class="step-item" style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 12px; animation: slideInLeft 0.5s ease-out 0.6s forwards; opacity: 0; transform: translateX(-20px);">
+                                <div style="background: #00bcd4; color: #0a0a0a; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 1.1rem;">3</div>
+                                <div>
+                                    <h3 style="color: white; font-size: 1rem; margin-bottom: 0.2rem; font-weight: 600;">Download & Use</h3>
+                                    <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0; line-height: 1.3;">Export in multiple formats for any project</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FAQ Section -->
+                    <div style="background: rgba(255,255,255,0.05); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; backdrop-filter: blur(10px);">
+                        <h2 style="font-family: 'Sora', sans-serif; font-size: 1.5rem; color: white; margin-bottom: 1.2rem; text-align: center;">FAQ</h2>
+                        <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                            <details class="faq-item" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem;">
+                                <summary style="font-weight: 600; color: #00bcd4; font-size: 0.95rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                                    What image formats are supported?
+                                    <span class="faq-arrow" style="transition: transform 0.3s; display: inline-block;">▼</span>
+                                </summary>
+                                <p style="color: rgba(255,255,255,0.8); margin-top: 0.8rem; font-size: 0.85rem; line-height: 1.4;">We support JPG, PNG, and WEBP formats up to 10MB. For best results, use clear, well-lit pictures with the object as the main subject.</p>
+                            </details>
+                            
+                            <details class="faq-item" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem;">
+                                <summary style="font-weight: 600; color: #00bcd4; font-size: 0.95rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                                    Can I get a refund?
+                                    <span class="faq-arrow" style="transition: transform 0.3s; display: inline-block;">▼</span>
+                                </summary>
+                                <p style="color: rgba(255,255,255,0.8); margin-top: 0.8rem; font-size: 0.85rem; line-height: 1.4;">Due to the computational resources required for each generation, we do not offer refunds for credits once purchased. However, we're always here to help if you experience any issues.</p>
+                            </details>
+                            
+                            <details class="faq-item" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem;">
+                                <summary style="font-weight: 600; color: #00bcd4; font-size: 0.95rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                                    Who owns the generated models?
+                                    <span class="faq-arrow" style="transition: transform 0.3s; display: inline-block;">▼</span>
+                                </summary>
+                                <p style="color: rgba(255,255,255,0.8); margin-top: 0.8rem; font-size: 0.85rem; line-height: 1.4;">You retain full ownership and commercial rights to all models generated with paid credits. Use them freely in games, animations, NFTs, or any other projects.</p>
+                            </details>
+                            
+                            <details class="faq-item" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem;">
+                                <summary style="font-weight: 600; color: #00bcd4; font-size: 0.95rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                                    What export formats are available?
+                                    <span class="faq-arrow" style="transition: transform 0.3s; display: inline-block;">▼</span>
+                                </summary>
+                                <p style="color: rgba(255,255,255,0.8); margin-top: 0.8rem; font-size: 0.85rem; line-height: 1.4;">We support GLB, FBX, OBJ, and USDZ formats, compatible with Unity, Unreal Engine, Blender, and more.</p>
+                            </details>
+                        </div>
+                    </div>
+
+                    <!-- Legal & Privacy -->
+                    <div style="background: rgba(255,255,255,0.05); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; backdrop-filter: blur(10px);">
+                        <h2 style="font-family: 'Sora', sans-serif; font-size: 1.5rem; color: white; margin-bottom: 1.2rem; text-align: center;">Legal & Privacy</h2>
+                        <div style="display: flex; flex-direction: column; gap: 1.2rem;">
+                            <div>
+                                <h3 style="color: #00bcd4; font-size: 1rem; margin-bottom: 0.4rem;">Terms of Service</h3>
+                                <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.4;">By using Threely, you agree to our terms. All generated models from paid credits are yours to use commercially without restrictions.</p>
+                            </div>
+                            <div>
+                                <h3 style="color: #00bcd4; font-size: 1rem; margin-bottom: 0.4rem;">Privacy Policy</h3>
+                                <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.4;">Uploaded images are processed securely and deleted after 24 hours. We never share your data with third parties.</p>
+                            </div>
+                            <div>
+                                <h3 style="color: #00bcd4; font-size: 1rem; margin-bottom: 0.4rem;">Content Guidelines</h3>
+                                <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.4;">Let your imagination come to reality. Our AI is trained to generate any model.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact -->
+                    <div style="text-align: center; padding: 2rem 0;">
+                        <h3 style="color: white; margin-bottom: 0.8rem; font-size: 1.3rem;">Need Help?</h3>
+                        <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.2rem; font-size: 0.9rem;">Our support team is here to assist you</p>
+                        <a href="mailto:threely.service@gmail.com" style="background: #00bcd4; color: white; padding: 0.8rem 2rem; border-radius: 50px; text-decoration: none; display: inline-block; font-weight: 600; font-size: 0.95rem;">Contact Support</a>
+                    </div>
                 </div>
-            </section>
+
+                <style>
+                    /* Make sure the about container takes full height */
+                    #aboutSection {
+                        height: 100%;
+                        overflow: hidden;
+                    }
+                    
+                    #aboutSection .section-content {
+                        height: 100%;
+                        overflow: hidden;
+                    }
+                    
+                    @keyframes float-1 {
+                        0%, 100% { transform: translate(0, 0) scale(1); }
+                        33% { transform: translate(30px, -30px) scale(1.1); }
+                        66% { transform: translate(-20px, 20px) scale(0.9); }
+                    }
+                    @keyframes float-2 {
+                        0%, 100% { transform: translate(0, 0) scale(1); }
+                        33% { transform: translate(-40px, 20px) scale(0.9); }
+                        66% { transform: translate(20px, -40px) scale(1.1); }
+                    }
+                    @keyframes float-3 {
+                        0%, 100% { transform: translate(-50%, -50%) scale(1); }
+                        50% { transform: translate(-50%, -50%) scale(1.15); }
+                    }
+                    @keyframes fadeInUp {
+                        from {
+                            opacity: 0;
+                            transform: translateY(20px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+                    @keyframes slideInLeft {
+                        from {
+                            opacity: 0;
+                            transform: translateX(-20px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateX(0);
+                        }
+                    }
+                    @keyframes particle-float {
+                        from {
+                            transform: translateY(100vh) translateX(-50px);
+                        }
+                        to {
+                            transform: translateY(-100px) translateX(50px);
+                        }
+                    }
+                    .faq-item[open] .faq-arrow {
+                        transform: rotate(180deg);
+                    }
+                    .faq-item summary::-webkit-details-marker {
+                        display: none;
+                    }
+                </style>
+            </div>
         `;
     }
 
@@ -513,7 +635,7 @@ class AppNavigation {
                 await this.initializeAccount();
                 break;
             case 'about':
-                // About section is mostly static, no special initialization needed
+                await this.initializeAbout();
                 break;
         }
     }
@@ -545,6 +667,53 @@ class AppNavigation {
                 this.setupBasicGenerate();
             }
         }, 200);
+    }
+
+    async initializeAbout() {
+        console.log('🎯 Initializing about section animations...');
+        
+        // Create floating particles
+        const particleField = document.getElementById('particleField');
+        if (particleField) {
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.style.cssText = `
+                    position: absolute;
+                    width: 2px;
+                    height: 2px;
+                    background: #00bcd4;
+                    opacity: ${Math.random() * 0.5 + 0.2};
+                    left: ${Math.random() * 100}%;
+                    top: ${Math.random() * 100}%;
+                    animation: particle-float ${10 + Math.random() * 20}s linear infinite;
+                `;
+                particleField.appendChild(particle);
+            }
+        }
+        
+        // Animate stats numbers when they come into view
+        setTimeout(() => {
+            const statNumbers = document.querySelectorAll('.stat-number');
+            statNumbers.forEach(stat => {
+                const target = parseInt(stat.getAttribute('data-target'));
+                const duration = 2000;
+                const start = 0;
+                const increment = target / (duration / 16);
+                let current = start;
+                
+                const updateNumber = () => {
+                    current += increment;
+                    if (current < target) {
+                        stat.textContent = Math.floor(current);
+                        requestAnimationFrame(updateNumber);
+                    } else {
+                        stat.textContent = target + (stat.parentElement.textContent.includes('%') ? '%' : '');
+                    }
+                };
+                
+                updateNumber();
+            });
+        }, 300);
     }
 
     setupBasicGenerate() {
