@@ -10,8 +10,6 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/auth-modal.css">
     <link rel="stylesheet" href="css/view-asset.css">
-    
-    <!-- Enhanced Mobile app wrapper CSS with assets integration -->
     <link rel="stylesheet" href="css/mobile-app.css">
     <link rel="stylesheet" href="css/monetization.css">
     
@@ -116,7 +114,7 @@
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2z"/>
                 </svg>
-                <span class="nav-label">Assets</span>
+                <span class="nav-label">Gallery</span>
             </button>
             
             <button class="nav-item" data-section="account">
@@ -258,7 +256,7 @@
         async function initializeApp() {
             if (appInitialized) return;
             
-            console.log('🚀 Initializing app with assets integration...');
+            console.log('🚀 Initializing app with public assets access...');
             updateLoadingScreen(20, 'Loading interface...');
             
             // Wait for auth manager to be ready
@@ -287,7 +285,7 @@
             // Update UI based on auth state
             updateUIForAuthState(isAuthenticated);
             
-            // Initialize app navigation with assets
+            // Initialize app navigation with public assets
             updateLoadingScreen(70, 'Loading sections...');
             
             if (window.AppNavigation) {
@@ -299,7 +297,7 @@
                 });
             }
             
-            // Setup restricted navigation
+            // Setup restricted navigation - ONLY generate section requires auth
             setupRestrictedNavigation(isAuthenticated);
             
             // Setup account button handler
@@ -314,10 +312,10 @@
             }, 1000);
         }
         
-        // Setup navigation with restrictions
+       // Setup navigation with restrictions - UPDATED: Remove assets from restricted sections
         function setupRestrictedNavigation(isAuthenticated) {
-            // Sections that require authentication
-            const restrictedSections = ['generate', 'assets'];
+            // Sections that require authentication - ONLY generate section now
+            const restrictedSections = ['generate']; // Removed 'assets' - now completely public
             
             // Override navigation for restricted sections
             const originalNavigate = window.AppNavigation.navigateToSection;
@@ -422,8 +420,11 @@
         window.debugAssetsData = () => window.AppNavigation?.assetsData;
         window.debugLoadAssets = () => window.AppNavigation?.loadAllAssets();
         window.debugReloadAssets = () => window.AppNavigation?.reloadSection('assets');
+        window.debugLikedAssets = () => window.AppNavigation?.likedAssetsData;
+        window.debugShowLikedModels = () => window.AppNavigation?.showLikedModels();
         
-        console.log('🎯 Mobile app with assets integration initialized');
+        console.log('🎯 Mobile app with public assets gallery initialized');
     </script>
+    
 </body>
 </html>

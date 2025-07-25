@@ -1,5 +1,5 @@
 // Enhanced app-navigation.js - DALMA AI Mobile App Navigation
-// Updated version with complete assets integration and functionality
+// Updated version with assets section public, authentication only for actions
 
 class AppNavigation {
     constructor() {
@@ -20,7 +20,19 @@ class AppNavigation {
             sortBy: 'recent'
         };
         
-        console.log('🚀 AppNavigation initialized with assets integration');
+        // Liked assets management for account section
+        this.likedAssetsData = {
+            assets: [],
+            filteredAssets: [],
+            currentPage: 1,
+            assetsPerPage: 8,
+            searchTerm: '',
+            sortBy: 'recent',
+            isLoading: false,
+            showLikedModels: false
+        };
+        
+        console.log('🚀 AppNavigation initialized with public assets access');
     }
 
     updateAccountNavLabel(username = null) {
@@ -51,7 +63,7 @@ class AppNavigation {
     }
 
     init() {
-        console.log('🎯 Setting up app navigation with assets...');
+        console.log('🎯 Setting up app navigation with public assets access...');
         
         this.setupBottomNavigation();
         this.loadSectionContent('home');
@@ -80,7 +92,7 @@ class AppNavigation {
             });
         }
         
-        console.log('✅ App navigation ready with assets functionality');
+        console.log('✅ App navigation ready with public assets access');
     }
 
     setupBottomNavigation() {
@@ -159,7 +171,7 @@ class AppNavigation {
             return;
         }
 
-        // Show loading state
+        // Show loading state with smooth spinner
         sectionElement.innerHTML = `
             <div class="section-loading">
                 <div class="section-loading-spinner"></div>
@@ -394,36 +406,60 @@ class AppNavigation {
     async loadAssetsContent() {
         return `
             <div class="assets-mobile-container" style="height: 100%; overflow-y: auto; background: #0a0a0a; padding: 1rem; padding-bottom: 2rem;">
-                <!-- Assets Header -->
-                <div class="assets-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
-                    <h2 class="assets-title" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: white; margin: 0;">3D Dog Models</h2>
-                    <div class="assets-search" style="position: relative; width: 100%; max-width: 300px;">
-                        <svg class="assets-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: rgba(0, 188, 212, 0.6); pointer-events: none;">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <path d="m21 21-4.35-4.35"></path>
-                        </svg>
-                        <input type="text" class="assets-search-input" placeholder="Search models..." id="mobileAssetSearchInput" style="width: 100%; padding: 0.8rem 1.2rem 0.8rem 3rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 188, 212, 0.3); border-radius: 24px; color: white; font-family: 'Inter', sans-serif; font-size: 0.95rem; transition: all 0.3s ease; backdrop-filter: blur(10px);">
+                <!-- Public Assets Header - No authentication required -->
+                <div class="assets-header" style="margin-bottom: 1.5rem;">
+                    <h2 class="assets-title" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: white; margin: 0 0 1rem 0;">3D Dog Gallery</h2>
+                    <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.5rem; font-size: 0.9rem;">Browse amazing 3D models created by our community. Sign in to like or download models.</p>
+                    
+                    <!-- Search and Sort Controls in One Row -->
+                    <div class="search-sort-row" style="display: flex; gap: 1rem; align-items: center;">
+                        <div class="assets-search" style="position: relative; flex: 1;">
+                            <svg class="assets-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: rgba(0, 188, 212, 0.6); pointer-events: none;">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                            <input type="text" class="assets-search-input" placeholder="Search models..." id="mobileAssetSearchInput" style="width: 100%; padding: 0.8rem 1.2rem 0.8rem 3rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 188, 212, 0.3); border-radius: 24px; color: white; font-family: 'Inter', sans-serif; font-size: 0.95rem; transition: all 0.3s ease; backdrop-filter: blur(10px);">
+                        </div>
+                        <select class="sort-select" id="mobileSortSelect" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; font-family: 'Inter', sans-serif; font-size: 0.85rem; padding: 0.6rem 0.8rem; cursor: pointer; min-width: 120px;">
+                            <option value="recent">Recent</option>
+                            <option value="popular">Popular</option>
+                            <option value="name">Name</option>
+                            <option value="downloads">Downloads</option>
+                        </select>
                     </div>
-                </div>
-
-                <!-- Filter and Sort Controls -->
-                <div class="assets-controls" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;">
-                    <div class="filter-buttons" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <button class="filter-btn active" data-filter="all" style="background: rgba(0, 188, 212, 0.2); color: #00bcd4; border: 1px solid rgba(0, 188, 212, 0.3); padding: 0.5rem 1rem; border-radius: 20px; font-family: 'Sora', sans-serif; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease;">All</button>
-                        <button class="filter-btn" data-filter="liked" style="background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.2); padding: 0.5rem 1rem; border-radius: 20px; font-family: 'Sora', sans-serif; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease;">❤️ Liked</button>
-                        <button class="filter-btn" data-filter="recent" style="background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.2); padding: 0.5rem 1rem; border-radius: 20px; font-family: 'Sora', sans-serif; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease;">🕒 Recent</button>
-                    </div>
-                    <select class="sort-select" id="mobileSortSelect" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; font-family: 'Inter', sans-serif; font-size: 0.85rem; padding: 0.6rem 0.8rem; cursor: pointer;">
-                        <option value="recent">Recent</option>
-                        <option value="popular">Popular</option>
-                        <option value="name">Name</option>
-                        <option value="downloads">Downloads</option>
-                    </select>
                 </div>
                 
-                <!-- Assets Grid -->
+                <!-- Assets Grid with Loading State -->
                 <div class="mobile-assets-grid" id="mobileAssetsGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 2rem;">
-                    <!-- Assets will be loaded here -->
+                    <!-- Loading skeleton cards -->
+                    <div class="skeleton-card">
+                        <div class="skeleton-preview"></div>
+                        <div class="skeleton-info">
+                            <div class="skeleton-title"></div>
+                            <div class="skeleton-stats"></div>
+                        </div>
+                    </div>
+                    <div class="skeleton-card">
+                        <div class="skeleton-preview"></div>
+                        <div class="skeleton-info">
+                            <div class="skeleton-title"></div>
+                            <div class="skeleton-stats"></div>
+                        </div>
+                    </div>
+                    <div class="skeleton-card">
+                        <div class="skeleton-preview"></div>
+                        <div class="skeleton-info">
+                            <div class="skeleton-title"></div>
+                            <div class="skeleton-stats"></div>
+                        </div>
+                    </div>
+                    <div class="skeleton-card">
+                        <div class="skeleton-preview"></div>
+                        <div class="skeleton-info">
+                            <div class="skeleton-title"></div>
+                            <div class="skeleton-stats"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Load More Button -->
@@ -476,7 +512,7 @@ class AppNavigation {
         // Update navigation to show username
         this.updateAccountNavLabel(userEmail);
         
-        // Enhanced account content for authenticated users - scrollable
+        // Enhanced account content for authenticated users with liked models integration
         return `
             <div class="account-section" style="height: 100%; background: #0a0a0a; position: relative; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;">
                 <!-- Animated Background -->
@@ -485,8 +521,8 @@ class AppNavigation {
                     <div style="position: absolute; width: 400px; height: 400px; background: radial-gradient(circle, rgba(0,229,255,0.1) 0%, transparent 70%); bottom: -200px; left: -200px; filter: blur(80px); animation: float-2 25s ease-in-out infinite;"></div>
                 </div>
                 
-                <!-- Scrollable Content Container -->
-                <div class="content-wrapper" style="position: relative; z-index: 1; padding: 1rem 1rem 8rem 1rem; min-height: calc(100vh - 2rem); box-sizing: border-box;">
+                <!-- Default Account View -->
+                <div class="account-main-view" id="accountMainView" style="position: relative; z-index: 1; padding: 1rem 1rem 8rem 1rem; min-height: calc(100vh - 2rem); box-sizing: border-box;">
                     <!-- Profile Header -->
                     <div style="text-align: center; margin-bottom: 3rem; padding-top: 1rem;">
                         <div style="width: 100px; height: 100px; margin: 0 auto 1.5rem; background: linear-gradient(135deg, #00bcd4, #00acc1); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 32px rgba(0,188,212,0.3); position: relative; animation: profileFloat 3s ease-in-out infinite;">
@@ -515,11 +551,10 @@ class AppNavigation {
                         <div style="background: linear-gradient(135deg, rgba(0,188,212,0.1), rgba(0,188,212,0.05)); border: 1px solid rgba(0,188,212,0.3); border-radius: 16px; padding: 1.5rem; text-align: center; position: relative; overflow: hidden; animation: cardSlideUp 0.5s ease-out 0.1s; animation-fill-mode: both;">
                             <div style="position: absolute; top: -20px; right: -20px; width: 60px; height: 60px; background: rgba(0,188,212,0.1); border-radius: 50%; filter: blur(20px);"></div>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2" style="margin-bottom: 0.5rem;">
-                                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
-                                <path d="M8 10h8m-8 4h3"></path>
+                                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"></path>
                             </svg>
                             <div style="font-family: 'Sora', sans-serif; font-size: 2rem; color: #00bcd4; margin-bottom: 0.3rem; font-weight: 700;" id="accountModelsCount">0</div>
-                            <div style="color: rgba(255,255,255,0.8); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Models</div>
+                            <div style="color: rgba(255,255,255,0.8); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Liked Models</div>
                         </div>
                     </div>
 
@@ -554,7 +589,7 @@ class AppNavigation {
 
                     <!-- Menu Items -->
                     <div style="display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 2rem;">
-                        <button onclick="window.AppNavigation.navigateToSection('assets')" 
+                        <button onclick="window.AppNavigation.showLikedModels()" 
                                 style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 1.2rem; color: white; text-align: left; font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 1rem; position: relative; overflow: hidden;">
                             <div style="background: rgba(255,255,255,0.05); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
@@ -621,6 +656,74 @@ class AppNavigation {
                         </button>
                     </div>
                 </div>
+
+                <!-- Liked Models View -->
+                <div class="liked-models-view" id="likedModelsView" style="position: relative; z-index: 1; padding: 1rem; min-height: 100%; display: none;">
+                    <!-- Header with back button -->
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; padding-top: 0.5rem;">
+                        <button onclick="window.AppNavigation.hideLikedModels()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 0.6rem; color: white; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </button>
+                        <h2 style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: white; margin: 0; flex: 1;">My Liked Models</h2>
+                    </div>
+
+                    <!-- Search and Sort Controls in One Row -->
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem;">
+                        <div style="position: relative; flex: 1;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: rgba(0, 188, 212, 0.6); pointer-events: none;">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                            <input type="text" placeholder="Search liked models..." id="likedModelsSearchInput" style="width: 100%; padding: 0.8rem 1.2rem 0.8rem 3rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 188, 212, 0.3); border-radius: 24px; color: white; font-family: 'Inter', sans-serif; font-size: 0.95rem; transition: all 0.3s ease; backdrop-filter: blur(10px);">
+                        </div>
+                        <select id="likedModelsSortSelect" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; font-family: 'Inter', sans-serif; font-size: 0.85rem; padding: 0.6rem 0.8rem; cursor: pointer; min-width: 120px;">
+                            <option value="recent">Recent</option>
+                            <option value="name">Name</option>
+                            <option value="popular">Popular</option>
+                            <option value="downloads">Downloads</option>
+                        </select>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="likedModelsLoading" style="display: none; text-align: center; padding: 3rem 1rem; color: #00bcd4;">
+                        <div style="width: 50px; height: 50px; border: 3px solid rgba(0, 188, 212, 0.2); border-top: 3px solid #00bcd4; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+                        <p style="font-family: 'Sora', sans-serif; font-weight: 500;">Loading your liked models...</p>
+                    </div>
+
+                    <!-- Liked Models Grid -->
+                    <div id="likedModelsGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 2rem;">
+                        <!-- Liked models will be loaded here -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="likedModelsEmpty" style="display: none; text-align: center; padding: 3rem 1rem; color: rgba(255, 255, 255, 0.6);">
+                        <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.6;">💔</div>
+                        <h3 style="color: white; font-family: 'Sora', sans-serif; margin-bottom: 0.5rem; font-size: 1.2rem;">No liked models yet</h3>
+                        <p style="margin-bottom: 2rem; line-height: 1.5;">Start liking models to build your collection!</p>
+                        <button onclick="window.AppNavigation.navigateToSection('assets')" style="background: #00bcd4; color: white; border: none; padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                            Browse Models
+                        </button>
+                    </div>
+
+                    <!-- Error State -->
+                    <div id="likedModelsError" style="display: none; text-align: center; padding: 3rem 1rem; color: rgba(255, 255, 255, 0.6);">
+                        <div style="font-size: 4rem; margin-bottom: 1rem; color: #dc3545;">⚠️</div>
+                        <h3 style="color: white; font-family: 'Sora', sans-serif; margin-bottom: 0.5rem; font-size: 1.2rem;">Error Loading Models</h3>
+                        <p style="margin-bottom: 2rem; line-height: 1.5;">Failed to load your liked models. Please try again.</p>
+                        <button onclick="window.AppNavigation.loadLikedModels()" style="background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 500; cursor: pointer; transition: all 0.3s ease;">
+                            Try Again
+                        </button>
+                    </div>
+
+                    <!-- Load More Button -->
+                    <div style="text-align: center; margin-top: 2rem;">
+                        <button id="likedModelsLoadMore" style="background: rgba(0, 188, 212, 0.1); color: #00bcd4; border: 2px solid #00bcd4; padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: none;">
+                            Load More Models
+                        </button>
+                    </div>
+                </div>
                 
                 <style>
                     @keyframes float-1 {
@@ -645,13 +748,27 @@ class AppNavigation {
                             transform: translateY(0);
                         }
                     }
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                    .account-section button {
+                        pointer-events: auto;
+                        touch-action: manipulation;
+                    }
+                    
+                    .account-section button:active {
+                        transform: translateY(0);
+                    }
+                    
                     .account-section button:hover {
                         transform: translateY(-1px);
                         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                     }
                     
-                    .account-section button:active {
-                        transform: translateY(0);
+                    .account-section .animated-bg {
+                        position: fixed !important;
+                        pointer-events: none !important;
                     }
                 </style>
             </div>
@@ -673,7 +790,7 @@ class AppNavigation {
                 </div>
 
                 <!-- Scrollable Content -->
-                <div style="position: relative; z-index: 1; padding: 1rem; padding-bottom: 6rem; min-height: 100%;">
+                <div style="position: relative; z-index: 1; padding: 1rem; padding-bottom: 4rem; min-height: 100%;">
                     <!-- Header -->
                     <div style="text-align: center; margin-bottom: 2rem; padding-top: 1rem;">
                         <h1 style="font-family: 'Sora', sans-serif; font-size: 2.5rem; font-weight: 700; color: white; margin-bottom: 0.5rem; text-shadow: 0 0 30px rgba(0,188,212,0.5);">About Dalma AI</h1>
@@ -781,8 +898,8 @@ class AppNavigation {
                         </div>
                     </div>
 
-                    <!-- Contact -->
-                    <div style="text-align: center; padding: 2rem 0;">
+                    <!-- Contact - Final Section with Limited Scroll -->
+                    <div style="text-align: center; padding: 2rem 0; margin-bottom: 0;">
                         <h3 style="color: white; margin-bottom: 0.8rem; font-size: 1.3rem;">Need Help?</h3>
                         <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.2rem; font-size: 0.9rem;">Our support team is here to assist you</p>
                         <a href="mailto:support@dalma-ai.com" style="background: #00bcd4; color: white; padding: 0.8rem 2rem; border-radius: 50px; text-decoration: none; display: inline-block; font-weight: 600; font-size: 0.95rem;">Contact Support</a>
@@ -900,7 +1017,7 @@ class AppNavigation {
     }
 
     async initializeAssets() {
-        console.log('🎯 Initializing assets section with full functionality...');
+        console.log('🎯 Initializing public assets section...');
         
         // Setup search functionality
         const searchInput = document.getElementById('mobileAssetSearchInput');
@@ -922,27 +1039,6 @@ class AppNavigation {
             });
         }
 
-        // Setup filter buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.filter-btn').forEach(b => {
-                    b.classList.remove('active');
-                    b.style.background = 'rgba(255, 255, 255, 0.05)';
-                    b.style.color = 'rgba(255, 255, 255, 0.7)';
-                    b.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                });
-                
-                e.target.classList.add('active');
-                e.target.style.background = 'rgba(0, 188, 212, 0.2)';
-                e.target.style.color = '#00bcd4';
-                e.target.style.borderColor = 'rgba(0, 188, 212, 0.3)';
-                
-                this.assetsData.currentFilter = e.target.dataset.filter;
-                this.assetsData.currentPage = 1;
-                this.filterAndRenderAssets();
-            });
-        });
-
         // Setup load more button
         const loadMoreBtn = document.getElementById('loadMoreBtn');
         if (loadMoreBtn) {
@@ -952,9 +1048,26 @@ class AppNavigation {
             });
         }
 
-        // Load assets and user likes
+        // Load user likes only if authenticated (for button states)
         await this.loadUserLikedAssets();
+        
+        // Load all assets - public access
         await this.loadAllAssets();
+    }
+
+    async initializeAccount() {
+        console.log('🎯 Initializing account section...');
+        this.updateAccountStats();
+        
+        const isAuthenticated = window.authManager?.isAuthenticated();
+        if (isAuthenticated) {
+            const userData = window.authManager?.currentUser || {};
+            this.updateAccountNavLabel(userData.email);
+            this.updateTopBarAccountButton();
+        } else {
+            this.updateAccountNavLabel(null);
+            this.updateTopBarAccountButton();
+        }
     }
 
     async initializeAbout() {
@@ -1004,22 +1117,398 @@ class AppNavigation {
         }, 300);
     }
 
-    async initializeAccount() {
-        console.log('🎯 Initializing account section...');
-        this.updateAccountStats();
+    // Liked Models functionality
+    async showLikedModels() {
+        console.log('💖 Showing liked models view...');
         
-        const isAuthenticated = window.authManager?.isAuthenticated();
-        if (isAuthenticated) {
-            const userData = window.authManager?.currentUser || {};
-            this.updateAccountNavLabel(userData.email);
-            this.updateTopBarAccountButton();
-        } else {
-            this.updateAccountNavLabel(null);
-            this.updateTopBarAccountButton();
+        const mainView = document.getElementById('accountMainView');
+        const likedView = document.getElementById('likedModelsView');
+        
+        if (mainView && likedView) {
+            mainView.style.display = 'none';
+            likedView.style.display = 'block';
+            
+            // Setup liked models functionality
+            this.setupLikedModelsEventListeners();
+            
+            // Load liked models
+            await this.loadLikedModels();
         }
     }
 
-    // Assets functionality methods
+    hideLikedModels() {
+        console.log('🔙 Hiding liked models view...');
+        
+        const mainView = document.getElementById('accountMainView');
+        const likedView = document.getElementById('likedModelsView');
+        
+        if (mainView && likedView) {
+            likedView.style.display = 'none';
+            mainView.style.display = 'block';
+        }
+    }
+
+    setupLikedModelsEventListeners() {
+        // Search functionality
+        const searchInput = document.getElementById('likedModelsSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', this.debounce((e) => {
+                this.likedAssetsData.searchTerm = e.target.value.toLowerCase().trim();
+                this.likedAssetsData.currentPage = 1;
+                this.filterAndRenderLikedModels();
+            }, 300));
+        }
+
+        // Sort functionality
+        const sortSelect = document.getElementById('likedModelsSortSelect');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', (e) => {
+                this.likedAssetsData.sortBy = e.target.value;
+                this.likedAssetsData.currentPage = 1;
+                this.filterAndRenderLikedModels();
+            });
+        }
+
+        // Load more button
+        const loadMoreBtn = document.getElementById('likedModelsLoadMore');
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', () => {
+                this.likedAssetsData.currentPage++;
+                this.filterAndRenderLikedModels(false);
+            });
+        }
+    }
+
+    async loadLikedModels() {
+        this.likedAssetsData.isLoading = true;
+        this.showLikedModelsLoading();
+        
+        try {
+            console.log('💖 Loading liked models...');
+            
+            const response = await fetch(`${this.getApiBaseUrl()}/auth/liked-assets`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            this.likedAssetsData.assets = data.assets || [];
+            this.likedAssetsData.filteredAssets = [...this.likedAssetsData.assets];
+            
+            console.log('✅ Liked models loaded:', this.likedAssetsData.assets.length);
+            
+            if (this.likedAssetsData.assets.length === 0) {
+                this.showLikedModelsEmpty();
+            } else {
+                this.filterAndRenderLikedModels();
+            }
+            
+        } catch (error) {
+            console.error('❌ Error loading liked models:', error);
+            this.showLikedModelsError();
+        } finally {
+            this.likedAssetsData.isLoading = false;
+        }
+    }
+
+    filterAndRenderLikedModels(clearExisting = true) {
+        let filtered = [...this.likedAssetsData.assets];
+        
+        // Apply search filter
+        if (this.likedAssetsData.searchTerm) {
+            filtered = filtered.filter(asset => 
+                asset.name.toLowerCase().includes(this.likedAssetsData.searchTerm) ||
+                (asset.tags && asset.tags.some(tag => tag.toLowerCase().includes(this.likedAssetsData.searchTerm)))
+            );
+        }
+        
+        // Apply sorting
+        switch (this.likedAssetsData.sortBy) {
+            case 'popular':
+                filtered.sort((a, b) => (b.views || 0) - (a.views || 0));
+                break;
+            case 'name':
+                filtered.sort((a, b) => a.name.localeCompare(b.name));
+                break;
+            case 'downloads':
+                filtered.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
+                break;
+            case 'recent':
+            default:
+                filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                break;
+        }
+        
+        this.likedAssetsData.filteredAssets = filtered;
+        this.renderLikedModelsGrid(clearExisting);
+    }
+
+    renderLikedModelsGrid(clearExisting = true) {
+        const grid = document.getElementById('likedModelsGrid');
+        if (!grid) return;
+        
+        const startIndex = clearExisting ? 0 : grid.children.length;
+        const endIndex = Math.min(startIndex + this.likedAssetsData.assetsPerPage, this.likedAssetsData.filteredAssets.length);
+        const assetsToShow = this.likedAssetsData.filteredAssets.slice(startIndex, endIndex);
+        
+        if (clearExisting) {
+            grid.innerHTML = '';
+        }
+        
+        // Hide loading/error/empty states
+        this.hideLikedModelsStates();
+        
+        if (this.likedAssetsData.filteredAssets.length === 0) {
+            this.showLikedModelsEmpty();
+            return;
+        }
+        
+        assetsToShow.forEach(asset => {
+            const assetCard = this.createLikedModelCard(asset);
+            grid.appendChild(assetCard);
+        });
+        
+        // Update load more button
+        const loadMoreBtn = document.getElementById('likedModelsLoadMore');
+        if (loadMoreBtn) {
+            if (endIndex < this.likedAssetsData.filteredAssets.length) {
+                loadMoreBtn.style.display = 'block';
+                loadMoreBtn.textContent = `Load More (${this.likedAssetsData.filteredAssets.length - endIndex} remaining)`;
+            } else {
+                loadMoreBtn.style.display = 'none';
+            }
+        }
+        
+        console.log(`📊 Rendered ${assetsToShow.length} liked models`);
+    }
+
+    createLikedModelCard(asset) {
+        const assetCard = document.createElement('div');
+        assetCard.className = 'mobile-asset-card liked-model-card';
+        assetCard.style.cssText = `
+            background: rgba(20, 20, 20, 0.6);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        `;
+        
+        // Determine image URL
+        let imageUrl = null;
+        if (asset.originalImage?.url) imageUrl = asset.originalImage.url;
+        else if (asset.inputImage?.url) imageUrl = asset.inputImage.url;
+        else if (asset.previewImage?.url) imageUrl = asset.previewImage.url;
+        
+        assetCard.innerHTML = `
+            ${imageUrl ? `
+                <div class="asset-preview" style="width: 100%; height: 200px; position: relative; background: rgba(0, 0, 0, 0.3); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                    <div class="image-loading-placeholder" style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%); background-size: 200% 100%; animation: shimmer 2s infinite;"></div>
+                    <img src="${imageUrl}" alt="${this.escapeHtml(asset.name)}" style="width: 100%; height: 100%; object-fit: cover; object-position: center; background: #0a0a0a; opacity: 0; transition: opacity 0.3s ease;" 
+                         onload="this.style.opacity='1'; this.parentElement.querySelector('.image-loading-placeholder').style.display='none';"
+                         onerror="this.parentElement.innerHTML = '<div style=\\'font-size: 3rem; opacity: 0.6;\\'>${asset.icon || '🐕'}</div>';">
+                    <button class="mobile-like-button liked" data-asset-id="${asset._id}" style="position: absolute; top: 8px; right: 8px; background: rgba(0, 188, 212, 0.2); border: 2px solid #00bcd4; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); color: #00bcd4; z-index: 10;">
+                        <svg width="14" height="14" viewBox="0 0 24 24">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="asset-info" style="padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; background: rgba(10, 10, 10, 0.5);">
+                    <h3 style="font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 600; color: white; margin: 0; text-align: center; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;">${this.escapeHtml(asset.name)}</h3>
+                    <div style="margin-top: 0.5rem; text-align: center; color: #00bcd4; font-family: 'Inter', sans-serif; font-size: 0.75rem;">
+                        <small>${asset.views || 0} views • ${asset.downloads || 0} downloads</small>
+                    </div>
+                </div>
+            ` : `
+                <div style="font-size: 3rem; opacity: 0.6; text-align: center; padding: 2rem;">${asset.icon || '🐕'}</div>
+                <h3 style="font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 600; color: white; margin: 0; padding: 0 1rem; text-align: center;">${this.escapeHtml(asset.name)}</h3>
+                <div style="padding: 1rem; text-align: center; color: #00bcd4; font-family: 'Inter', sans-serif; font-size: 0.75rem;">
+                    <small>${asset.views || 0} views • ${asset.downloads || 0} downloads</small>
+                </div>
+                <button class="mobile-like-button liked" data-asset-id="${asset._id}" style="position: absolute; top: 8px; right: 8px; background: rgba(0, 188, 212, 0.2); border: 2px solid #00bcd4; border-radius: 50%; width: 32px; height: 32px; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); color: #00bcd4; z-index: 10; touch-action: manipulation;">
+                    <svg width="14" height="14" viewBox="0 0 24 24">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </button>
+            `}
+        `;
+        
+        // Add hover effects
+        assetCard.addEventListener('mouseenter', () => {
+            assetCard.style.transform = 'translateY(-5px)';
+            assetCard.style.background = 'rgba(30, 30, 30, 0.8)';
+            assetCard.style.borderColor = 'rgba(0, 188, 212, 0.3)';
+            assetCard.style.boxShadow = '0 10px 30px rgba(0, 188, 212, 0.2)';
+        });
+        
+        assetCard.addEventListener('mouseleave', () => {
+            assetCard.style.transform = 'translateY(0)';
+            assetCard.style.background = 'rgba(20, 20, 20, 0.6)';
+            assetCard.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            assetCard.style.boxShadow = 'none';
+        });
+        
+        // Add click handler for viewing asset
+        assetCard.addEventListener('click', (e) => {
+            if (!e.target.closest('.mobile-like-button')) {
+                this.viewAsset(asset._id);
+            }
+        });
+        
+        // Add like button handler - REQUIRES AUTHENTICATION
+        const likeButton = assetCard.querySelector('.mobile-like-button');
+        if (likeButton) {
+            likeButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleLike(asset._id, asset.name);
+            });
+        }
+        
+        return assetCard;
+    }
+
+    async toggleLike(assetId, assetName) {
+        const isAuthenticated = await this.checkAuthentication();
+        if (!isAuthenticated) {
+            console.log('❌ User not authenticated, showing login modal');
+            // Store the pending like action for after login
+            sessionStorage.setItem('pendingLikeAction', JSON.stringify({ assetId, assetName }));
+            
+            if (window.MobileAuth) {
+                window.MobileAuth.showAuth('like', { assetId, assetName });
+            } else if (window.authManager) {
+                window.authManager.showLoginModal();
+            }
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${this.getApiBaseUrl()}/auth/like-asset`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ assetId: assetId })
+            });
+            
+            if (!response.ok) throw new Error('Failed to update like status');
+            
+            const data = await response.json();
+            const isLiked = data.isLiked;
+            
+            if (isLiked) {
+                this.assetsData.likedAssets.add(assetId);
+            } else {
+                this.assetsData.likedAssets.delete(assetId);
+            }
+            
+            // Update like button states
+            document.querySelectorAll(`[data-asset-id="${assetId}"]`).forEach(button => {
+                if (isLiked) {
+                    button.classList.add('liked');
+                    button.style.background = 'rgba(0, 188, 212, 0.2)';
+                    button.style.borderColor = '#00bcd4';
+                    button.style.color = '#00bcd4';
+                } else {
+                    button.classList.remove('liked');
+                    button.style.background = 'rgba(0, 0, 0, 0.7)';
+                    button.style.borderColor = 'rgba(0, 188, 212, 0.4)';
+                    button.style.color = 'rgba(0, 188, 212, 0.8)';
+                }
+                
+                // Update SVG fill
+                const svg = button.querySelector('path');
+                if (svg) {
+                    svg.setAttribute('fill', isLiked ? 'currentColor' : 'none');
+                }
+            });
+            
+            const message = isLiked 
+                ? `Added "${assetName}" to your liked models ❤️` 
+                : `Removed "${assetName}" from your liked models`;
+            this.showFeedback(message, 'success');
+            
+            // Update account stats
+            this.updateAccountStats();
+            
+        } catch (error) {
+            console.error('❌ Like error:', error);
+            this.showFeedback('Failed to update like status. Please try again.', 'error');
+        }
+    }
+
+    showFeedback(message, type = 'success') {
+        const existingFeedback = document.querySelector('.mobile-feedback-message');
+        if (existingFeedback) existingFeedback.remove();
+        
+        const feedback = document.createElement('div');
+        feedback.className = 'mobile-feedback-message';
+        feedback.textContent = message;
+        feedback.style.cssText = `
+            position: fixed; top: 20px; right: 20px; left: 20px;
+            background: ${type === 'success' ? 'rgba(0, 188, 212, 0.9)' : type === 'error' ? 'rgba(220, 38, 127, 0.9)' : 'rgba(0, 150, 255, 0.9)'};
+            color: white; padding: 1rem 1.5rem; border-radius: 8px;
+            font-family: 'Sora', sans-serif; font-weight: 500; z-index: 10000;
+            opacity: 0; transform: translateY(-20px); transition: all 0.3s ease;
+            text-align: center; font-size: 0.9rem; max-width: 400px; margin: 0 auto;
+        `;
+        
+        document.body.appendChild(feedback);
+        
+        setTimeout(() => {
+            feedback.style.opacity = '1';
+            feedback.style.transform = 'translateY(0)';
+        }, 10);
+        
+        setTimeout(() => {
+            feedback.style.opacity = '0';
+            feedback.style.transform = 'translateY(-20px)';
+            setTimeout(() => feedback.remove(), 300);
+        }, 3000);
+    }
+
+    showLikedModelsLoading() {
+        this.hideLikedModelsStates();
+        const loading = document.getElementById('likedModelsLoading');
+        if (loading) loading.style.display = 'block';
+    }
+
+    showLikedModelsEmpty() {
+        this.hideLikedModelsStates();
+        const empty = document.getElementById('likedModelsEmpty');
+        if (empty) empty.style.display = 'block';
+    }
+
+    showLikedModelsError() {
+        this.hideLikedModelsStates();
+        const error = document.getElementById('likedModelsError');
+        if (error) error.style.display = 'block';
+    }
+
+    hideLikedModelsStates() {
+        const states = ['likedModelsLoading', 'likedModelsEmpty', 'likedModelsError'];
+        states.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.style.display = 'none';
+        });
+    }
+
+    viewAsset(assetId) {
+        console.log('🎯 Viewing asset:', assetId);
+        // Create URL for view-asset page with mobile-friendly parameters
+        const viewUrl = `view-asset.html?id=${assetId}&from=mobile-app`;
+        window.location.href = viewUrl;
+    }
+
+    // Assets functionality methods (existing methods remain the same)
     getApiBaseUrl() {
         if (window.DALMA_CONFIG && window.DALMA_CONFIG.API_BASE_URL) {
             return window.DALMA_CONFIG.API_BASE_URL;
@@ -1095,7 +1584,11 @@ class AppNavigation {
 
     async loadAllAssets() {
         try {
-            console.log('🔄 Loading assets from API...');
+            console.log('🔄 Loading public assets from API...');
+            
+            // Show loading state
+            this.showAssetsLoading();
+            
             const response = await fetch(`${this.getApiBaseUrl()}/assets?limit=20&sortBy=popularity&sortOrder=desc`);
             
             if (!response.ok) {
@@ -1115,6 +1608,24 @@ class AppNavigation {
         }
     }
 
+    showAssetsLoading() {
+        const grid = document.getElementById('mobileAssetsGrid');
+        if (grid) {
+            grid.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; color: #00bcd4;">
+                    <div style="width: 50px; height: 50px; border: 3px solid rgba(0, 188, 212, 0.2); border-top: 3px solid #00bcd4; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+                    <p style="font-family: 'Sora', sans-serif; font-weight: 500;">Loading amazing 3D models...</p>
+                </div>
+                <style>
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                </style>
+            `;
+        }
+    }
+
     filterAndRenderAssets(clearExisting = true) {
         let filtered = [...this.assetsData.allAssets];
         
@@ -1124,13 +1635,6 @@ class AppNavigation {
                 asset.name.toLowerCase().includes(this.assetsData.searchTerm) ||
                 (asset.tags && asset.tags.some(tag => tag.toLowerCase().includes(this.assetsData.searchTerm)))
             );
-        }
-        
-        // Apply category filter
-        if (this.assetsData.currentFilter === 'liked') {
-            filtered = filtered.filter(asset => this.assetsData.likedAssets.has(asset._id));
-        } else if (this.assetsData.currentFilter === 'recent') {
-            filtered = filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         }
         
         // Apply sorting
@@ -1223,9 +1727,11 @@ class AppNavigation {
         assetCard.innerHTML = `
             ${imageUrl ? `
                 <div class="asset-preview" style="width: 100%; height: 200px; position: relative; background: rgba(0, 0, 0, 0.3); display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                    <img src="${imageUrl}" alt="${this.escapeHtml(asset.name)}" style="width: 100%; height: 100%; object-fit: contain; object-position: center; background: #0a0a0a;" 
+                    <div class="image-loading-placeholder" style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%); background-size: 200% 100%; animation: shimmer 2s infinite;"></div>
+                    <img src="${imageUrl}" alt="${this.escapeHtml(asset.name)}" style="width: 100%; height: 100%; object-fit: cover; object-position: center; background: #0a0a0a; opacity: 0; transition: opacity 0.3s ease;" 
+                         onload="this.style.opacity='1'; this.parentElement.querySelector('.image-loading-placeholder').style.display='none';"
                          onerror="this.parentElement.innerHTML = '<div style=\\'font-size: 3rem; opacity: 0.6;\\'>${asset.icon || '🐕'}</div>';">
-                    <button class="mobile-like-button ${isLiked ? 'liked' : ''}" data-asset-id="${asset._id}" style="position: absolute; top: 8px; right: 8px; background: rgba(0, 0, 0, 0.7); border: 2px solid rgba(0, 188, 212, 0.4); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); color: rgba(0, 188, 212, 0.8); z-index: 10;">
+                    <button class="mobile-like-button ${isLiked ? 'liked' : ''}" data-asset-id="${asset._id}" style="position: absolute; top: 8px; right: 8px; background: rgba(0, 0, 0, 0.7); border: 2px solid rgba(0, 188, 212, 0.4); border-radius: 50%; width: 32px; height: 32px; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); color: rgba(0, 188, 212, 0.8); z-index: 10; touch-action: manipulation;">
                         <svg width="14" height="14" viewBox="0 0 24 24">
                             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"/>
                         </svg>
@@ -1243,7 +1749,7 @@ class AppNavigation {
                 <div style="padding: 1rem; text-align: center; color: #00bcd4; font-family: 'Inter', sans-serif; font-size: 0.75rem;">
                     <small>${asset.views || 0} views • ${asset.downloads || 0} downloads</small>
                 </div>
-                <button class="mobile-like-button ${isLiked ? 'liked' : ''}" data-asset-id="${asset._id}" style="position: absolute; top: 8px; right: 8px; background: rgba(0, 0, 0, 0.7); border: 2px solid rgba(0, 188, 212, 0.4); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); color: rgba(0, 188, 212, 0.8); z-index: 10;">
+                <button class="mobile-like-button ${isLiked ? 'liked' : ''}" data-asset-id="${asset._id}" style="position: absolute; top: 8px; right: 8px; background: rgba(0, 0, 0, 0.7); border: 2px solid rgba(0, 188, 212, 0.4); border-radius: 50%; width: 32px; height: 32px; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); color: rgba(0, 188, 212, 0.8); z-index: 10; touch-action: manipulation;">
                     <svg width="14" height="14" viewBox="0 0 24 24">
                         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"/>
                     </svg>
@@ -1273,7 +1779,7 @@ class AppNavigation {
             }
         });
         
-        // Add like button handler
+        // Add like button handler - REQUIRES AUTHENTICATION
         const likeButton = assetCard.querySelector('.mobile-like-button');
         if (likeButton) {
             likeButton.addEventListener('click', (e) => {
@@ -1283,104 +1789,6 @@ class AppNavigation {
         }
         
         return assetCard;
-    }
-
-    async toggleLike(assetId, assetName) {
-        const isAuthenticated = await this.checkAuthentication();
-        if (!isAuthenticated) {
-            console.log('❌ User not authenticated, showing login modal');
-            if (window.authManager) {
-                window.authManager.showLoginModal();
-            }
-            return;
-        }
-        
-        try {
-            const response = await fetch(`${this.getApiBaseUrl()}/auth/like-asset`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ assetId: assetId })
-            });
-            
-            if (!response.ok) throw new Error('Failed to update like status');
-            
-            const data = await response.json();
-            const isLiked = data.isLiked;
-            
-            if (isLiked) {
-                this.assetsData.likedAssets.add(assetId);
-            } else {
-                this.assetsData.likedAssets.delete(assetId);
-            }
-            
-            // Update like button states
-            document.querySelectorAll(`[data-asset-id="${assetId}"]`).forEach(button => {
-                if (isLiked) {
-                    button.classList.add('liked');
-                    button.style.background = 'rgba(0, 188, 212, 0.2)';
-                    button.style.borderColor = '#00bcd4';
-                    button.style.color = '#00bcd4';
-                } else {
-                    button.classList.remove('liked');
-                    button.style.background = 'rgba(0, 0, 0, 0.7)';
-                    button.style.borderColor = 'rgba(0, 188, 212, 0.4)';
-                    button.style.color = 'rgba(0, 188, 212, 0.8)';
-                }
-                
-                // Update SVG fill
-                const svg = button.querySelector('path');
-                if (svg) {
-                    svg.setAttribute('fill', isLiked ? 'currentColor' : 'none');
-                }
-            });
-            
-            const message = isLiked 
-                ? `Added "${assetName}" to your liked models ❤️` 
-                : `Removed "${assetName}" from your liked models`;
-            this.showFeedback(message, 'success');
-            
-        } catch (error) {
-            console.error('❌ Like error:', error);
-            this.showFeedback('Failed to update like status. Please try again.', 'error');
-        }
-    }
-
-    viewAsset(assetId) {
-        console.log('🎯 Viewing asset:', assetId);
-        // Since this is a mobile app, we could open a modal or navigate to a new section
-        // For now, we'll just show a message
-        this.showFeedback(`Viewing asset ${assetId} - View functionality to be implemented`, 'info');
-    }
-
-    showFeedback(message, type = 'success') {
-        const existingFeedback = document.querySelector('.mobile-feedback-message');
-        if (existingFeedback) existingFeedback.remove();
-        
-        const feedback = document.createElement('div');
-        feedback.className = 'mobile-feedback-message';
-        feedback.textContent = message;
-        feedback.style.cssText = `
-            position: fixed; top: 20px; right: 20px; left: 20px;
-            background: ${type === 'success' ? 'rgba(0, 188, 212, 0.9)' : type === 'error' ? 'rgba(220, 38, 127, 0.9)' : 'rgba(0, 150, 255, 0.9)'};
-            color: white; padding: 1rem 1.5rem; border-radius: 8px;
-            font-family: 'Sora', sans-serif; font-weight: 500; z-index: 10000;
-            opacity: 0; transform: translateY(-20px); transition: all 0.3s ease;
-            text-align: center; font-size: 0.9rem; max-width: 400px; margin: 0 auto;
-        `;
-        
-        document.body.appendChild(feedback);
-        
-        setTimeout(() => {
-            feedback.style.opacity = '1';
-            feedback.style.transform = 'translateY(0)';
-        }, 10);
-        
-        setTimeout(() => {
-            feedback.style.opacity = '0';
-            feedback.style.transform = 'translateY(-20px)';
-            setTimeout(() => feedback.remove(), 300);
-        }, 3000);
     }
 
     showAssetsError() {

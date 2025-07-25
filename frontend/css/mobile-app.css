@@ -1,6 +1,6 @@
-/* Enhanced Mobile App CSS - DALMA AI with Assets Integration
+/* Enhanced Mobile App CSS - DALMA AI with Liked Assets Integration
    Transforms existing web pages into single-page mobile app
-   Now includes comprehensive assets functionality
+   Now includes comprehensive assets functionality and liked assets view
 */
 
 /* Reset for mobile app */
@@ -200,7 +200,7 @@ button, .button, .btn {
 }
 
 /* ========================================
-   MAIN APP CONTAINER - ELIMINATE BLACK BARS
+   MAIN APP CONTAINER
    ======================================== */
 
 .app-container {
@@ -301,7 +301,7 @@ button, .button, .btn {
 }
 
 /* ========================================
-   MAIN CONTENT AREA - NO GAPS OR BLACK BARS
+   MAIN CONTENT AREA
    ======================================== */
 
 .app-main {
@@ -476,6 +476,10 @@ button, .button, .btn {
     cursor: pointer;
     transition: all 0.3s ease;
     white-space: nowrap;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .filter-btn.active,
@@ -496,6 +500,7 @@ button, .button, .btn {
     padding: 0.6rem 0.8rem;
     cursor: pointer;
     min-width: 120px;
+    min-height: 44px;
 }
 
 .sort-select:focus {
@@ -528,6 +533,7 @@ button, .button, .btn {
     display: flex;
     flex-direction: column;
     height: 100%;
+    min-height: 44px;
 }
 
 .mobile-asset-card:hover {
@@ -546,6 +552,8 @@ button, .button, .btn {
     border-radius: 50%;
     width: 32px;
     height: 32px;
+    min-width: 44px;
+    min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -554,6 +562,7 @@ button, .button, .btn {
     backdrop-filter: blur(10px);
     color: rgba(0, 188, 212, 0.8);
     z-index: 10;
+    touch-action: manipulation;
 }
 
 .mobile-like-button:hover {
@@ -593,6 +602,8 @@ button, .button, .btn {
     cursor: pointer;
     transition: all 0.3s ease;
     display: none;
+    min-height: 44px;
+    touch-action: manipulation;
 }
 
 .load-more-btn:hover {
@@ -625,7 +636,7 @@ button, .button, .btn {
 }
 
 /* ========================================
-   ACCOUNT SECTION SPECIFIC SCROLLING FIXES
+   ACCOUNT SECTION SPECIFIC STYLES
    ======================================== */
 
 .account-section {
@@ -701,6 +712,7 @@ button, .button, .btn {
 .account-section button {
     pointer-events: auto;
     touch-action: manipulation;
+    min-height: 44px;
 }
 
 .account-section .animated-bg {
@@ -708,8 +720,148 @@ button, .button, .btn {
     pointer-events: none !important;
 }
 
+/* Liked Models View Styles */
+.liked-models-view {
+    padding: 1rem;
+    min-height: 100%;
+    position: relative;
+    z-index: 1;
+    background: #0a0a0a;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.liked-models-view::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
+
+.liked-model-card {
+    /* Inherits all mobile-asset-card styles */
+    animation: likedModelSlideIn 0.4s ease-out;
+}
+
+@keyframes likedModelSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Liked models search input styling */
+#likedModelsSearchInput {
+    width: 100%;
+    padding: 0.8rem 1.2rem 0.8rem 3rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(0, 188, 212, 0.3);
+    border-radius: 24px;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+#likedModelsSearchInput:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #00bcd4;
+    box-shadow: 0 0 20px rgba(0, 188, 212, 0.2);
+}
+
+#likedModelsSearchInput::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+#likedModelsSortSelect {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+    min-height: 44px;
+}
+
+#likedModelsSortSelect:focus {
+    outline: none;
+    border-color: #00bcd4;
+    background: rgba(0, 188, 212, 0.1);
+}
+
+#likedModelsSortSelect option {
+    background: #1a1a1a;
+    color: white;
+}
+
+#likedModelsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+#likedModelsLoadMore {
+    background: rgba(0, 188, 212, 0.1);
+    color: #00bcd4;
+    border: 2px solid #00bcd4;
+    padding: 0.8rem 2rem;
+    border-radius: 8px;
+    font-family: 'Sora', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: none;
+    min-height: 44px;
+    touch-action: manipulation;
+}
+
+#likedModelsLoadMore:hover {
+    background: rgba(0, 188, 212, 0.2);
+    border-color: #00e5ff;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 0 20px rgba(0, 188, 212, 0.4);
+}
+
+/* Loading/Error/Empty states for liked models */
+#likedModelsLoading,
+#likedModelsEmpty,
+#likedModelsError {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: 'Inter', sans-serif;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+#likedModelsLoading {
+    color: #00bcd4;
+}
+
+#likedModelsError {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+#likedModelsEmpty {
+    color: rgba(255, 255, 255, 0.6);
+}
+
 /* ========================================
-   BOTTOM NAVIGATION - NO GAPS
+   BOTTOM NAVIGATION
    ======================================== */
 
 .bottom-nav {
@@ -744,7 +896,9 @@ button, .button, .btn {
     padding: 0.5rem;
     border-radius: 12px;
     min-width: 60px;
+    min-height: 44px;
     position: relative;
+    touch-action: manipulation;
 }
 
 .nav-item:hover {
@@ -970,7 +1124,8 @@ button, .button, .btn {
         align-self: stretch;
     }
     
-    .mobile-assets-grid {
+    .mobile-assets-grid,
+    #likedModelsGrid {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
@@ -1011,6 +1166,118 @@ button, .button, .btn {
 }
 
 /* ========================================
+   ACCESSIBILITY AND TOUCH IMPROVEMENTS
+   ======================================== */
+
+/* Improve touch targets */
+.mobile-like-button,
+.filter-btn,
+.sort-select,
+.load-more-btn,
+.nav-item,
+#likedModelsLoadMore,
+.account-section button {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+}
+
+/* Prevent text selection on interactive elements */
+.mobile-asset-card,
+.liked-model-card,
+.filter-btn,
+.mobile-like-button,
+.nav-item,
+.load-more-btn,
+#likedModelsLoadMore {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Improve touch feedback */
+.mobile-asset-card:active,
+.liked-model-card:active {
+    transform: scale(0.98);
+}
+
+.filter-btn:active,
+.load-more-btn:active,
+#likedModelsLoadMore:active {
+    transform: scale(0.95);
+}
+
+.mobile-like-button:active {
+    transform: scale(0.9);
+}
+
+/* Focus states for keyboard navigation */
+.mobile-asset-card:focus-visible,
+.liked-model-card:focus-visible,
+.filter-btn:focus-visible,
+.sort-select:focus-visible,
+.load-more-btn:focus-visible,
+.nav-item:focus-visible,
+#likedModelsLoadMore:focus-visible,
+#likedModelsSearchInput:focus-visible,
+#likedModelsSortSelect:focus-visible {
+    outline: 2px solid #00bcd4;
+    outline-offset: 2px;
+}
+
+/* Screen reader only text */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .mobile-asset-card,
+    .liked-model-card {
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .filter-btn,
+    .sort-select,
+    .load-more-btn,
+    #likedModelsLoadMore {
+        border-color: rgba(255, 255, 255, 0.8);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .mobile-asset-card,
+    .liked-model-card,
+    .filter-btn,
+    .mobile-like-button,
+    .load-more-btn,
+    .nav-item,
+    #likedModelsLoadMore {
+        animation: none;
+        transition: none;
+    }
+    
+    .loading-logo,
+    .orbital-ring-1,
+    .orbital-ring-2,
+    .orbital-ring-3,
+    .loading-center-dot,
+    .section-loading-spinner {
+        animation: none;
+    }
+}
+
+/* ========================================
    HIDDEN SCROLLBARS - MOBILE APP STYLE
    ======================================== */
 
@@ -1021,7 +1288,8 @@ button, .button, .btn {
 .account-section,
 #accountSection,
 #accountSection .section-content,
-.assets-mobile-container {
+.assets-mobile-container,
+.liked-models-view {
     /* Firefox */
     scrollbar-width: none;
     /* Internet Explorer 10+ */
@@ -1035,7 +1303,8 @@ button, .button, .btn {
 .account-section::-webkit-scrollbar,
 #accountSection::-webkit-scrollbar,
 #accountSection .section-content::-webkit-scrollbar,
-.assets-mobile-container::-webkit-scrollbar {
+.assets-mobile-container::-webkit-scrollbar,
+.liked-models-view::-webkit-scrollbar {
     width: 0px;
     height: 0px;
     background: transparent;
@@ -1076,7 +1345,8 @@ html, body {
 .account-section,
 .section-content,
 .content-wrapper,
-.assets-mobile-container {
+.assets-mobile-container,
+.liked-models-view {
     overscroll-behavior: contain !important;
     overscroll-behavior-y: contain !important;
     background: #0a0a0a;
@@ -1087,7 +1357,8 @@ html, body {
 .account-section,
 .section-content,
 .content-wrapper,
-.assets-mobile-container {
+.assets-mobile-container,
+.liked-models-view {
     -webkit-overscroll-behavior: contain;
     -webkit-overscroll-behavior-y: contain;
     overscroll-behavior: contain;
@@ -1108,12 +1379,67 @@ html, body {
     }
     
     /* Prevent rubber band scrolling on iOS */
-    .app-section {
+    .app-section,
+    .liked-models-view {
         -webkit-overscroll-behavior: contain;
         -webkit-overscroll-behavior-y: contain;
         overscroll-behavior: contain;
         overscroll-behavior-y: contain;
     }
+}
+
+/* ========================================
+   ABOUT SECTION SCROLL FIXES
+   ======================================== */
+
+/* Fix about section scroll to stop near support button */
+.about-container {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #0a0a0a;
+    position: relative;
+    max-height: 100vh;
+}
+
+.about-container > div:last-child {
+    /* Final content div with limited padding */
+    padding-bottom: 1rem !important;
+    margin-bottom: 0 !important;
+}
+
+/* Ensure about content doesn't over-scroll */
+#aboutSection {
+    height: 100% !important;
+    max-height: 100vh !important;
+    overflow: hidden !important;
+}
+
+#aboutSection .section-content {
+    height: 100% !important;
+    max-height: 100vh !important;
+    overflow: hidden !important;
+}
+
+#aboutSection .about-container {
+    height: 100% !important;
+    max-height: 100vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+#aboutSection .about-container::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
+
+/* Contact section - final section with no extra padding */
+#aboutSection .about-container > div:last-child > div:last-child {
+    padding-bottom: 1rem !important;
+    margin-bottom: 0 !important;
 }
 
 /* ========================================
@@ -1176,19 +1502,28 @@ html, body {
     }
 }
 
-.mobile-asset-card {
+.mobile-asset-card,
+.liked-model-card {
     animation: assetCardSlideIn 0.4s ease-out;
 }
 
 /* Stagger animation for asset cards */
-.mobile-asset-card:nth-child(1) { animation-delay: 0.1s; }
-.mobile-asset-card:nth-child(2) { animation-delay: 0.2s; }
-.mobile-asset-card:nth-child(3) { animation-delay: 0.3s; }
-.mobile-asset-card:nth-child(4) { animation-delay: 0.4s; }
-.mobile-asset-card:nth-child(5) { animation-delay: 0.5s; }
-.mobile-asset-card:nth-child(6) { animation-delay: 0.6s; }
-.mobile-asset-card:nth-child(7) { animation-delay: 0.7s; }
-.mobile-asset-card:nth-child(8) { animation-delay: 0.8s; }
+.mobile-asset-card:nth-child(1),
+.liked-model-card:nth-child(1) { animation-delay: 0.1s; }
+.mobile-asset-card:nth-child(2),
+.liked-model-card:nth-child(2) { animation-delay: 0.2s; }
+.mobile-asset-card:nth-child(3),
+.liked-model-card:nth-child(3) { animation-delay: 0.3s; }
+.mobile-asset-card:nth-child(4),
+.liked-model-card:nth-child(4) { animation-delay: 0.4s; }
+.mobile-asset-card:nth-child(5),
+.liked-model-card:nth-child(5) { animation-delay: 0.5s; }
+.mobile-asset-card:nth-child(6),
+.liked-model-card:nth-child(6) { animation-delay: 0.6s; }
+.mobile-asset-card:nth-child(7),
+.liked-model-card:nth-child(7) { animation-delay: 0.7s; }
+.mobile-asset-card:nth-child(8),
+.liked-model-card:nth-child(8) { animation-delay: 0.8s; }
 
 /* Loading state for assets */
 .assets-loading {
@@ -1255,6 +1590,8 @@ html, body {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
+    min-height: 44px;
+    touch-action: manipulation;
 }
 
 .assets-empty-button:hover {
@@ -1302,6 +1639,8 @@ html, body {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
+    min-height: 44px;
+    touch-action: manipulation;
 }
 
 .assets-error-button:hover {
@@ -1311,104 +1650,236 @@ html, body {
 }
 
 /* ========================================
-   TOUCH INTERACTIONS FOR MOBILE
+   ENHANCED ASSET CARD STYLES
    ======================================== */
 
-/* Improve touch targets */
-.mobile-like-button,
-.filter-btn,
-.sort-select,
-.load-more-btn,
-.nav-item {
-    min-height: 44px;
-    min-width: 44px;
-    touch-action: manipulation;
+/* Asset preview styling */
+.mobile-asset-card .asset-preview,
+.liked-model-card .asset-preview {
+    width: 100%;
+    height: 200px;
+    position: relative;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 16px 16px 0 0;
 }
 
-/* Prevent text selection on interactive elements */
-.mobile-asset-card,
-.filter-btn,
-.mobile-like-button,
-.nav-item,
-.load-more-btn {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+.mobile-asset-card .asset-preview img,
+.liked-model-card .asset-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    background: #0a0a0a;
+    transition: transform 0.3s ease;
 }
 
-/* Improve touch feedback */
-.mobile-asset-card:active {
+.mobile-asset-card:hover .asset-preview img,
+.liked-model-card:hover .asset-preview img {
+    transform: scale(1.05);
+}
+
+/* Asset info styling */
+.mobile-asset-card .asset-info,
+.liked-model-card .asset-info {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+    background: rgba(10, 10, 10, 0.5);
+    border-radius: 0 0 16px 16px;
+}
+
+.mobile-asset-card .asset-info h3,
+.liked-model-card .asset-info h3 {
+    font-family: 'Sora', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+    margin: 0;
+    text-align: center;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.mobile-asset-card .asset-info > div:last-child,
+.liked-model-card .asset-info > div:last-child {
+    margin-top: 0.5rem;
+    text-align: center;
+    color: #00bcd4;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+}
+
+.mobile-asset-card .asset-info small,
+.liked-model-card .asset-info small {
+    color: #00bcd4;
+}
+
+/* ========================================
+   ENHANCED LOADING STATES
+   ======================================== */
+
+/* Skeleton loading for asset cards */
+.skeleton-card {
+    background: rgba(20, 20, 20, 0.6);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    height: 280px;
+    display: flex;
+    flex-direction: column;
+}
+
+.skeleton-preview {
+    width: 100%;
+    height: 200px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+}
+
+.skeleton-info {
+    padding: 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.skeleton-title {
+    height: 20px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.skeleton-stats {
+    height: 14px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+    border-radius: 4px;
+    width: 60%;
+    margin: 0 auto;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* ========================================
+   ENHANCED FEEDBACK MESSAGES
+   ======================================== */
+
+.mobile-feedback-message.success {
+    background: rgba(0, 188, 212, 0.9);
+    box-shadow: 0 4px 20px rgba(0, 188, 212, 0.3);
+}
+
+.mobile-feedback-message.error {
+    background: rgba(220, 38, 127, 0.9);
+    box-shadow: 0 4px 20px rgba(220, 38, 127, 0.3);
+}
+
+.mobile-feedback-message.warning {
+    background: rgba(255, 152, 0, 0.9);
+    box-shadow: 0 4px 20px rgba(255, 152, 0, 0.3);
+}
+
+.mobile-feedback-message.info {
+    background: rgba(33, 150, 243, 0.9);
+    box-shadow: 0 4px 20px rgba(33, 150, 243, 0.3);
+}
+
+/* ========================================
+   FINAL MOBILE OPTIMIZATIONS
+   ======================================== */
+
+/* Ensure touch-friendly interactions */
+@media (hover: none) and (pointer: coarse) {
+    .mobile-asset-card:hover,
+    .liked-model-card:hover {
+        transform: none;
+        background: rgba(20, 20, 20, 0.6);
+        border-color: rgba(255, 255, 255, 0.1);
+        box-shadow: none;
+    }
+    
+    .mobile-like-button:hover {
+        transform: none;
+        background: rgba(0, 0, 0, 0.7);
+        border-color: rgba(0, 188, 212, 0.4);
+        color: rgba(0, 188, 212, 0.8);
+    }
+    
+    .mobile-like-button.liked:hover {
+        background: rgba(0, 188, 212, 0.2);
+        border-color: #00bcd4;
+        color: #00bcd4;
+    }
+}
+
+/* Enhanced touch feedback for mobile */
+.mobile-asset-card:active,
+.liked-model-card:active {
     transform: scale(0.98);
-}
-
-.filter-btn:active,
-.load-more-btn:active {
-    transform: scale(0.95);
+    transition: transform 0.1s ease;
 }
 
 .mobile-like-button:active {
     transform: scale(0.9);
+    transition: transform 0.1s ease;
 }
 
-/* ========================================
-   ACCESSIBILITY IMPROVEMENTS
-   ======================================== */
-
-/* Focus states for keyboard navigation */
-.mobile-asset-card:focus-visible,
-.filter-btn:focus-visible,
-.sort-select:focus-visible,
-.load-more-btn:focus-visible,
-.nav-item:focus-visible {
-    outline: 2px solid #00bcd4;
-    outline-offset: 2px;
+/* Final scroll behavior fixes */
+.app-main,
+.app-section,
+.account-section,
+.liked-models-view {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
 }
 
-/* Screen reader only text */
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-    .mobile-asset-card {
-        border-color: rgba(255, 255, 255, 0.5);
-    }
-    
-    .filter-btn,
-    .sort-select,
-    .load-more-btn {
-        border-color: rgba(255, 255, 255, 0.8);
+/* Prevent zoom on input focus on iOS */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+    input[type="text"],
+    input[type="search"],
+    select {
+        font-size: 16px !important;
     }
 }
 
-/* Reduced motion support */
+/* Final accessibility improvements */
 @media (prefers-reduced-motion: reduce) {
     .mobile-asset-card,
-    .filter-btn,
+    .liked-model-card,
     .mobile-like-button,
-    .load-more-btn,
     .nav-item {
-        animation: none;
         transition: none;
+        animation: none;
     }
     
-    .loading-logo,
-    .orbital-ring-1,
-    .orbital-ring-2,
-    .orbital-ring-3,
-    .loading-center-dot,
-    .section-loading-spinner,
-    .assets-loading-spinner {
+    .skeleton-preview,
+    .skeleton-title,
+    .skeleton-stats {
         animation: none;
     }
 }

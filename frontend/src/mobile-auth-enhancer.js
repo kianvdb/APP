@@ -78,81 +78,120 @@ class MobileAuthEnhancer {
             }
         };
         
-        this.init();
+        this.init().catch(error => {
+            console.error('❌ Mobile Auth Enhancer initialization failed:', error);
+        });
     }
 
     async init() {
         console.log('📱 Initializing Mobile Auth Enhancer...');
         
-        // Wait for auth manager to be available
-        await this.waitForAuthManager();
-        
-        // Wait for DOM to be fully ready
-        if (document.readyState === 'loading') {
-            await new Promise(resolve => {
-                document.addEventListener('DOMContentLoaded', resolve);
-            });
+        try {
+            // Wait for auth manager to be available with improved checking
+            await this.waitForAuthManager();
+            
+            // Wait for DOM to be fully ready
+            if (document.readyState === 'loading') {
+                await new Promise(resolve => {
+                    document.addEventListener('DOMContentLoaded', resolve);
+                });
+            }
+            
+            // Small delay to ensure everything is properly loaded
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Enhance the existing auth modal
+            this.enhanceAuthModal();
+            
+            // Setup mobile-specific auth handlers
+            this.setupMobileAuthHandlers();
+            
+            // Setup auth success handlers
+            this.setupAuthSuccessHandlers();
+            
+            this.isInitialized = true;
+            this.authReady = true;
+            
+            console.log('✅ Mobile Auth Enhancer initialized successfully');
+            
+            // Dispatch ready event
+            window.dispatchEvent(new CustomEvent('mobileAuthReady'));
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Mobile Auth Enhancer initialization error:', error);
+            
+            // Still mark as ready to prevent hanging
+            this.isInitialized = true;
+            this.authReady = true;
+            
+            throw error;
         }
-        
-        // Enhance the existing auth modal
-        this.enhanceAuthModal();
-        
-        // Setup mobile-specific auth handlers
-        this.setupMobileAuthHandlers();
-        
-        // Setup auth success handlers
-        this.setupAuthSuccessHandlers();
-        
-        this.isInitialized = true;
-        this.authReady = true;
-        
-        console.log('✅ Mobile Auth Enhancer initialized');
-        
-        // Dispatch ready event
-        window.dispatchEvent(new CustomEvent('mobileAuthReady'));
     }
 
     async waitForAuthManager() {
+        console.log('🔍 Waiting for AuthManager to be ready...');
+        
         return new Promise((resolve) => {
+            let attempts = 0;
+            const maxAttempts = 100; // 10 seconds at 100ms intervals
+            
             const checkAuth = setInterval(() => {
-                if (window.authManager?.isInitialized) {
+                attempts++;
+                
+                // Check multiple conditions for auth manager readiness
+                const authManagerExists = window.authManager;
+                const isInitialized = window.authManager?.isInitialized;
+                const hasInitMethod = typeof window.authManager?.init === 'function';
+                
+                console.log(`🔍 Attempt ${attempts}: authManager=${!!authManagerExists}, initialized=${isInitialized}, hasInit=${hasInitMethod}`);
+                
+                if (authManagerExists && (isInitialized || hasInitMethod)) {
                     clearInterval(checkAuth);
-                    console.log('🔗 Auth manager ready, proceeding with enhancement');
+                    console.log('✅ Auth manager found and ready!');
                     resolve();
+                    return;
+                }
+                
+                if (attempts >= maxAttempts) {
+                    clearInterval(checkAuth);
+                    console.warn('⚠️ Auth manager not ready after maximum attempts, proceeding anyway');
+                    resolve(); // Don't throw error, just proceed
                 }
             }, 100);
-            
-            // Timeout after 10 seconds
-            setTimeout(() => {
-                clearInterval(checkAuth);
-                console.warn('⚠️ Auth manager not ready after 10s, proceeding anyway');
-                resolve();
-            }, 10000);
         });
     }
 
     enhanceAuthModal() {
-        const authModal = document.getElementById('auth-modal');
-        if (!authModal) {
-            console.warn('⚠️ Auth modal not found, cannot enhance');
-            return;
-        }
+        // Wait for modal to exist and then enhance it
+        const tryEnhance = () => {
+            const authModal = document.getElementById('auth-modal');
+            if (!authModal) {
+                console.log('🔍 Auth modal not found yet, waiting...');
+                setTimeout(tryEnhance, 500);
+                return;
+            }
 
-        console.log('🎨 Enhancing auth modal for mobile...');
+            console.log('🎨 Enhancing auth modal for mobile...');
+            
+            // Add mobile-specific classes
+            authModal.classList.add('mobile-enhanced-auth-modal');
+            
+            const modalContent = authModal.querySelector('.auth-modal-content');
+            if (modalContent) {
+                modalContent.classList.add('mobile-enhanced-content');
+            }
+            
+            // Add enhanced styles
+            this.addEnhancedStyles();
+            
+            // Enhance modal behavior
+            this.enhanceModalBehavior();
+            
+            console.log('✅ Auth modal enhanced successfully');
+        };
         
-        // Add mobile-specific classes
-        authModal.classList.add('mobile-enhanced-auth-modal');
-        
-        const modalContent = authModal.querySelector('.auth-modal-content');
-        if (modalContent) {
-            modalContent.classList.add('mobile-enhanced-content');
-        }
-        
-        // Add enhanced styles
-        this.addEnhancedStyles();
-        
-        // Enhance modal behavior
-        this.enhanceModalBehavior();
+        tryEnhance();
     }
 
     addEnhancedStyles() {
@@ -613,11 +652,14 @@ class MobileAuthEnhancer {
     }
 
     enhanceModalBehavior() {
-        const authModal = document.getElementById('auth-modal');
-        if (!authModal) return;
+        // Wait for auth manager to be available before enhancing behavior
+        const tryEnhance = () => {
+            if (!window.authManager) {
+                setTimeout(tryEnhance, 200);
+                return;
+            }
 
-        // Override the original show/hide methods with enhanced versions
-        if (window.authManager) {
+            // Override the original show/hide methods with enhanced versions
             const originalShow = window.authManager.showLoginModal.bind(window.authManager);
             const originalHide = window.authManager.hideLoginModal.bind(window.authManager);
 
@@ -630,7 +672,11 @@ class MobileAuthEnhancer {
                 this.enhanceModalOnHide();
                 originalHide();
             };
-        }
+            
+            console.log('✅ Modal behavior enhanced');
+        };
+        
+        tryEnhance();
     }
 
     enhanceModalOnShow() {
@@ -673,8 +719,8 @@ class MobileAuthEnhancer {
         // Enhanced download protection
         this.setupDownloadProtection();
         
-        // Assets section protection
-        this.setupAssetsSectionProtection();
+        // Remove assets section protection - it's now public
+        // this.setupAssetsSectionProtection(); // REMOVED
     }
 
     setupAccountButtonHandler() {
@@ -748,16 +794,10 @@ class MobileAuthEnhancer {
     }
 
     setupAssetsSectionProtection() {
-        // Handle assets section navigation
-        document.addEventListener('click', (e) => {
-            const assetsNavItem = e.target.closest('.nav-item[data-section="assets"]');
-            
-            if (assetsNavItem && !window.authManager?.isAuthenticated()) {
-                e.preventDefault();
-                e.stopPropagation();
-                this.showAuthModal('assets');
-            }
-        });
+        // REMOVED: Assets section is now completely public
+        // Users can browse and view assets without authentication
+        // Authentication is only required for actions like like/download
+        console.log('📖 Assets section is public - no authentication required for browsing');
     }
 
     setupAuthSuccessHandlers() {
@@ -1137,10 +1177,10 @@ class MobileAuthEnhancer {
     }
 }
 
-// Initialize the mobile auth enhancer
-document.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit for other scripts to load
-    setTimeout(() => {
+// Initialize the mobile auth enhancer with improved timing
+function initializeMobileAuthEnhancer() {
+    if (!window.mobileAuthEnhancer) {
+        console.log('📱 Creating Mobile Auth Enhancer...');
         window.mobileAuthEnhancer = new MobileAuthEnhancer();
         
         // Make static methods globally accessible
@@ -1150,19 +1190,18 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Dispatch ready event
         window.dispatchEvent(new CustomEvent('mobileAuthEnhancerReady'));
-        
-    }, 1200); // Slightly longer delay to ensure auth.js is fully loaded
-});
+    }
+}
 
-// Also initialize if DOM is already loaded
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    setTimeout(() => {
-        if (!window.mobileAuthEnhancer) {
-            window.mobileAuthEnhancer = new MobileAuthEnhancer();
-            window.MobileAuth = MobileAuthEnhancer;
-            console.log('📱 Mobile Auth system ready (DOM already loaded)');
-        }
-    }, 1200);
+// Initialize when DOM is loaded or immediately if already loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        // Wait a bit for other scripts to load
+        setTimeout(initializeMobileAuthEnhancer, 800);
+    });
+} else {
+    // DOM is already loaded
+    setTimeout(initializeMobileAuthEnhancer, 800);
 }
 
 // Export for module usage
