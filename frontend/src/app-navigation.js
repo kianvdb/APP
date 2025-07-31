@@ -62,11 +62,29 @@ class AppNavigation {
         }
     }
 
-    init() {
+    init(initialSection = null) {
         console.log('🎯 Setting up app navigation with public assets access...');
         
         this.setupBottomNavigation();
-        this.loadSectionContent('home');
+        
+        // Check for redirect section first
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectSection = urlParams.get('redirect') || localStorage.getItem('dalma_redirectAfterLogin');
+        
+        // Determine which section to load initially
+        const sectionToLoad = initialSection || redirectSection || 'home';
+        console.log('📍 Initial section to load:', sectionToLoad);
+        
+        // Update navigation state immediately if not home
+        if (sectionToLoad !== 'home') {
+            this.currentSection = sectionToLoad;
+            this.updateNavigation(sectionToLoad);
+        }
+        
+        // Load the appropriate section (skip animation for initial load)
+        this.loadSectionContent(sectionToLoad).then(() => {
+            this.showSection(sectionToLoad, true); // Skip animation for initial load
+        });
         
         // Check authentication and update navigation labels
         const isAuthenticated = window.authManager?.isAuthenticated();
@@ -134,7 +152,7 @@ class AppNavigation {
         });
     }
 
-    async showSection(sectionName) {
+    async showSection(sectionName, skipAnimation = false) {
         const sectionElement = document.getElementById(`${sectionName}Section`);
         
         if (!sectionElement) {
@@ -154,13 +172,22 @@ class AppNavigation {
         }
 
         // Show new section
-        setTimeout(() => {
+        if (skipAnimation) {
+            // Immediate display without animation for initial load
             sectionElement.style.display = 'block';
             sectionElement.classList.add('active');
             sectionElement.scrollTop = 0;
-            
-            console.log(`✅ Section displayed: ${sectionName}`);
-        }, 50);
+            console.log(`✅ Section displayed immediately: ${sectionName}`);
+        } else {
+            // Normal animated transition
+            setTimeout(() => {
+                sectionElement.style.display = 'block';
+                sectionElement.classList.add('active');
+                sectionElement.scrollTop = 0;
+                
+                console.log(`✅ Section displayed: ${sectionName}`);
+            }, 50);
+        }
     }
 
     async loadSectionContent(sectionName) {
@@ -233,14 +260,49 @@ class AppNavigation {
                 <div class="hero-3d" id="appHero3d">
                     <!-- 3D Dog Model will be rendered here -->
                 </div>
-                <div class="hero-content" style="padding: 0.5rem; padding-top: 0.25rem;">
+                <div class="hero-content" style="padding: 0.5rem; padding-top: 0.25rem; position: relative; z-index: 10;">
                     <div class="hero-text">
                         <h2 class="hero-title" style="margin-bottom: 0.4rem; line-height: 1.05;">From picture to<br>3D with ease!</h2>
                         <p class="hero-subtitle" style="margin-bottom: 1rem; line-height: 1.1; font-size: 0.8rem;">Within a few clicks of a button you can generate, rig and animate your own, ready to use 3D model!</p>
-                        <button class="cta-button" onclick="window.AppNavigation.navigateToSection('generate')">GENERATE</button>
+                        <button class="cta-button" id="heroGenerateBtn" style="position: relative; z-index: 20; pointer-events: auto;">GENERATE</button>
                     </div>
                 </div>
             </section>
+            
+            <style>
+                .hero {
+                    position: relative;
+                }
+                
+                .hero-3d {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    z-index: 1;
+                }
+                
+                .hero-content {
+                    position: relative;
+                    z-index: 10;
+                    pointer-events: none;
+                }
+                
+                .hero-content * {
+                    pointer-events: auto;
+                }
+                
+                .cta-button {
+                    cursor: pointer !important;
+                    touch-action: manipulation;
+                }
+                
+                /* Ensure 3D canvas doesn't block interactions */
+                #appHero3d canvas {
+                    pointer-events: auto !important;
+                }
+            </style>
         `;
     }
 
@@ -793,8 +855,8 @@ class AppNavigation {
                 <div style="position: relative; z-index: 1; padding: 1rem; padding-bottom: 4rem; min-height: 100%;">
                     <!-- Header -->
                     <div style="text-align: center; margin-bottom: 2rem; padding-top: 1rem;">
-                        <h1 style="font-family: 'Sora', sans-serif; font-size: 2.5rem; font-weight: 700; color: white; margin-bottom: 0.5rem; text-shadow: 0 0 30px rgba(0,188,212,0.5);">About Dalma AI</h1>
-                        <p style="color: rgba(255,255,255,0.8); font-size: 1rem; line-height: 1.4; max-width: 500px; margin: 0 auto;">Transform your dog photos into professional 3D models with cutting-edge AI technology.</p>
+                        <h1 style="font-family: 'Sora', sans-serif; font-size: 2.5rem; font-weight: 700; color: white; margin-bottom: 0.5rem; text-shadow: 0 0 30px rgba(0,188,212,0.5);">About Threely</h1>
+                        <p style="color: rgba(255,255,255,0.8); font-size: 1rem; line-height: 1.4; max-width: 500px; margin: 0 auto;">Transform every picture into professional 3D models with cutting-edge AI technology.</p>
                     </div>
 
                     <!-- Stats with animation -->
@@ -821,7 +883,7 @@ class AppNavigation {
                                 <div style="background: #00bcd4; color: #0a0a0a; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 1.1rem;">1</div>
                                 <div>
                                     <h3 style="color: white; font-size: 1rem; margin-bottom: 0.2rem; font-weight: 600;">Upload Photo</h3>
-                                    <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0; line-height: 1.3;">Take or select a clear photo of your dog</p>
+                                    <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0; line-height: 1.3;">Take or select a clear picture of your object</p>
                                 </div>
                             </div>
                             <div class="step-item" style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 12px; animation: slideInLeft 0.5s ease-out 0.5s forwards; opacity: 0; transform: translateX(-20px);">
@@ -850,7 +912,7 @@ class AppNavigation {
                                     What image formats are supported?
                                     <span class="faq-arrow" style="transition: transform 0.3s; display: inline-block;">▼</span>
                                 </summary>
-                                <p style="color: rgba(255,255,255,0.8); margin-top: 0.8rem; font-size: 0.85rem; line-height: 1.4;">We support JPG, PNG, and WEBP formats up to 10MB. For best results, use clear, well-lit photos with the dog as the main subject.</p>
+                                <p style="color: rgba(255,255,255,0.8); margin-top: 0.8rem; font-size: 0.85rem; line-height: 1.4;">We support JPG, PNG, and WEBP formats up to 10MB. For best results, use clear, well-lit pictures with the object as the main subject.</p>
                             </details>
                             
                             <details class="faq-item" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem;">
@@ -885,7 +947,7 @@ class AppNavigation {
                         <div style="display: flex; flex-direction: column; gap: 1.2rem;">
                             <div>
                                 <h3 style="color: #00bcd4; font-size: 1rem; margin-bottom: 0.4rem;">Terms of Service</h3>
-                                <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.4;">By using Dalma AI, you agree to our terms. All generated models from paid credits are yours to use commercially without restrictions.</p>
+                                <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.4;">By using Threely, you agree to our terms. All generated models from paid credits are yours to use commercially without restrictions.</p>
                             </div>
                             <div>
                                 <h3 style="color: #00bcd4; font-size: 1rem; margin-bottom: 0.4rem;">Privacy Policy</h3>
@@ -893,7 +955,7 @@ class AppNavigation {
                             </div>
                             <div>
                                 <h3 style="color: #00bcd4; font-size: 1rem; margin-bottom: 0.4rem;">Content Guidelines</h3>
-                                <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.4;">Please only upload photos of dogs. The AI is trained specifically for canine models.</p>
+                                <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.4;">Use your imagination! Our AI model is trained on any object.</p>
                             </div>
                         </div>
                     </div>
@@ -902,7 +964,7 @@ class AppNavigation {
                     <div style="text-align: center; padding: 2rem 0; margin-bottom: 0;">
                         <h3 style="color: white; margin-bottom: 0.8rem; font-size: 1.3rem;">Need Help?</h3>
                         <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.2rem; font-size: 0.9rem;">Our support team is here to assist you</p>
-                        <a href="mailto:support@dalma-ai.com" style="background: #00bcd4; color: white; padding: 0.8rem 2rem; border-radius: 50px; text-decoration: none; display: inline-block; font-weight: 600; font-size: 0.95rem;">Contact Support</a>
+                        <a href="mailto:threely.service@gmail.com" style="background: #00bcd4; color: white; padding: 0.8rem 2rem; border-radius: 50px; text-decoration: none; display: inline-block; font-weight: 600; font-size: 0.95rem;">Contact Support</a>
                     </div>
                 </div>
 

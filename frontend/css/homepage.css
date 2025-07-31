@@ -246,7 +246,6 @@ button, .button, .btn {
     display: block !important;
 }
 
-/* Hero Content - Position at top of screen */
 .hero-content {
     position: absolute;
     top: 0;
@@ -259,6 +258,7 @@ button, .button, .btn {
     align-items: center;
     padding: 0.5rem;
     padding-top: 0.25rem; /* Even less top padding */
+    pointer-events: none; /* Allow clicks to pass through container */
 }
 
 .hero-text {
@@ -266,6 +266,7 @@ button, .button, .btn {
     max-width: 500px;
     width: 100%;
     margin-top: 0;
+    pointer-events: auto; /* Re-enable pointer events for content */
 }
 
 .hero-title {
@@ -304,6 +305,9 @@ button, .button, .btn {
     display: inline-block;
     text-transform: uppercase;
     letter-spacing: 1px;
+    pointer-events: auto; /* Ensure button is clickable */
+    position: relative;
+    z-index: 15; /* Higher z-index than 3D canvas */
 }
 
 .cta-button:hover {

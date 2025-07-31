@@ -207,16 +207,16 @@ class AuthManager {
             console.log('🚫 Unauthorized access to protected standalone page:', currentPage);
             
             // Redirect to SPA and show modal
-            sessionStorage.setItem('redirectAfterLogin', window.location.href);
-            sessionStorage.setItem('showLoginModal', 'true');
+            localStorage.setItem('dalma_redirectAfterLogin', window.location.href);
+            localStorage.setItem('dalma_showLoginModal', 'true');
             window.location.replace('index.html'); // Redirect to SPA, not homepage
         } else if (standaloneProtectedPages.includes(currentPage) && this.user) {
             console.log('✅ Authorized access to protected standalone page:', currentPage);
         }
         
         // Check if we should auto-show the modal (coming from a redirect)
-        if (sessionStorage.getItem('showLoginModal') === 'true') {
-            sessionStorage.removeItem('showLoginModal');
+        if (localStorage.getItem('dalma_showLoginModal') === 'true') {
+            localStorage.removeItem('dalma_showLoginModal');
             setTimeout(() => {
                 this.showLoginModal();
             }, 500);
@@ -240,8 +240,8 @@ class AuthManager {
                     <!-- Header -->
                     <div class="premium-header">
                         <img src="public/threely3.png" alt="Dalma AI" class="premium-logo">
-                        <h2 class="premium-title">Welcome Back</h2>
-                        <p class="premium-subtitle">Continue your 3D journey</p>
+                        <h2 class="premium-title">Welcome!</h2>
+                        <p class="premium-subtitle">Start your 3D journey</p>
                     </div>
                     
                     <!-- Form Toggle -->
@@ -267,10 +267,7 @@ class AuthManager {
                                 </div>
                                 <button type="submit" class="premium-submit-btn">
                                     <span class="premium-btn-text">Sign In</span>
-                                    <svg class="premium-btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                                        <polyline points="12,5 19,12 12,19"></polyline>
-                                    </svg>
+                               
                                 </button>
                                 <div id="premiumLoginMessage" class="premium-message" style="display: none;"></div>
                             </form>
@@ -294,10 +291,7 @@ class AuthManager {
                                 </div>
                                 <button type="submit" class="premium-submit-btn">
                                     <span class="premium-btn-text">Create Account</span>
-                                    <svg class="premium-btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                                        <polyline points="12,5 19,12 12,19"></polyline>
-                                    </svg>
+                                
                                 </button>
                                 <div id="premiumRegisterMessage" class="premium-message" style="display: none;"></div>
                             </form>
@@ -777,13 +771,17 @@ class AuthManager {
                 this.user = data.user;
                 this.currentUser = data.user; // For backward compatibility
                 this.updateUI();
-                this.showModalMessage('premiumLoginMessage', 'Welcome back! Redirecting...', 'success');
+                
+                // Check if we have a redirect to show appropriate message
+                const redirectUrl = localStorage.getItem('dalma_redirectAfterLogin');
+                const redirectMessage = redirectUrl ? 'Welcome back! Loading...' : 'Welcome back!';
+                this.showModalMessage('premiumLoginMessage', redirectMessage, 'success');
                 
                 // Dispatch auth state change event
                 this.dispatchAuthStateChange();
                 
                 // Wait longer to ensure cookie is set
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 
                 this.hideLoginModal();
                 document.getElementById('premium-login-form').reset();
@@ -794,25 +792,35 @@ class AuthManager {
                     return;
                 }
                 
-                // Check for redirect
-                const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
-                console.log('🔄 Checking redirect URL:', redirectUrl);
+                // Check for redirect using localStorage
+                const loginRedirectUrl = localStorage.getItem('dalma_redirectAfterLogin');
+                console.log('🔄 Checking redirect URL:', loginRedirectUrl);
+                console.log('📍 All localStorage keys:', Object.keys(localStorage));
                 
-                if (redirectUrl) {
-                    sessionStorage.removeItem('redirectAfterLogin');
-                    
-                    // If the redirect URL is to index.html or contains index.html, use it
-                    if (redirectUrl.includes('index.html')) {
-                        console.log('🚀 Redirecting to index.html (generate page)');
-                        window.location.href = 'index.html';
+                if (loginRedirectUrl) {
+                    // Handle section-based redirects (like 'generate')
+                    if (['generate', 'assets', 'account', 'about'].includes(loginRedirectUrl)) {
+                        console.log('🚀 Section redirect detected:', loginRedirectUrl);
+                        // Use URL parameter to preserve redirect across reload
+                        window.location.href = `index.html?redirect=${loginRedirectUrl}`;
+                        return;
                     } else {
-                        // For other redirects, use them
-                        window.location.href = redirectUrl;
+                        localStorage.removeItem('dalma_redirectAfterLogin');
+                        
+                        if (loginRedirectUrl.includes('index.html')) {
+                            console.log('🚀 Redirecting to index.html');
+                            window.location.href = 'index.html';
+                            return;
+                        } else {
+                            // For other redirects (full URLs), use them
+                            window.location.href = loginRedirectUrl;
+                            return;
+                        }
                     }
-                } else {
-                    // Default: reload current page
-                    window.location.reload();
                 }
+                
+                // Default: reload current page
+                window.location.reload();
             } else {
                 this.showModalMessage('premiumLoginMessage', data.error || 'Login failed', 'error');
             }
@@ -881,25 +889,34 @@ class AuthManager {
                     return;
                 }
                 
-                // Check for redirect
-                const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
-                console.log('🔄 Checking redirect URL after register:', redirectUrl);
+                // Check for redirect using localStorage
+                const registerRedirectUrl = localStorage.getItem('dalma_redirectAfterLogin');
+                console.log('🔄 Checking redirect URL after register:', registerRedirectUrl);
                 
-                if (redirectUrl) {
-                    sessionStorage.removeItem('redirectAfterLogin');
-                    
-                    // If the redirect URL is to index.html or contains index.html, use it
-                    if (redirectUrl.includes('index.html')) {
-                        console.log('🚀 Redirecting to index.html (generate page) after register');
-                        window.location.href = 'index.html';
+                if (registerRedirectUrl) {
+                    // Handle section-based redirects (like 'generate')
+                    if (['generate', 'assets', 'account', 'about'].includes(registerRedirectUrl)) {
+                        console.log('🚀 Section redirect detected:', registerRedirectUrl);
+                        // Use URL parameter to preserve redirect across reload
+                        window.location.href = `index.html?redirect=${registerRedirectUrl}`;
+                        return;
                     } else {
-                        // For other redirects, use them
-                        window.location.href = redirectUrl;
+                        localStorage.removeItem('dalma_redirectAfterLogin');
+                        
+                        if (registerRedirectUrl.includes('index.html')) {
+                            console.log('🚀 Redirecting to index.html');
+                            window.location.href = 'index.html';
+                            return;
+                        } else {
+                            // For other redirects (full URLs), use them
+                            window.location.href = registerRedirectUrl;
+                            return;
+                        }
                     }
-                } else {
-                    // Default: reload current page
-                    window.location.reload();
                 }
+                
+                // Default: reload current page
+                window.location.reload();
             } else {
                 this.showModalMessage('premiumRegisterMessage', data.error || 'Registration failed', 'error');
             }
@@ -929,6 +946,7 @@ class AuthManager {
             
             // Clear any stored auth data
             localStorage.removeItem('dalma_user');
+            localStorage.removeItem('dalma_redirectAfterLogin');
             sessionStorage.removeItem('redirectAfterLogin');
             
             // Redirect to homepage after logout
@@ -1064,8 +1082,9 @@ class AuthManager {
                 
                 if (!isAuthenticated) {
                     // Store intended destination for after login
-                    sessionStorage.setItem('redirectAfterLogin', 'generate');
+                    localStorage.setItem('dalma_redirectAfterLogin', 'generate');
                     console.log('🔐 Hero generate button clicked - not authenticated, showing login modal');
+                    console.log('📍 Stored redirect:', localStorage.getItem('dalma_redirectAfterLogin'));
                     this.showLoginModal();
                 } else {
                     // User is authenticated, navigate to generate section
@@ -1091,7 +1110,7 @@ class AuthManager {
                     const isAuthenticated = await this.waitForAuthCheck();
                     
                     if (!isAuthenticated) {
-                        sessionStorage.setItem('redirectAfterLogin', 'generate');
+                        localStorage.setItem('dalma_redirectAfterLogin', 'generate');
                         console.log('🔐 Generate button clicked - not authenticated, showing login modal');
                         this.showLoginModal();
                     } else {
@@ -1148,7 +1167,7 @@ class AuthManager {
             const isAuthenticated = await this.waitForAuthCheck();
             
             if (!isAuthenticated) {
-                sessionStorage.setItem('redirectAfterLogin', 'generate');
+                localStorage.setItem('dalma_redirectAfterLogin', 'generate');
                 console.log('🔐 Dynamic generate button clicked - not authenticated, showing login modal');
                 this.showLoginModal();
             } else {
@@ -1282,7 +1301,7 @@ class AuthManager {
             callback();
         } else {
             // Store current page for redirect after login
-            sessionStorage.setItem('redirectAfterLogin', window.location.href);
+            localStorage.setItem('dalma_redirectAfterLogin', window.location.href);
             this.showLoginModal();
         }
     }

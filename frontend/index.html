@@ -184,19 +184,75 @@
 
     <!-- Scripts -->
     <script src="src/auth.js"></script>
-    <script src="src/mobile-auth-enhancer.js"></script>
+
     <script src="src/monetization.js"></script>
     <script src="src/mobile-3d-viewer.js"></script>
     
     <!-- Enhanced App Navigation with Assets Integration -->
     <script src="src/app-navigation.js"></script>
     
-    <!-- Initialize the app -->
-    <script>
-        // App initialization state
-        let appInitialized = false;
-        let loadingProgress = 0;
-
+   <!-- Initialize the app -->
+<script>
+    // Add CSS fix for hero content and 3D interaction
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = `
+        /* Hero content layering fixes */
+        .hero {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .hero-3d {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .hero-content * {
+            pointer-events: auto;
+        }
+        
+        .cta-button {
+            position: relative;
+            z-index: 20;
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            touch-action: manipulation;
+        }
+        
+        /* Ensure 3D canvas allows proper interaction */
+        #appHero3d {
+            position: relative;
+            pointer-events: auto;
+        }
+        
+        #appHero3d canvas {
+            pointer-events: auto !important;
+        }
+        
+        /* Mobile-specific touch improvements */
+        @media (max-width: 768px) {
+            .cta-button {
+                min-height: 44px;
+                min-width: 120px;
+            }
+        }
+    `;
+    document.head.appendChild(styleSheet);
+    
+    // App initialization state
+    let appInitialized = false;
+    let loadingProgress = 0;
         // Update UI based on auth state
         function updateUIForAuthState(isAuthenticated) {
             const creditsContainer = document.getElementById('creditsContainer');
@@ -259,6 +315,23 @@
             console.log('🚀 Initializing app with public assets access...');
             updateLoadingScreen(20, 'Loading interface...');
             
+            // Check for redirect in URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlRedirect = urlParams.get('redirect');
+            
+            // Store any pending redirect (from URL or sessionStorage)
+            const pendingRedirect = urlRedirect || sessionStorage.getItem('redirectAfterLogin');
+            console.log('📍 Pending redirect detected:', pendingRedirect);
+            console.log('📍 URL redirect:', urlRedirect);
+            console.log('📍 SessionStorage redirect:', sessionStorage.getItem('redirectAfterLogin'));
+            
+            // Clean up URL if we have a redirect parameter
+            if (urlRedirect) {
+                // Remove the redirect parameter from URL without reload
+                const newUrl = window.location.pathname + window.location.hash;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+            
             // Wait for auth manager to be ready
             await new Promise(resolve => {
                 let attempts = 0;
@@ -291,7 +364,17 @@
             if (window.AppNavigation) {
                 await new Promise(resolve => {
                     setTimeout(() => {
-                        window.AppNavigation.init();
+                        // Pass the pending redirect to init if we have one and user is authenticated
+                        const initialSection = (isAuthenticated && pendingRedirect && ['generate', 'assets', 'account', 'about'].includes(pendingRedirect)) 
+                            ? pendingRedirect 
+                            : null;
+                            
+                        if (initialSection) {
+                            console.log('🎯 Initializing navigation with redirect section:', initialSection);
+                            localStorage.removeItem('dalma_redirectAfterLogin');
+                        }
+                        
+                        window.AppNavigation.init(initialSection);
                         resolve();
                     }, 300);
                 });
@@ -302,6 +385,20 @@
             
             // Setup account button handler
             setupAccountButton();
+            
+            // Handle pending redirect if authenticated
+            if (isAuthenticated && pendingRedirect && ['generate', 'assets', 'account', 'about'].includes(pendingRedirect)) {
+                console.log('🚀 Processing pending redirect to:', pendingRedirect);
+                sessionStorage.removeItem('redirectAfterLogin');
+                
+                // Wait a bit longer to ensure everything is ready
+                setTimeout(() => {
+                    if (window.AppNavigation) {
+                        console.log('🎯 Navigating to section:', pendingRedirect);
+                        window.AppNavigation.navigateToSection(pendingRedirect);
+                    }
+                }, 1000);
+            }
             
             updateLoadingScreen(100, 'Ready!');
             
@@ -323,12 +420,14 @@
                 if (!window.authManager?.isAuthenticated() && restrictedSections.includes(sectionName)) {
                     console.log('🔐 Section requires authentication:', sectionName);
                     sessionStorage.setItem('redirectAfterLogin', sectionName);
+                    console.log('📍 Stored section redirect:', sessionStorage.getItem('redirectAfterLogin'));
                     window.authManager.showLoginModal();
                     return;
                 }
                 
                 // Account section special handling
                 if (sectionName === 'account' && !window.authManager?.isAuthenticated()) {
+                    sessionStorage.setItem('redirectAfterLogin', 'account');
                     window.authManager.showLoginModal();
                     return;
                 }
@@ -380,10 +479,10 @@
             // Start initialization after brief delay
             setTimeout(initializeApp, 300);
         });
-        
+       
         // Listen for auth state changes
-        window.addEventListener('authStateChange', function() {
-            console.log('🔄 Auth state changed, updating UI...');
+        window.addEventListener('authStateChange', function(event) {
+            console.log('🔄 Auth state changed, updating UI...', event.detail);
             const isAuthenticated = window.authManager?.isAuthenticated();
             updateUIForAuthState(isAuthenticated);
             setupRestrictedNavigation(isAuthenticated);
@@ -391,11 +490,34 @@
             // Handle redirect after login
             if (isAuthenticated) {
                 const redirect = sessionStorage.getItem('redirectAfterLogin');
+                console.log('🎯 Post-auth redirect check:', redirect);
                 if (redirect) {
                     sessionStorage.removeItem('redirectAfterLogin');
+                    if (['generate', 'assets', 'account', 'about'].includes(redirect)) {
+                        console.log('🚀 Navigating to section:', redirect);
+                        setTimeout(() => {
+                            if (window.AppNavigation) {
+                                window.AppNavigation.navigateToSection(redirect);
+                            }
+                        }, 500);
+                    }
+                }
+            }
+        });
+        
+        // Also check for redirect when app initializes
+        window.addEventListener('authManagerReady', function(event) {
+            console.log('🔐 Auth manager ready event:', event.detail);
+            if (event.detail.authenticated) {
+                const redirect = sessionStorage.getItem('redirectAfterLogin');
+                if (redirect && ['generate', 'assets', 'account', 'about'].includes(redirect)) {
+                    console.log('🚀 Auth ready - navigating to:', redirect);
+                    sessionStorage.removeItem('redirectAfterLogin');
                     setTimeout(() => {
-                        window.AppNavigation.navigateToSection(redirect);
-                    }, 500);
+                        if (window.AppNavigation) {
+                            window.AppNavigation.navigateToSection(redirect);
+                        }
+                    }, 800);
                 }
             }
         });

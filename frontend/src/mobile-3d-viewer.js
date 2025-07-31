@@ -111,14 +111,14 @@
             Mobile3D.renderer.toneMapping = THREE.ACESFilmicToneMapping;
             Mobile3D.renderer.toneMappingExposure = 0.8;
             
-            // Force renderer canvas to be ABSOLUTE full viewport
-            Mobile3D.renderer.domElement.style.position = 'fixed';
+            Mobile3D.renderer.domElement.style.position = 'absolute';
             Mobile3D.renderer.domElement.style.top = '0';
             Mobile3D.renderer.domElement.style.left = '0';
-            Mobile3D.renderer.domElement.style.width = '100vw';
-            Mobile3D.renderer.domElement.style.height = '100vh';
+            Mobile3D.renderer.domElement.style.width = '100%';
+            Mobile3D.renderer.domElement.style.height = '100%';
             Mobile3D.renderer.domElement.style.display = 'block';
             Mobile3D.renderer.domElement.style.zIndex = '1';
+            Mobile3D.renderer.domElement.style.pointerEvents = 'auto'; // Changed from 'none' to 'auto'
             
             console.log('✅ WebGL renderer created successfully');
             
@@ -183,6 +183,7 @@
         }
         
         try {
+            // Create controls directly on the renderer's DOM element
             Mobile3D.controls = new THREE.OrbitControls(Mobile3D.camera, Mobile3D.renderer.domElement);
             Mobile3D.controls.enableDamping = true;
             Mobile3D.controls.dampingFactor = 0.05;
