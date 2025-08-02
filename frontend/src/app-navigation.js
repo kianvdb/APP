@@ -307,159 +307,186 @@ class AppNavigation {
     }
 
     async loadGenerateContent() {
-        // Same as before - existing generate content
         return `
-            <div class="container">
-                <div class="main-layout">
-                    <!-- Left side - 3D Viewer -->
-                    <div class="viewer-section">
-                        <!-- 3D Viewer -->
-                        <div id="viewer">
-                            <div id="3dCanvas">
-                                <div id="dogFactOverlay"></div>
-                                <div id="generationOverlay"></div>
-                                
-                                <!-- Like Button -->
-                                <div class="like-button-container" id="likeButtonContainer" style="display: none;">
-                                    <button class="like-button" id="likeButton" title="Like this model">
-                                        <svg class="heart-icon" viewBox="0 0 24 24" width="20" height="20">
-                                            <path class="heart-outline" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="2"/>
-                                            <path class="heart-filled" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" opacity="0"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Action buttons -->
-                        <div class="action-buttons">
-                            <button class="action-btn">
-                                <span>🦴 Rigging & Animation</span>
-                            </button>
-                            <button class="action-btn">
-                                <span>🚀 Direct Export</span>
-                            </button>
-                            <!-- Download dropdown -->
-                            <div class="download-dropdown">
-                                <button class="download-trigger">
-                                    <span>📥 Download</span>
-                                    <span class="dropdown-arrow">▶</span>
-                                </button>
-                                <div class="download-options">
-                                    <button id="downloadGLB" class="download-option">GLB</button>
-                                    <button id="downloadUSDZ" class="download-option">USDZ</button>
-                                    <button id="downloadOBJ" class="download-option">OBJ</button>
-                                    <button id="downloadFBX" class="download-option">FBX</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right side - Controls -->
-                    <div class="controls-sidebar disabled">
-                        
+            <div class="generate-container" id="generateContainer">
+                <!-- FORM STATE -->
+                <div class="generate-form-state" id="generateFormState">
+                    <div class="generate-controls-wrapper">
                         <!-- Image Upload -->
                         <div class="control-section image-upload">
-                            <label class="control-label" for="imageInput">Upload Image</label>
-                            <div class="upload-area" onclick="document.getElementById('imageInput').click()">
-                                <input type="file" id="imageInput" accept="image/*"/>
-                                <div class="upload-text">Supported formats: .jpg .jpeg .png</div>
-                                <div class="upload-preview" id="uploadPreview">
-                                    <div class="upload-preview-overlay">
-                                        <div class="upload-change-text">Click to change image</div>
-                                    </div>
+                            <label class="control-label">Upload Image</label>
+                            <div class="upload-area" id="uploadArea">
+                                <input type="file" id="imageInput" accept="image/*" hidden/>
+                                <div class="upload-placeholder" id="uploadPlaceholder">
+                                    <svg class="upload-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                                    </svg>
+                                    <p class="upload-text">Tap to upload image</p>
+                                    <p class="upload-formats">Supported: JPG, PNG</p>
                                 </div>
-                                <div class="scanning-overlay" id="scanningOverlay">
-                                    <div class="scanning-animation"></div>
-                                    <div class="scanning-text">Scanning picture...</div>
+                                <div class="upload-preview" id="uploadPreview" style="display: none;">
+                                    <img id="previewImage" alt="Preview"/>
+                                    <button class="change-image-btn" id="changeImageBtn">Change Image</button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Symmetry Controls -->
-                        <div class="control-section dropdown-section">
+                        <!-- Symmetry Control -->
+                        <div class="control-section">
                             <label class="control-label">Symmetry</label>
-                            <div class="dropdown-control" id="symmetryDropdown">
-                                <div class="dropdown-display">
-                                    <span class="dropdown-label">Symmetry</span>
-                                    <span class="dropdown-value">Auto</span>
-                                    <span class="dropdown-arrow">></span>
-                                </div>
-                                <div class="dropdown-options">
-                                    <div class="dropdown-option" data-value="auto">Auto</div>
-                                    <div class="dropdown-option" data-value="on">On</div>
-                                </div>
+                            <div class="toggle-group">
+                                <button class="toggle-btn active" data-value="auto">Auto</button>
+                                <button class="toggle-btn" data-value="on">On</button>
                             </div>
                         </div>
 
-                        <!-- Topology Controls -->
-                        <div class="control-section dropdown-section">
+                        <!-- Topology Control -->
+                        <div class="control-section">
                             <label class="control-label">Topology</label>
-                            <div class="dropdown-control" id="topologyDropdown">
-                                <div class="dropdown-display">
-                                    <span class="dropdown-label">Topology</span>
-                                    <span class="dropdown-value">Triangles</span>
-                                    <span class="dropdown-arrow">></span>
-                                </div>
-                                <div class="dropdown-options">
-                                    <div class="dropdown-option" data-value="triangle">Triangles</div>
-                                    <div class="dropdown-option" data-value="quad">Quads</div>
-                                </div>
+                            <div class="toggle-group">
+                                <button class="toggle-btn active" data-value="triangle">Triangles</button>
+                                <button class="toggle-btn" data-value="quad">Quads</button>
                             </div>
                         </div>
 
-                        <!-- Polycount Controls -->
+                        <!-- Polycount Control -->
                         <div class="control-section">
-                            <div class="polycount-control">
-                                <label class="control-label" for="polycountSlider">Polycount</label>
-                                <div class="polycount-inputs">
-                                    <input type="range" id="polycountSlider" min="100" max="300000" value="30000" step="100">
-                                    <input type="number" id="polycountInput" min="100" max="300000" value="30000" step="100">
-                                </div>
+                            <label class="control-label">Polycount: <span id="polycountValue">30000</span></label>
+                            <input type="range" id="polycountSlider" min="100" max="300000" value="30000" step="100" class="polycount-slider"/>
+                            <div class="polycount-labels">
+                                <span>100</span>
+                                <span>300K</span>
                             </div>
                         </div>
 
-                        <!-- Texture Controls -->
-                        <div class="control-section dropdown-section">
+                        <!-- Texture Control -->
+                        <div class="control-section">
                             <label class="control-label">Texture</label>
-                            <div class="dropdown-control" id="textureDropdown">
-                                <div class="dropdown-display">
-                                    <span class="dropdown-label">Texture</span>
-                                    <span class="dropdown-value">Yes</span>
-                                    <span class="dropdown-arrow">></span>
-                                </div>
-                                <div class="dropdown-options">
-                                    <div class="dropdown-option" data-value="true">Yes</div>
-                                    <div class="dropdown-option" data-value="false">No</div>
-                                </div>
+                            <div class="toggle-group">
+                                <button class="toggle-btn active" data-value="true">Yes</button>
+                                <button class="toggle-btn" data-value="false">No</button>
                             </div>
                         </div>
 
-                        <!-- PBR Controls -->
-                        <div class="control-section">
-                            <div id="pbrButtons" class="checkbox-group">
-                                <label for="pbrCheckbox">
-                                    <input type="checkbox" id="pbrCheckbox" />
-                                    PBR Enabled
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Progress Section -->
-                        <div class="progress-section-container">
-                            <div class="progress-section">
-                                <div id="spinnerContainer">
-                                    <div class="spinner"></div>
-                                    <span id="progressText">0%</span>
-                                </div>
-                                <progress id="progressBar" value="0" max="100"></progress>
-                            </div>
+                        <!-- PBR Control -->
+                        <div class="control-section" id="pbrSection">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="pbrCheckbox" class="premium-checkbox"/>
+                                <span class="checkbox-custom"></span>
+                                <span>PBR Enabled</span>
+                            </label>
                         </div>
 
                         <!-- Generate Button -->
-                        <button id="generateBtn">Generate Model</button>
-                        
+                        <button class="generate-model-btn" id="generateModelBtn">
+                            <span class="btn-text">Generate Model</span>
+                        </button>
                     </div>
+                </div>
+
+                <!-- LOADING STATE -->
+                <div class="generate-loading-state" id="generateLoadingState" style="display: none;">
+                    <div class="loading-background">
+                        <!-- Animated background particles -->
+                        <div class="particle"></div>
+                        <div class="particle"></div>
+                        <div class="particle"></div>
+                        <div class="particle"></div>
+                        <div class="particle"></div>
+                    </div>
+                    
+                    <div class="loading-content">
+                        <h2 class="loading-title">
+                            <span class="title-word">Creating</span>
+                            <span class="title-word">Your</span>
+                            <span class="title-word">3D</span>
+                            <span class="title-word">Model</span>
+                        </h2>
+                        
+                        <!-- Enhanced Progress Circle -->
+                        <div class="progress-circle-container">
+                            <div class="progress-glow"></div>
+                            <svg class="progress-circle" width="200" height="200">
+                                <defs>
+                                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#00bcd4;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#00e5ff;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                                <circle cx="100" cy="100" r="90" class="progress-bg"/>
+                                <circle cx="100" cy="100" r="90" class="progress-fill" id="progressFill" stroke="url(#progressGradient)"/>
+                            </svg>
+                            <div class="progress-text">
+                                <span class="progress-percent" id="progressPercent">0%</span>
+                                <span class="progress-status" id="progressStatus">Initializing...</span>
+                            </div>
+                            
+                            <!-- Boost Indicators -->
+                            <div class="boost-indicators" id="boostIndicators"></div>
+                        </div>
+
+                        <!-- Dog Facts with enhanced styling -->
+                        <div class="dog-fact-container">
+                            <div class="dog-fact-icon">🐕</div>
+                            <p class="dog-fact-text" id="dogFactText">Dogs have been human companions for over 15,000 years!</p>
+                            <div class="fact-decoration left">✨</div>
+                            <div class="fact-decoration right">✨</div>
+                        </div>
+
+                        <!-- Enhanced Watch Ad Button -->
+                        <div class="ad-boost-section">
+                            <button class="watch-ad-btn" id="watchAdBtn">
+                                <div class="ad-btn-bg"></div>
+                                <span class="ad-icon">📺</span>
+                                <span class="ad-text">Watch Ad for Speed Boost</span>
+                                <span class="ad-boost">⚡ Instant Boost</span>
+                            </button>
+                            <p class="ad-info">Watch unlimited ads to speed up generation!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEWER STATE -->
+                <div class="generate-viewer-state" id="generateViewerState" style="display: none;">
+                    <!-- 3D Viewer -->
+                    <div class="model-viewer" id="modelViewer">
+                        <div id="viewer3d"></div>
+                    </div>
+
+                    <!-- Model Actions -->
+                    <div class="model-actions">
+                        <button class="action-btn download-btn" id="downloadBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                            </svg>
+                            <span>Download</span>
+                        </button>
+                        
+                        <button class="action-btn export-btn" id="exportBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 6L9 17l-5-5"/>
+                            </svg>
+                            <span>Export</span>
+                        </button>
+                        
+                        <button class="action-btn rig-btn" id="rigBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M12 1v6m0 6v6m4.22-10.22l4.24 4.24m-4.24 4.24l4.24 4.24M20 12h6m-6 0h-6"/>
+                            </svg>
+                            <span>Rig & Animate</span>
+                        </button>
+                        
+                        <button class="action-btn favorite-btn" id="favoriteBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+                            </svg>
+                            <span>Save to Favorites</span>
+                        </button>
+                    </div>
+
+                    <!-- New Model Button -->
+                    <button class="new-model-btn" id="newModelBtn">Create New Model</button>
                 </div>
             </div>
         `;
@@ -871,6 +898,7 @@ class AppNavigation {
                         </div>
                         <div class="stat-card" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.3); border-radius: 12px; padding: 1.2rem 0.5rem; text-align: center; backdrop-filter: blur(10px); animation: fadeInUp 0.6s ease-out 0.3s forwards; opacity: 0;">
                             <div class="stat-number" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: #00bcd4; margin-bottom: 0.3rem;" data-target="98">0</div>
+                            <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">% Satisfaction</div>0.3rem;" data-target="98">0</div>
                             <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">% Satisfaction</div>
                         </div>
                     </div>
@@ -1054,7 +1082,20 @@ class AppNavigation {
     }
 
     async initializeHome() {
-        console.log('🎯 Initializing home section 3D viewer...');
+        console.log('🎯 Initializing home section...');
+        
+        // Setup hero generate button
+        setTimeout(() => {
+            const heroGenerateBtn = document.getElementById('heroGenerateBtn');
+            if (heroGenerateBtn) {
+                heroGenerateBtn.addEventListener('click', () => {
+                    this.navigateToSection('generate');
+                });
+                console.log('✅ Hero generate button connected');
+            }
+        }, 100);
+        
+        // Initialize 3D viewer
         setTimeout(() => {
             const container = document.getElementById('appHero3d');
             if (container) {
@@ -1068,14 +1109,22 @@ class AppNavigation {
 
     async initializeGenerate() {
         console.log('🎯 Initializing generate section...');
+        
+        // Create a new instance if it doesn't exist
+        if (!window.generateController) {
+            window.generateController = new GenerateController(this.getApiBaseUrl());
+        }
+        
+        // Wait a moment for DOM to be ready
         setTimeout(() => {
-            if (window.initGenerate && typeof window.initGenerate === 'function') {
-                window.initGenerate();
-            } else {
-                console.log('⚠️ initGenerate function not available, setting up basic functionality');
-                this.setupBasicGenerate();
-            }
-        }, 200);
+            // Setup all event listeners
+            window.generateController.setupGenerateEventListeners();
+            
+            // Initialize dog facts
+            window.generateController.initializeDogFacts();
+            
+            console.log('✅ Generate section initialized with GenerateController');
+        }, 100);
     }
 
     async initializeAssets() {
@@ -1866,15 +1915,6 @@ class AppNavigation {
                     </button>
                 </div>
             `;
-        }
-    }
-
-    setupBasicGenerate() {
-        const generateBtn = document.getElementById('generateBtn');
-        if (generateBtn) {
-            generateBtn.addEventListener('click', () => {
-                alert('Generate functionality will be connected to your existing generate.js system');
-            });
         }
     }
 

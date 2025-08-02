@@ -1,5 +1,5 @@
 // mobile-monetization.js - DALMA AI Mobile Monetization System
-// Handles credits, ad integration, and €4.99 purchase flow
+// Updated to work with GenerateController - handles only credits and purchases
 
 class MobileMonetization {
     constructor() {
@@ -21,10 +21,7 @@ class MobileMonetization {
         // Setup purchase modal event handlers
         this.setupPurchaseModal();
         
-        // Setup generation modal event handlers
-        this.setupGenerationModal();
-        
-        console.log('✅ Monetization system ready');
+        console.log('✅ Monetization system ready (credits only)');
     }
 
     // ========================================
@@ -109,7 +106,7 @@ class MobileMonetization {
     }
 
     // ========================================
-    // GENERATION & AD INTEGRATION
+    // GENERATION INTEGRATION
     // ========================================
 
     checkCreditsBeforeGeneration() {
@@ -120,141 +117,160 @@ class MobileMonetization {
         return true;
     }
 
-    startGeneration() {
+    // This is called by GenerateController before starting generation
+    beforeGenerate() {
         if (!this.checkCreditsBeforeGeneration()) {
             return false;
         }
-
+        
         // Consume credit
         this.consumeCredit();
-        
-        // Start generation process with ad integration
         this.generationInProgress = true;
-        this.showGenerationModal();
         
         return true;
     }
 
-    showGenerationModal() {
-        const modal = document.getElementById('generationModal');
-        if (modal) {
-            modal.classList.add('visible');
-            
-            // Start progress simulation
-            this.simulateGenerationProgress();
-        }
-    }
-
-    hideGenerationModal() {
-        const modal = document.getElementById('generationModal');
-        if (modal) {
-            modal.classList.remove('visible');
-            this.generationInProgress = false;
-        }
-    }
-
-    simulateGenerationProgress() {
-        const progressBar = document.getElementById('generationProgressBar');
-        const timeDisplay = document.getElementById('generationTime');
-        
-        let progress = 0;
-        let timeRemaining = 300; // 5 minutes in seconds
-        
-        const updateProgress = () => {
-            if (!this.generationInProgress) return;
-            
-            progress += Math.random() * 2; // Slow, realistic progress
-            timeRemaining -= 1;
-            
-            if (progressBar) {
-                progressBar.style.width = Math.min(progress, 95) + '%'; // Never quite reach 100% until done
-            }
-            
-            if (timeDisplay) {
-                const minutes = Math.floor(timeRemaining / 60);
-                const seconds = timeRemaining % 60;
-                timeDisplay.textContent = `Estimated time: ${minutes}:${seconds.toString().padStart(2, '0')}`;
-            }
-            
-            // Generation complete
-            if (timeRemaining <= 0 || progress >= 100) {
-                this.completeGeneration();
-                return;
-            }
-            
-            setTimeout(updateProgress, 1000);
-        };
-        
-        updateProgress();
-    }
-
-    watchAd() {
-        console.log('📺 User clicked watch ad');
-        
-        // In a real implementation, you'd integrate with an ad network
-        // For now, simulate ad watching
-        this.simulateAdWatch();
-    }
-
-    simulateAdWatch() {
-        const watchAdBtn = document.getElementById('watchAdBtn');
-        
-        if (watchAdBtn) {
-            watchAdBtn.textContent = '⏳ Loading Ad...';
-            watchAdBtn.disabled = true;
-            
-            // Simulate 30-second ad
-            setTimeout(() => {
-                this.adWatchedCount++;
-                
-                // Speed up generation (reduce time by 30%)
-                this.speedUpGeneration();
-                
-                watchAdBtn.textContent = '✅ Ad Watched - Speed Boost Applied!';
-                
-                // Reset button after 3 seconds
-                setTimeout(() => {
-                    watchAdBtn.textContent = '📺 Watch Another Ad for More Speed';
-                    watchAdBtn.disabled = false;
-                }, 3000);
-                
-            }, 3000); // 3 seconds for demo, would be 30+ seconds for real ad
-        }
-    }
-
-    speedUpGeneration() {
-        // In real implementation, this would actually speed up the server processing
-        console.log(`⚡ Generation speed boosted! Ads watched: ${this.adWatchedCount}`);
-        
-        // Visual feedback
-        const timeDisplay = document.getElementById('generationTime');
-        if (timeDisplay) {
-            timeDisplay.style.color = '#00e5ff';
-            timeDisplay.innerHTML = '⚡ Speed Boost Active! Faster processing...';
-        }
-    }
-
-    completeGeneration() {
-        const progressBar = document.getElementById('generationProgressBar');
-        if (progressBar) {
-            progressBar.style.width = '100%';
-        }
-        
-        // Hide modal after 2 seconds
-        setTimeout(() => {
-            this.hideGenerationModal();
-            
-            // Show success message or trigger model display
-            this.showGenerationSuccess();
-        }, 2000);
-    }
-
-    showGenerationSuccess() {
-        // This would integrate with your existing generation success flow
-        console.log('🎉 Generation completed successfully!');
+    // This is called by GenerateController when generation completes
+    onGenerationComplete() {
+        this.generationInProgress = false;
+        console.log('💰 Generation completed successfully');
         
         // Show temporary success message
         this.showStatusMessage('🎉 3D model generated successfully!', 3000);
+    }
+
+    // This is called by GenerateController when generation fails
+    onGenerationError(error) {
+        this.generationInProgress = false;
+        console.log('❌ Generation failed:', error);
+        
+        // Refund credit on error
+        this.addCredits(1);
+        this.showStatusMessage('💳 Credit refunded due to error', 3000);
+    }
+
+    showInsufficientCreditsModal() {
+        // Remove any existing modal
+        const existing = document.querySelector('.insufficient-credits-modal');
+        if (existing) existing.remove();
+        
+        // Create premium styled modal
+        const insufficientModal = document.createElement('div');
+        insufficientModal.className = 'insufficient-credits-modal';
+        insufficientModal.innerHTML = `
+            <div class="modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-icon">💎</div>
+                <h3>No Credits Remaining</h3>
+                <p>You need credits to generate amazing 3D models</p>
+                <button class="buy-credits-btn" onclick="window.MobileMonetization.showPricingModal(); this.closest('.insufficient-credits-modal').remove();">
+                    Get 10 Credits for €4.99
+                </button>
+                <button class="close-btn" onclick="this.closest('.insufficient-credits-modal').remove();">
+                    Maybe Later
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(insufficientModal);
+        
+        // Add styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .insufficient-credits-modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                animation: modalFadeIn 0.3s ease;
+            }
+            
+            .insufficient-credits-modal .modal-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(10px);
+            }
+            
+            .insufficient-credits-modal .modal-content {
+                position: relative;
+                background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+                border-radius: 20px;
+                padding: 2rem;
+                max-width: 400px;
+                margin: 1rem;
+                text-align: center;
+                border: 1px solid rgba(0, 188, 212, 0.3);
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            }
+            
+            .insufficient-credits-modal .modal-icon {
+                font-size: 3rem;
+                margin-bottom: 1rem;
+                animation: bounce 1s ease infinite;
+            }
+            
+            .insufficient-credits-modal h3 {
+                font-family: 'Sora', sans-serif;
+                color: white;
+                margin-bottom: 0.5rem;
+                font-size: 1.5rem;
+            }
+            
+            .insufficient-credits-modal p {
+                color: rgba(255, 255, 255, 0.8);
+                margin-bottom: 1.5rem;
+            }
+            
+            .insufficient-credits-modal .buy-credits-btn {
+                background: linear-gradient(135deg, #00bcd4, #00e5ff);
+                color: white;
+                border: none;
+                padding: 1rem 2rem;
+                border-radius: 50px;
+                font-family: 'Sora', sans-serif;
+                font-weight: 600;
+                cursor: pointer;
+                width: 100%;
+                margin-bottom: 0.8rem;
+                transition: all 0.3s ease;
+            }
+            
+            .insufficient-credits-modal .buy-credits-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 30px rgba(0, 188, 212, 0.4);
+            }
+            
+            .insufficient-credits-modal .close-btn {
+                background: transparent;
+                color: rgba(255, 255, 255, 0.6);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                padding: 0.8rem 1.5rem;
+                border-radius: 50px;
+                font-family: 'Sora', sans-serif;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            
+            @keyframes modalFadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            @keyframes bounce {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-10px); }
+            }
+        `;
+        document.head.appendChild(style);
     }
 
     // ========================================
@@ -273,29 +289,6 @@ class MobileMonetization {
         if (modal) {
             modal.classList.remove('visible');
         }
-    }
-
-    showInsufficientCreditsModal() {
-        // Create and show insufficient credits modal
-        const insufficientModal = document.createElement('div');
-        insufficientModal.className = 'insufficient-credits';
-        insufficientModal.innerHTML = `
-            <h3>⚠️ No Credits Remaining</h3>
-            <p>You need credits to generate 3D models.</p>
-            <button onclick="window.MobileMonetization.showPricingModal(); this.parentElement.remove();" 
-                    style="background: #00bcd4; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer; font-family: 'Sora', sans-serif; font-weight: 600;">
-                Buy 10 Credits for €4.99
-            </button>
-        `;
-        
-        document.body.appendChild(insufficientModal);
-        
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            if (insufficientModal.parentElement) {
-                insufficientModal.remove();
-            }
-        }, 5000);
     }
 
     purchaseCredits() {
@@ -341,21 +334,60 @@ class MobileMonetization {
             <div class="purchase-success-subtitle">10 credits added to your account</div>
         `;
         
+        successElement.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: linear-gradient(135deg, #00bcd4, #00e5ff);
+            padding: 2rem 3rem;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+            font-family: 'Sora', sans-serif;
+            box-shadow: 0 20px 60px rgba(0, 188, 212, 0.4);
+            z-index: 10001;
+            opacity: 0;
+            transition: all 0.3s ease;
+        `;
+        
+        const iconStyle = `
+            .purchase-success-icon {
+                font-size: 3rem;
+                margin-bottom: 1rem;
+            }
+            .purchase-success-title {
+                font-size: 1.5rem;
+                font-weight: 700;
+                margin-bottom: 0.5rem;
+            }
+            .purchase-success-subtitle {
+                font-size: 1rem;
+                opacity: 0.9;
+            }
+        `;
+        
+        const style = document.createElement('style');
+        style.textContent = iconStyle;
+        document.head.appendChild(style);
+        
         document.body.appendChild(successElement);
         
         // Show success animation
         setTimeout(() => {
-            successElement.classList.add('visible');
+            successElement.style.opacity = '1';
+            successElement.style.transform = 'translate(-50%, -50%) scale(1)';
         }, 100);
         
         // Auto-remove after 3 seconds
         setTimeout(() => {
-            successElement.classList.remove('visible');
+            successElement.style.opacity = '0';
+            successElement.style.transform = 'translate(-50%, -50%) scale(0.8)';
             setTimeout(() => {
                 if (successElement.parentElement) {
                     successElement.remove();
                 }
-            }, 500);
+            }, 300);
         }, 3000);
     }
 
@@ -393,14 +425,6 @@ class MobileMonetization {
         }
     }
 
-    setupGenerationModal() {
-        // Watch ad button
-        const watchAdBtn = document.getElementById('watchAdBtn');
-        if (watchAdBtn) {
-            watchAdBtn.addEventListener('click', () => this.watchAd());
-        }
-    }
-
     showStatusMessage(message, duration = 3000) {
         const statusMsg = document.createElement('div');
         statusMsg.style.cssText = `
@@ -419,6 +443,7 @@ class MobileMonetization {
             opacity: 0;
             transform: translateX(100%);
             transition: all 0.3s ease;
+            max-width: 90%;
         `;
         statusMsg.textContent = message;
         
@@ -442,30 +467,6 @@ class MobileMonetization {
                 }
             }, 300);
         }, duration);
-    }
-
-    // ========================================
-    // INTEGRATION WITH EXISTING GENERATE FLOW
-    // ========================================
-
-    // Call this from your existing generate button click handler
-    beforeGenerate() {
-        return this.startGeneration();
-    }
-
-    // Call this when generation actually completes
-    onGenerationComplete() {
-        this.completeGeneration();
-    }
-
-    // Call this when generation fails
-    onGenerationError(error) {
-        this.hideGenerationModal();
-        this.showStatusMessage(`❌ Generation failed: ${error}`, 5000);
-        
-        // Refund credit on error
-        this.addCredits(1);
-        this.showStatusMessage('💳 Credit refunded due to error', 3000);
     }
 }
 
