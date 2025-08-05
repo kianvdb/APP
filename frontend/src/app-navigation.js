@@ -316,7 +316,7 @@ class AppNavigation {
                         <div class="control-section image-upload">
                             <label class="control-label">Upload Image</label>
                             <div class="upload-area" id="uploadArea">
-                                <input type="file" id="imageInput" accept="image/*" hidden/>
+                                <input type="file" id="imageInput" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/*" capture="environment" hidden/>
                                 <div class="upload-placeholder" id="uploadPlaceholder">
                                     <svg class="upload-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
@@ -1098,25 +1098,40 @@ class AppNavigation {
         }, 500);
     }
 
-    async initializeGenerate() {
-        console.log('🎯 Initializing generate section...');
-        
-        // Create a new instance if it doesn't exist
-        if (!window.generateController) {
-            window.generateController = new GenerateController(this.getApiBaseUrl());
+   async initializeGenerate() {
+    console.log('🎯 Initializing generate section...');
+    
+    // Create a new instance if it doesn't exist
+    if (!window.generateController) {
+        window.generateController = new GenerateController(this.getApiBaseUrl());
+    }
+    
+    // Reset any existing state when re-entering the section
+    if (window.generateController) {
+        // If there's an existing generation in progress, don't reset
+        if (window.generateController.generateState.currentView === 'loading') {
+            console.log('⚠️ Generation in progress, not resetting');
+            return;
         }
         
-        // Wait a moment for DOM to be ready
-        setTimeout(() => {
-            // Setup all event listeners
-            window.generateController.setupGenerateEventListeners();
-            
-            // Initialize dog facts
-            window.generateController.initializeDogFacts();
-            
-            console.log('✅ Generate section initialized with GenerateController');
-        }, 100);
+        // If we're coming back to the form, ensure it's properly reset
+        if (window.generateController.generateState.currentView === 'viewer') {
+            console.log('🔄 Viewer active, keeping state');
+            return;
+        }
     }
+    
+    // Wait a moment for DOM to be ready
+    setTimeout(() => {
+        // Setup all event listeners
+        window.generateController.setupGenerateEventListeners();
+        
+        // Initialize dog facts
+        window.generateController.initializeDogFacts();
+        
+        console.log('✅ Generate section initialized with GenerateController');
+    }, 100);
+}
 
     async initializeAssets() {
         console.log('🎯 Initializing public assets section...');

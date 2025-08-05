@@ -30,128 +30,168 @@ class GenerateController {
     }
 
     setupGenerateEventListeners() {
-        // Image upload
-        const uploadArea = document.getElementById('uploadArea');
-        const imageInput = document.getElementById('imageInput');
+    // Image upload
+    const uploadArea = document.getElementById('uploadArea');
+    const imageInput = document.getElementById('imageInput');
+    
+    if (uploadArea && imageInput) {
+        // Remove old listeners to prevent duplicates
+        const newUploadArea = uploadArea.cloneNode(true);
+        uploadArea.parentNode.replaceChild(newUploadArea, uploadArea);
         
-        if (uploadArea && imageInput) {
-            uploadArea.addEventListener('click', (e) => {
-                // Don't trigger if clicking on change button
-                if (!e.target.closest('.change-image-btn')) {
+        // Re-get the element after replacement
+        const uploadAreaNew = document.getElementById('uploadArea');
+        const imageInputNew = document.getElementById('imageInput');
+        
+        uploadAreaNew.addEventListener('click', (e) => {
+            // Don't trigger if clicking on change button
+            if (!e.target.closest('.change-image-btn')) {
+                // Reset input before clicking to ensure it works
+                imageInputNew.value = '';
+                imageInputNew.click();
+            }
+        });
+        
+        imageInputNew.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                // More thorough file type check
+                const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+                if (validTypes.includes(file.type.toLowerCase()) || file.type.startsWith('image/')) {
+                    this.handleImageUpload(file);
+                } else {
+                    this.showPremiumError('Please select a valid image file (JPG, PNG, WEBP)');
+                    imageInputNew.value = ''; // Clear invalid selection
+                }
+            }
+        });
+        
+        // Drag and drop (works on desktop, limited on mobile)
+        uploadAreaNew.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadAreaNew.classList.add('drag-over');
+        });
+        
+        uploadAreaNew.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadAreaNew.classList.remove('drag-over');
+        });
+        
+        uploadAreaNew.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadAreaNew.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files && files.length > 0) {
+                const file = files[0];
+                const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+                if (validTypes.includes(file.type.toLowerCase()) || file.type.startsWith('image/')) {
+                    // Reset input and handle upload
+                    imageInputNew.value = '';
+                    this.handleImageUpload(file);
+                } else {
+                    this.showPremiumError('Please select a valid image file (JPG, PNG, WEBP)');
+                }
+            }
+        });
+    }
+    
+    // Change image button with improved handling
+    setTimeout(() => {
+        const changeImageBtn = document.getElementById('changeImageBtn');
+        if (changeImageBtn) {
+            // Remove old listener if exists
+            const newChangeBtn = changeImageBtn.cloneNode(true);
+            changeImageBtn.parentNode.replaceChild(newChangeBtn, changeImageBtn);
+            
+            document.getElementById('changeImageBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                const imageInput = document.getElementById('imageInput');
+                if (imageInput) {
+                    imageInput.value = ''; // Reset before clicking
                     imageInput.click();
                 }
             });
-            
-            imageInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (file && file.type.startsWith('image/')) {
-                    this.handleImageUpload(file);
-                }
-            });
-            
-            // Drag and drop
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.classList.add('drag-over');
-            });
-            
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.classList.remove('drag-over');
-            });
-            
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('drag-over');
-                const file = e.dataTransfer.files[0];
-                if (file && file.type.startsWith('image/')) {
-                    this.handleImageUpload(file);
-                }
-            });
         }
-        
-        // Change image button
-        const changeImageBtn = document.getElementById('changeImageBtn');
-        if (changeImageBtn) {
-            changeImageBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                imageInput.click();
-            });
-        }
-        
-        // Toggle buttons
-        document.querySelectorAll('.toggle-group').forEach(group => {
-            const buttons = group.querySelectorAll('.toggle-btn');
-            buttons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    buttons.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    
-                    // Update settings based on parent control
-                    const parentSection = btn.closest('.control-section');
-                    const label = parentSection.querySelector('.control-label').textContent;
-                    
-                    if (label.includes('Symmetry')) {
-                        this.generateState.settings.symmetryMode = btn.dataset.value;
-                    } else if (label.includes('Topology')) {
-                        this.generateState.settings.topology = btn.dataset.value;
-                    } else if (label.includes('Texture')) {
-                        this.generateState.settings.shouldTexture = btn.dataset.value === 'true';
-                        // Show/hide PBR section
-                        const pbrSection = document.getElementById('pbrSection');
-                        if (pbrSection) {
-                            pbrSection.style.display = this.generateState.settings.shouldTexture ? 'block' : 'none';
-                        }
+    }, 100);
+    
+    // Toggle buttons
+    document.querySelectorAll('.toggle-group').forEach(group => {
+        const buttons = group.querySelectorAll('.toggle-btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                buttons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Update settings based on parent control
+                const parentSection = btn.closest('.control-section');
+                const label = parentSection.querySelector('.control-label').textContent;
+                
+                if (label.includes('Symmetry')) {
+                    this.generateState.settings.symmetryMode = btn.dataset.value;
+                } else if (label.includes('Topology')) {
+                    this.generateState.settings.topology = btn.dataset.value;
+                } else if (label.includes('Texture')) {
+                    this.generateState.settings.shouldTexture = btn.dataset.value === 'true';
+                    // Show/hide PBR section
+                    const pbrSection = document.getElementById('pbrSection');
+                    if (pbrSection) {
+                        pbrSection.style.display = this.generateState.settings.shouldTexture ? 'block' : 'none';
                     }
-                });
+                }
             });
         });
-        
-        // Polycount slider
-        const polycountSlider = document.getElementById('polycountSlider');
-        const polycountValue = document.getElementById('polycountValue');
-        
-        if (polycountSlider && polycountValue) {
-            polycountSlider.addEventListener('input', (e) => {
-                const value = parseInt(e.target.value);
-                polycountValue.textContent = value.toLocaleString();
-                this.generateState.settings.targetPolycount = value;
-            });
-        }
-        
-        // PBR checkbox
-        const pbrCheckbox = document.getElementById('pbrCheckbox');
-        if (pbrCheckbox) {
-            pbrCheckbox.addEventListener('change', (e) => {
-                this.generateState.settings.enablePBR = e.target.checked;
-            });
-        }
-        
-        // Generate button
-        const generateBtn = document.getElementById('generateModelBtn');
-        if (generateBtn) {
-            generateBtn.addEventListener('click', () => this.handleGenerate());
-        }
-        
-        // Watch ad button
-        const watchAdBtn = document.getElementById('watchAdBtn');
-        if (watchAdBtn) {
-            watchAdBtn.addEventListener('click', () => this.handleWatchAd());
-        }
-        
-        // Viewer state buttons
-        const downloadBtn = document.getElementById('downloadBtn');
-        const exportBtn = document.getElementById('exportBtn');
-        const rigBtn = document.getElementById('rigBtn');
-        const favoriteBtn = document.getElementById('favoriteBtn');
-        const newModelBtn = document.getElementById('newModelBtn');
-        
-        if (downloadBtn) downloadBtn.addEventListener('click', () => this.handleDownload());
-        if (exportBtn) exportBtn.addEventListener('click', () => this.handleExport());
-        if (rigBtn) rigBtn.addEventListener('click', () => this.handleRigAnimate());
-        if (favoriteBtn) favoriteBtn.addEventListener('click', () => this.handleSaveToFavorites());
-        if (newModelBtn) newModelBtn.addEventListener('click', () => this.resetToForm());
+    });
+    
+    // Polycount slider
+    const polycountSlider = document.getElementById('polycountSlider');
+    const polycountValue = document.getElementById('polycountValue');
+    
+    if (polycountSlider && polycountValue) {
+        polycountSlider.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            polycountValue.textContent = value.toLocaleString();
+            this.generateState.settings.targetPolycount = value;
+        });
     }
+    
+    // PBR checkbox
+    const pbrCheckbox = document.getElementById('pbrCheckbox');
+    if (pbrCheckbox) {
+        pbrCheckbox.addEventListener('change', (e) => {
+            this.generateState.settings.enablePBR = e.target.checked;
+        });
+    }
+    
+    // Generate button
+    const generateBtn = document.getElementById('generateModelBtn');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', () => this.handleGenerate());
+    }
+    
+    // Watch ad button
+    const watchAdBtn = document.getElementById('watchAdBtn');
+    if (watchAdBtn) {
+        watchAdBtn.addEventListener('click', () => this.handleWatchAd());
+    }
+    
+    // Viewer state buttons
+    const downloadBtn = document.getElementById('downloadBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const rigBtn = document.getElementById('rigBtn');
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    const newModelBtn = document.getElementById('newModelBtn');
+    
+    if (downloadBtn) downloadBtn.addEventListener('click', () => this.handleDownload());
+    if (exportBtn) exportBtn.addEventListener('click', () => this.handleExport());
+    if (rigBtn) rigBtn.addEventListener('click', () => this.handleRigAnimate());
+    if (favoriteBtn) favoriteBtn.addEventListener('click', () => this.handleSaveToFavorites());
+    if (newModelBtn) newModelBtn.addEventListener('click', () => this.resetToForm());
+}
 
     handleImageUpload(file) {
         const reader = new FileReader();
@@ -1060,13 +1100,28 @@ resetToForm() {
     this.generateState.selectedImage = null;
     this.generateState.progress = 0;
     
+    // CRITICAL: Reset the file input element
+    const imageInput = document.getElementById('imageInput');
+    if (imageInput) {
+        imageInput.value = ''; // Clear the file input
+        imageInput.files = null; // Clear files property
+    }
+    
     // Reset UI
     const uploadPlaceholder = document.getElementById('uploadPlaceholder');
     const uploadPreview = document.getElementById('uploadPreview');
+    const previewImage = document.getElementById('previewImage');
     
     if (uploadPlaceholder && uploadPreview) {
         uploadPlaceholder.style.display = 'flex';
         uploadPreview.style.display = 'none';
+    }
+    
+    // Clear preview image source
+    if (previewImage) {
+        previewImage.src = '';
+        previewImage.onload = null;
+        previewImage.onerror = null;
     }
     
     // Clear intervals
@@ -1078,6 +1133,21 @@ resetToForm() {
         clearInterval(this.dogFactInterval);
         this.dogFactInterval = null;
     }
+    
+    // Clean up 3D viewer if exists
+    if (this.viewer3D) {
+        if (this.viewer3D.renderer) {
+            this.viewer3D.renderer.dispose();
+        }
+        if (this.viewer3D.pmremGenerator) {
+            this.viewer3D.pmremGenerator.dispose();
+        }
+        this.viewer3D = null;
+    }
+    
+    // Clear the generated model data
+    this.generateState.generatedModelData = null;
+    this.generateState.taskId = null;
 }
 
 showPremiumError(message) {
