@@ -2160,14 +2160,18 @@ html, body {
 /* Enhanced Loading State - FIXED FOR BOTH CLASS AND ID */
 .generate-loading-state,
 #generateLoadingState {
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0a 100%);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #0a0a0a;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
+    z-index: 1;
     overflow: hidden;
+    padding: 2rem 1rem;
 }
 
 /* Animated Background */
@@ -2180,98 +2184,97 @@ html, body {
 
 .particle {
     position: absolute;
-    width: 4px;
-    height: 4px;
-    background: #00bcd4;
+    width: 2px;
+    height: 2px;
+    background: rgba(0, 188, 212, 0.6);
     border-radius: 50%;
-    box-shadow: 0 0 10px rgba(0, 188, 212, 0.5);
+    opacity: 0;
     animation: float-particle 20s infinite linear;
 }
 
-.particle:nth-child(1) { left: 10%; animation-delay: 0s; animation-duration: 15s; }
-.particle:nth-child(2) { left: 30%; animation-delay: 2s; animation-duration: 20s; }
-.particle:nth-child(3) { left: 50%; animation-delay: 4s; animation-duration: 18s; }
-.particle:nth-child(4) { left: 70%; animation-delay: 6s; animation-duration: 22s; }
-.particle:nth-child(5) { left: 90%; animation-delay: 8s; animation-duration: 16s; }
+.particle:nth-child(1) { left: 10%; top: 100%; animation-delay: 0s; animation-duration: 15s; }
+.particle:nth-child(2) { left: 30%; top: 100%; animation-delay: 2s; animation-duration: 20s; }
+.particle:nth-child(3) { left: 50%; top: 100%; animation-delay: 4s; animation-duration: 18s; }
+.particle:nth-child(4) { left: 70%; top: 100%; animation-delay: 6s; animation-duration: 22s; }
+.particle:nth-child(5) { left: 90%; top: 100%; animation-delay: 8s; animation-duration: 16s; }
 
 @keyframes float-particle {
     0% {
-        transform: translateY(100vh) rotate(0deg);
+        transform: translateY(0) translateX(-20px);
         opacity: 0;
     }
     10% {
-        opacity: 1;
+        opacity: 0.6;
     }
     90% {
-        opacity: 1;
+        opacity: 0.6;
     }
     100% {
-        transform: translateY(-100vh) rotate(720deg);
+        transform: translateY(-100vh) translateX(20px);
         opacity: 0;
     }
 }
 
 .loading-content {
     text-align: center;
-    padding: 2rem;
+    padding: 0;
     max-width: 400px;
     width: 100%;
+    height: calc(100% - 4rem);
     position: relative;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    overflow: visible; /* Added to prevent clipping */
 }
 
 /* Animated Title */
 .loading-title {
     font-family: 'Sora', sans-serif;
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: white;
-    margin-bottom: 2rem;
-    display: flex;
-    justify-content: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.title-word {
-    display: inline-block;
-    animation: title-bounce 2s ease-in-out infinite;
-}
-
-.title-word:nth-child(1) { animation-delay: 0s; }
-.title-word:nth-child(2) { animation-delay: 0.1s; }
-.title-word:nth-child(3) { animation-delay: 0.2s; }
-.title-word:nth-child(4) { animation-delay: 0.3s; }
-
-@keyframes title-bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+    margin: 0 0 1rem 0;
+    text-align: center;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
 }
 
 /* Enhanced Progress Circle */
 .progress-circle-container {
     position: relative;
-    width: 200px;
-    height: 200px;
-    margin: 0 auto 2rem;
+    width: 180px;
+    height: 180px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .progress-glow {
     position: absolute;
-    inset: -20px;
-    background: radial-gradient(circle, rgba(0, 188, 212, 0.3) 0%, transparent 70%);
+    inset: -10px; /* Reduced from -20px to prevent overflow */
+    background: radial-gradient(circle, rgba(0, 188, 212, 0.2) 0%, transparent 70%);
     border-radius: 50%;
     animation: pulse-glow 2s ease-in-out infinite;
 }
 
 @keyframes pulse-glow {
     0%, 100% { transform: scale(1); opacity: 0.5; }
-    50% { transform: scale(1.1); opacity: 0.8; }
+    50% { transform: scale(1.05); opacity: 0.8; } /* Reduced from 1.1 */
 }
 
 .progress-circle {
     transform: rotate(-90deg);
-    filter: drop-shadow(0 0 20px rgba(0, 188, 212, 0.6));
+    filter: drop-shadow(0 0 15px rgba(0, 188, 212, 0.5)); /* Reduced shadow spread */
+    width: 180px;
+    height: 180px;
+    position: relative; /* Added positioning */
+    z-index: 1; /* Ensure it's above glow */
 }
 
 .progress-bg {
@@ -2284,14 +2287,14 @@ html, body {
     fill: none;
     stroke-width: 8;
     stroke-linecap: round;
-    stroke-dasharray: 565.48;
-    stroke-dashoffset: 565.48;
+    stroke-dasharray: 534.07; /* Updated for radius 85 */
+    stroke-dashoffset: 534.07; /* Updated for radius 85 */
     transition: stroke-dashoffset 0.5s ease;
 }
 
 .progress-text {
     position: absolute;
-    top: 50%;
+    top: 45%;
     left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
@@ -2345,147 +2348,130 @@ html, body {
     }
 }
 
-/* Enhanced Dog Facts */
+
+/* Enhanced Dog Facts - Now Minimal 3D Facts */
 .dog-fact-container {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
+    width: 100%;
+    max-width: 350px;
     position: relative;
-    overflow: hidden;
-}
-
-.dog-fact-container::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(45deg, transparent, rgba(0, 188, 212, 0.1), transparent);
-    animation: shimmer-slow 4s ease-in-out infinite;
-}
-
-@keyframes shimmer-slow {
-    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-    100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    padding: 0;
+    margin: 0;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .dog-fact-icon {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
+    display: none; /* Remove icon */
 }
 
 .dog-fact-text {
     font-family: 'Inter', sans-serif;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.7);
     line-height: 1.5;
-    font-size: 0.95rem;
-    transition: opacity 0.3s ease;
-    position: relative;
-    z-index: 1;
+    font-size: 0.9rem;
+    transition: all 0.5s ease;
+    text-align: center;
+    padding: 0 1rem;
+    position: absolute;
+    width: 100%;
 }
 
 .fact-decoration {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 1.5rem;
-    animation: sparkle 2s ease-in-out infinite;
+    display: none; /* Remove star decorations */
 }
 
-.fact-decoration.left { left: 1rem; }
-.fact-decoration.right { right: 1rem; animation-delay: 1s; }
-
-@keyframes sparkle {
-    0%, 100% { opacity: 0.3; transform: translateY(-50%) scale(0.8); }
-    50% { opacity: 1; transform: translateY(-50%) scale(1.2); }
-}
-
-/* Enhanced Ad Button */
+/* Clean Ad Button for Mobile */
 .ad-boost-section {
-    margin-bottom: 2rem;
+    width: 100%;
+    max-width: 350px;
+    flex-shrink: 0;
+    position: relative;
 }
 
 .watch-ad-btn {
     width: 100%;
-    padding: 1.2rem;
-    background: linear-gradient(135deg, #ff6b6b, #ff8787);
-    border: none;
-    border-radius: 16px;
-    color: white;
+    padding: 1rem;
+    background: rgba(0, 188, 212, 0.05);
+    border: 2px solid #00bcd4;
+    border-radius: 50px;
+    color: #00bcd4;
     font-family: 'Sora', sans-serif;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.8rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 8px 30px rgba(255, 107, 107, 0.4);
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
     position: relative;
     overflow: hidden;
-    transform: translateZ(0);
+    backdrop-filter: blur(10px);
+    font-weight: 600;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+    box-shadow: 0 0 20px rgba(0, 188, 212, 0.2);
 }
 
-.ad-btn-bg {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(45deg, 
-        transparent 30%, 
-        rgba(255, 255, 255, 0.1) 50%, 
-        transparent 70%);
-    transform: translateX(-100%);
-    animation: shimmer-btn 3s ease-in-out infinite;
+/* Subtle animated border glow */
+@keyframes borderGlow {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(0, 188, 212, 0.2),
+                    inset 0 0 10px rgba(0, 188, 212, 0.05);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(0, 188, 212, 0.4),
+                    inset 0 0 15px rgba(0, 188, 212, 0.1);
+    }
 }
 
-@keyframes shimmer-btn {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+.watch-ad-btn {
+    animation: borderGlow 3s ease-in-out infinite;
 }
 
-.watch-ad-btn:hover {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 12px 40px rgba(255, 107, 107, 0.5);
-}
-
+/* Touch interaction */
 .watch-ad-btn:active {
-    transform: translateY(0) scale(0.98);
+    transform: scale(0.97);
+    background: rgba(0, 188, 212, 0.1);
+}
+
+/* Disabled state during ad */
+.watch-ad-btn:disabled {
+    background: rgba(100, 100, 100, 0.05);
+    border-color: #666;
+    color: #666;
+    animation: none;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
 .ad-icon {
-    font-size: 1.5rem;
-    z-index: 1;
+    font-size: 1.2rem;
 }
 
 .ad-text {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
-    z-index: 1;
 }
 
 .ad-boost {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 0.25rem 0.5rem;
+    background: rgba(0, 188, 212, 0.15);
+    padding: 0.2rem 0.6rem;
     border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    z-index: 1;
-    animation: pulse-badge 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse-badge {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(0, 188, 212, 0.3);
 }
 
 .ad-info {
     text-align: center;
     color: rgba(255, 255, 255, 0.5);
-    font-size: 0.8rem;
-    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    margin-top: 0.8rem;
+    letter-spacing: 0.3px;
 }
 
 /* Progress boost animation */

@@ -349,11 +349,12 @@ updateProgressUI(progress, statusMessage) {
     const progressStatus = document.getElementById('progressStatus');
     
     if (progressFill) {
-        const circumference = 2 * Math.PI * 90;
-        const offset = circumference - (circumference * progress / 100);
-        progressFill.style.strokeDasharray = `${circumference}`;
-        progressFill.style.strokeDashoffset = `${offset}`;
-    }
+    // Fixed radius to match the actual SVG circle radius (85 instead of 90)
+    const circumference = 2 * Math.PI * 85;
+    const offset = circumference - (circumference * progress / 100);
+    progressFill.style.strokeDasharray = `${circumference}`;
+    progressFill.style.strokeDashoffset = `${offset}`;
+}
     
     if (progressPercent) {
         progressPercent.textContent = Math.floor(progress) + '%';
@@ -371,7 +372,6 @@ handleWatchAd() {
     // Disable button during ad
     watchAdBtn.disabled = true;
     watchAdBtn.innerHTML = `
-        <div class="ad-btn-bg"></div>
         <span class="ad-icon">⏳</span>
         <span class="ad-text">Loading Ad...</span>
     `;
@@ -406,16 +406,13 @@ onAdWatched() {
     if (watchAdBtn) {
         watchAdBtn.disabled = false;
         watchAdBtn.innerHTML = `
-            <div class="ad-btn-bg"></div>
-            <span class="ad-icon">📺</span>
+            <span class="ad-icon">⚡</span>
             <span class="ad-text">Watch Another Ad</span>
-            <span class="ad-boost">⚡ Speed Boost ${this.generateState.adsWatched}x</span>
+            <span class="ad-boost">${this.generateState.adsWatched + 1}x Faster</span>
         `;
     }
     
-    // Show feedback with boost count
-    this.showFeedback(`Speed Boost ${this.generateState.adsWatched}x activated! 🚀`, 'success');
-    
+
     // Optional: Call backend to notify about ad watch (for priority processing)
     this.notifyAdWatched();
 }
@@ -425,10 +422,9 @@ onAdSkipped() {
     if (watchAdBtn) {
         watchAdBtn.disabled = false;
         watchAdBtn.innerHTML = `
-            <div class="ad-btn-bg"></div>
-            <span class="ad-icon">📺</span>
+            <span class="ad-icon">⚡</span>
             <span class="ad-text">Watch Ad for Speed Boost</span>
-            <span class="ad-boost">⚡ Instant Boost</span>
+            <span class="ad-boost">2x Faster</span>
         `;
     }
 }
@@ -471,16 +467,16 @@ async notifyAdWatched() {
 
 initializeDogFacts() {
     this.dogFacts = [
-        "Dogs have been human companions for over 15,000 years!",
-        "A dog's sense of smell is 10,000 to 100,000 times stronger than humans.",
-        "Dogs can learn over 150 words and can count up to four or five.",
-        "The average dog lives 10-13 years, depending on size and breed.",
-        "Dogs dream just like humans and can have nightmares too!",
-        "A dog's nose print is unique, just like a human's fingerprint.",
-        "Dogs can see in color, but not as vividly as humans.",
-        "Puppies are born deaf and blind but develop these senses quickly.",
-        "Dogs have three eyelids: upper, lower, and a third for protection.",
-        "The smallest dog breed is the Chihuahua, the largest is the Great Dane."
+        "3D modeling transforms flat images into immersive experiences",
+        "Professional 3D models can contain millions of polygons",
+        "The first 3D animation was created in 1972",
+        "Modern games use real-time 3D rendering at 60+ FPS",
+        "3D printing requires watertight models with no gaps",
+        "Photogrammetry can create 3D models from multiple photos",
+        "A single 3D character can take weeks to model by hand",
+        "AI can now generate 3D models in minutes instead of hours",
+        "Virtual reality relies entirely on 3D graphics technology",
+        "3D models are used in medicine, architecture, and engineering"
     ];
 }
 
@@ -493,17 +489,19 @@ startDogFactsRotation() {
         const dogFactText = document.getElementById('dogFactText');
         if (dogFactText) {
             dogFactText.style.opacity = '0';
+            dogFactText.style.transform = 'translateY(10px)';
             setTimeout(() => {
                 dogFactText.textContent = this.dogFacts[factIndex];
                 dogFactText.style.opacity = '1';
+                dogFactText.style.transform = 'translateY(0)';
                 factIndex = (factIndex + 1) % this.dogFacts.length;
-            }, 300);
+            }, 500);
         }
     };
     
     // Start rotation
     rotateFact();
-    this.dogFactInterval = setInterval(rotateFact, 5000);
+    this.dogFactInterval = setInterval(rotateFact, 4000);
 }
 
 switchToLoadingState() {
@@ -547,6 +545,8 @@ switchToViewerState() {
     this.generateState.currentView = 'viewer';
 }
 
+// Replace the entire initialize3DViewer() method in generate-controller.js with this:
+
 async initialize3DViewer() {
     const viewerContainer = document.getElementById('viewer3d');
     if (!viewerContainer) return;
@@ -554,70 +554,142 @@ async initialize3DViewer() {
     // Clear existing content
     viewerContainer.innerHTML = '';
     
-    // Create Three.js scene matching website style
+    // Create Three.js scene matching main.js EXACTLY
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a0a);
     
-    // Camera
+    // High-quality gradient background (EXACT copy from main.js)
+    const canvasBg = document.createElement('canvas');
+    canvasBg.width = 2;
+    canvasBg.height = 2;
+    const context = canvasBg.getContext('2d');
+    const gradient = context.createLinearGradient(0, 0, 0, 2);
+    gradient.addColorStop(0, '#0a0a0a');    // Top: very dark gray
+    gradient.addColorStop(0.5, '#0a0c0d');  // Middle: slightly blue-tinted dark
+    gradient.addColorStop(1, '#000000');    // Bottom: pure black
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, 2, 2);
+    
+    scene.background = new THREE.CanvasTexture(canvasBg);
+    scene.fog = new THREE.FogExp2(0x0a0a0a, 0.02);
+    
+    // Camera - EXACT same as main.js
     const camera = new THREE.PerspectiveCamera(
         50,
         viewerContainer.offsetWidth / viewerContainer.offsetHeight,
         0.1,
-        1000
+        200
     );
-    camera.position.set(5, 5, 5);
+    camera.position.set(0, 3, 12);
     
-    // Renderer
+    // Enhanced high-quality renderer - EXACT same as main.js
     const renderer = new THREE.WebGLRenderer({ 
         antialias: true,
-        alpha: true
+        alpha: true,
+        powerPreference: "high-performance",
+        precision: "highp",
+        logarithmicDepthBuffer: true
     });
+    
     renderer.setSize(viewerContainer.offsetWidth, viewerContainer.offsetHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1;
+    renderer.toneMappingExposure = 1.2;
+    renderer.physicallyCorrectLights = true;
+    
+    renderer.setClearColor(0x000000, 0);
+    renderer.sortObjects = true;
+    renderer.shadowMap.autoUpdate = true;
     
     viewerContainer.appendChild(renderer.domElement);
     
-    // Controls
+    // Setup environment for reflections
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+    scene.environment = pmremGenerator.fromScene(scene).texture;
+    
+    // Enhanced controls - EXACT same as main.js
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 1.5, 0);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.target.set(0, 0, 0);
+    controls.rotateSpeed = 0.5;
+    controls.minDistance = 3;
+    controls.maxDistance = 25;
+    controls.maxPolarAngle = Math.PI / 2 - 0.05;
+    controls.minPolarAngle = Math.PI / 6;
     controls.update();
     
-    // Lighting - Premium setup matching website
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    // DARKER STUDIO LIGHTING - EXACT copy from main.js
+    // Clear existing lights
+    scene.traverse((child) => {
+        if (child.isLight) scene.remove(child);
+    });
+
+    // Darker ambient light for more atmospheric feel
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
     scene.add(ambientLight);
-    
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1);
-    keyLight.position.set(5, 10, 5);
+
+    // Hemisphere light for natural feel
+    const hemiLight = new THREE.HemisphereLight(0x87CEEB, 0x8B7355, 0.4);
+    scene.add(hemiLight);
+
+    // Key light with high-res shadows
+    const keyLight = new THREE.DirectionalLight(0xfff5f0, 1.2);
+    keyLight.position.set(5, 8, 5);
     keyLight.castShadow = true;
-    keyLight.shadow.mapSize.width = 2048;
-    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.mapSize.width = 4096;
+    keyLight.shadow.mapSize.height = 4096;
     keyLight.shadow.camera.near = 0.1;
     keyLight.shadow.camera.far = 50;
-    keyLight.shadow.camera.left = -10;
-    keyLight.shadow.camera.right = 10;
-    keyLight.shadow.camera.top = 10;
-    keyLight.shadow.camera.bottom = -10;
+    keyLight.shadow.camera.left = -15;
+    keyLight.shadow.camera.right = 15;
+    keyLight.shadow.camera.top = 15;
+    keyLight.shadow.camera.bottom = -15;
+    keyLight.shadow.bias = -0.0005;
     scene.add(keyLight);
-    
-    const fillLight = new THREE.DirectionalLight(0x80e8ff, 0.5);
-    fillLight.position.set(-3, 5, -3);
+
+    // Fill light
+    const fillLight = new THREE.DirectionalLight(0xb3d0ff, 0.6);
+    fillLight.position.set(-5, 5, -3);
     scene.add(fillLight);
-    
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
-    rimLight.position.set(0, 0, -5);
+
+    // Rim light
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    rimLight.position.set(0, 5, -8);
     scene.add(rimLight);
+
+    // Accent lights
+    const accentLight1 = new THREE.PointLight(0xff9500, 0.2, 20);
+    accentLight1.position.set(-5, 2, 5);
+    scene.add(accentLight1);
+
+    const accentLight2 = new THREE.PointLight(0x00d4ff, 0.2, 20);
+    accentLight2.position.set(5, 2, -5);
+    scene.add(accentLight2);
     
-    // Grid
-    const gridHelper = new THREE.GridHelper(20, 20, 0x00bcd4, 0x00bcd4);
-    gridHelper.material.opacity = 0.2;
-    gridHelper.material.transparent = true;
+    // DARKER GROUND - EXACT copy from main.js
+    // Reflective ground plane
+    const groundGeometry = new THREE.PlaneGeometry(50, 50);
+    const groundMaterial = new THREE.MeshStandardMaterial({
+        color: 0x111111,
+        metalness: 0.9,
+        roughness: 0.8,
+        envMapIntensity: 0.5
+    });
+    
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.95;
+    ground.receiveShadow = true;
+    ground.userData.isGround = true;
+    scene.add(ground);
+
+    // Subtle grid - EXACT copy from main.js
+    const gridHelper = new THREE.GridHelper(20, 40, 0x444444, 0x222222);
+    gridHelper.position.y = -0.94;
     scene.add(gridHelper);
     
     // Load the generated model
@@ -634,33 +706,120 @@ async initialize3DViewer() {
             (gltf) => {
                 const model = gltf.scene;
                 
-                // Center and scale model
-                const box = new THREE.Box3().setFromObject(model);
-                const center = box.getCenter(new THREE.Vector3());
-                const size = box.getSize(new THREE.Vector3());
-                
-                const maxDim = Math.max(size.x, size.y, size.z);
-                const scale = 4 / maxDim;
-                model.scale.multiplyScalar(scale);
-                
-                model.position.x = -center.x * scale;
-                model.position.y = -box.min.y * scale;
-                model.position.z = -center.z * scale;
-                
-                // Enable shadows
+                // Enhanced material quality - matching main.js
                 model.traverse((child) => {
                     if (child.isMesh) {
+                        // Enable shadows
                         child.castShadow = true;
                         child.receiveShadow = true;
                         
-                        // Enhance materials for premium look
+                        // Enhance material quality
                         if (child.material) {
-                            child.material.envMapIntensity = 0.8;
+                            child.material.envMapIntensity = 1.0;
+                            child.material.needsUpdate = true;
+                            
+                            // Maximize texture quality
+                            const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+                            
+                            ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap'].forEach(mapName => {
+                                if (child.material[mapName]) {
+                                    child.material[mapName].anisotropy = maxAnisotropy;
+                                    if (mapName === 'map' || mapName === 'emissiveMap') {
+                                        child.material[mapName].encoding = THREE.sRGBEncoding;
+                                    }
+                                }
+                            });
                         }
                     }
                 });
                 
+                // Start small and animate scale (matching main.js animateModelIn)
+                model.scale.set(0.01, 0.01, 0.01);
+                model.rotation.y = 0;
+                
                 scene.add(model);
+                
+                // Calculate ground position
+                const tempScale = model.scale.x;
+                model.scale.set(1, 1, 1);
+                const box = new THREE.Box3().setFromObject(model);
+                const groundY = -0.95 - box.min.y;
+                model.scale.set(tempScale, tempScale, tempScale);
+                
+                // Animate model in (matching main.js)
+                const startTime = Date.now();
+                const duration = 2000;
+                
+                const animateIn = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    const eased = 1 - Math.pow(1 - progress, 3);
+                    
+                    const scale = 0.01 + (1 - 0.01) * eased;
+                    model.scale.set(scale, scale, scale);
+                    
+                    // Keep model on ground throughout animation
+                    model.position.y = groundY;
+                    
+                    model.rotation.y = (Math.PI * 4 + Math.PI * 0.25) * eased;
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animateIn);
+                    }
+                };
+                
+                animateIn();
+                
+                // Frame model after animation (matching main.js frameModel)
+                setTimeout(() => {
+                    const box = new THREE.Box3().setFromObject(model);
+                    const size = box.getSize(new THREE.Vector3());
+                    const center = box.getCenter(new THREE.Vector3());
+
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    const fov = camera.fov * (Math.PI / 180);
+                    
+                    // Calculate optimal camera distance
+                    let targetDistance = (maxDim / 2) / Math.tan(fov / 2) * 1.5;
+                    targetDistance = Math.max(targetDistance, 3);
+
+                    // Position camera at eye level
+                    const eyeLevel = center.y + size.y * 0.1;
+
+                    const newPos = {
+                        x: center.x,
+                        y: eyeLevel,
+                        z: center.z + targetDistance,
+                    };
+
+                    // Smooth camera animation
+                    const camStartTime = Date.now();
+                    const camDuration = 2000;
+                    const startPos = { ...camera.position };
+                    
+                    const animateCamera = () => {
+                        const elapsed = Date.now() - camStartTime;
+                        const progress = Math.min(elapsed / camDuration, 1);
+                        
+                        const eased = 1 - Math.pow(1 - progress, 2);
+                        
+                        camera.position.x = startPos.x + (newPos.x - startPos.x) * eased;
+                        camera.position.y = startPos.y + (newPos.y - startPos.y) * eased;
+                        camera.position.z = startPos.z + (newPos.z - startPos.z) * eased;
+                        
+                        camera.lookAt(center);
+                        controls.target.copy(center);
+                        controls.update();
+                        
+                        if (progress < 1) {
+                            requestAnimationFrame(animateCamera);
+                        }
+                    };
+                    
+                    animateCamera();
+                }, 600);
+                
                 this.hide3DLoadingState();
                 
                 // Store model reference
@@ -697,7 +856,7 @@ async initialize3DViewer() {
     window.addEventListener('resize', handleResize);
     
     // Store references for cleanup
-    this.viewer3D = { scene, camera, renderer, controls };
+    this.viewer3D = { scene, camera, renderer, controls, pmremGenerator };
 }
 
 show3DLoadingState() {
@@ -791,7 +950,7 @@ async downloadModel(format) {
         // Create a temporary link and click it
         const a = document.createElement('a');
         a.href = downloadUrl;
-        a.download = `dalma-model.${format}`;
+        a.download = `Threely-model.${format}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

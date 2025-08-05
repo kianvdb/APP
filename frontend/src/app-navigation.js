@@ -396,26 +396,21 @@ class AppNavigation {
                     </div>
                     
                     <div class="loading-content">
-                        <h2 class="loading-title">
-                            <span class="title-word">Creating</span>
-                            <span class="title-word">Your</span>
-                            <span class="title-word">3D</span>
-                            <span class="title-word">Model</span>
-                        </h2>
+                        <h2 class="loading-title">Creating Your 3D Model</h2>
                         
                         <!-- Enhanced Progress Circle -->
                         <div class="progress-circle-container">
                             <div class="progress-glow"></div>
-                            <svg class="progress-circle" width="200" height="200">
-                                <defs>
-                                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" style="stop-color:#00bcd4;stop-opacity:1" />
-                                        <stop offset="100%" style="stop-color:#00e5ff;stop-opacity:1" />
-                                    </linearGradient>
-                                </defs>
-                                <circle cx="100" cy="100" r="90" class="progress-bg"/>
-                                <circle cx="100" cy="100" r="90" class="progress-fill" id="progressFill" stroke="url(#progressGradient)"/>
-                            </svg>
+                            <svg class="progress-circle" width="180" height="180" viewBox="0 0 180 180">
+    <defs>
+        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#00bcd4;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#00e5ff;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+    <circle cx="90" cy="90" r="85" class="progress-bg"/>
+    <circle cx="90" cy="90" r="85" class="progress-fill" id="progressFill" stroke="url(#progressGradient)"/>
+</svg>
                             <div class="progress-text">
                                 <span class="progress-percent" id="progressPercent">0%</span>
                                 <span class="progress-status" id="progressStatus">Initializing...</span>
@@ -425,23 +420,19 @@ class AppNavigation {
                             <div class="boost-indicators" id="boostIndicators"></div>
                         </div>
 
-                        <!-- Dog Facts with enhanced styling -->
+                        <!-- 3D Facts with enhanced styling -->
                         <div class="dog-fact-container">
-                            <div class="dog-fact-icon">🐕</div>
-                            <p class="dog-fact-text" id="dogFactText">Dogs have been human companions for over 15,000 years!</p>
-                            <div class="fact-decoration left">✨</div>
-                            <div class="fact-decoration right">✨</div>
+                            <p class="dog-fact-text" id="dogFactText">3D modeling transforms flat images into immersive experiences</p>
                         </div>
 
                         <!-- Enhanced Watch Ad Button -->
                         <div class="ad-boost-section">
                             <button class="watch-ad-btn" id="watchAdBtn">
-                                <div class="ad-btn-bg"></div>
-                                <span class="ad-icon">📺</span>
-                                <span class="ad-text">Watch Ad for Speed Boost</span>
-                                <span class="ad-boost">⚡ Instant Boost</span>
-                            </button>
-                            <p class="ad-info">Watch unlimited ads to speed up generation!</p>
+    <span class="ad-icon">⚡</span>
+    <span class="ad-text">Speed Boost</span>
+    <span class="ad-boost">2x Faster</span>
+</button>
+<p class="ad-info">⚡ Watch ads for unlimited speed boosts!</p>
                         </div>
                     </div>
                 </div>
