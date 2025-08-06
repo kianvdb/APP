@@ -307,181 +307,202 @@ class AppNavigation {
     }
 
     async loadGenerateContent() {
-        return `
-            <div class="generate-container" id="generateContainer">
-                <!-- FORM STATE -->
-                <div class="generate-form-state" id="generateFormState">
-                    <div class="generate-controls-wrapper">
-                        <!-- Image Upload -->
-                        <div class="control-section image-upload">
-                            <label class="control-label">Upload Image</label>
-                            <div class="upload-area" id="uploadArea">
-                                <input type="file" id="imageInput" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/*" capture="environment" hidden/>
-                                <div class="upload-placeholder" id="uploadPlaceholder">
-                                    <svg class="upload-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+    return `
+        <div class="generate-container" id="generateContainer">
+            <!-- FORM STATE -->
+            <div class="generate-form-state" id="generateFormState">
+                <div class="generate-controls-wrapper">
+                    <!-- Image Upload -->
+                    <div class="control-section image-upload">
+                        <label class="control-label">Upload Image</label>
+                        <div class="upload-area" id="uploadArea">
+                            <input type="file" id="imageInput" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/*" capture="environment" hidden/>
+                            <div class="upload-placeholder" id="uploadPlaceholder">
+                                <svg class="upload-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                                </svg>
+                                <p class="upload-text">Tap to upload image</p>
+                                <p class="upload-formats">Supported: JPG, PNG, WEBP</p>
+                            </div>
+                            <div class="upload-preview" id="uploadPreview" style="display: none;">
+                                <img id="previewImage" alt="Preview"/>
+                                <button class="change-image-btn" id="changeImageBtn" type="button">Change Image</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Collapsible Settings -->
+                    <div class="settings-section">
+                        <button class="settings-toggle" id="settingsToggle" type="button">
+                            <div class="settings-toggle-content">
+                                <div class="settings-toggle-left">
+                                    <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                        <path d="M12 1v6m0 6v6m4.22-10.22l4.24 4.24m-4.24 4.24l4.24 4.24M20 12h6m-6 0h-6"></path>
                                     </svg>
-                                    <p class="upload-text">Tap to upload image</p>
-                                    <p class="upload-formats">Supported: JPG, PNG</p>
+                                    <span class="settings-label">Settings</span>
                                 </div>
-                                <div class="upload-preview" id="uploadPreview" style="display: none;">
-                                    <img id="previewImage" alt="Preview"/>
-                                    <button class="change-image-btn" id="changeImageBtn">Change Image</button>
+                                <svg class="settings-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+                            <div class="settings-summary" id="settingsSummary">Default settings</div>
+                        </button>
+                        
+                        <div class="settings-content" id="settingsContent" style="display: none;">
+                            <!-- Symmetry Control -->
+                            <div class="settings-item">
+                                <label class="settings-item-label">Symmetry</label>
+                                <div class="toggle-group">
+                                    <button class="toggle-btn active" data-value="auto">Auto</button>
+                                    <button class="toggle-btn" data-value="on">On</button>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Symmetry Control -->
-                        <div class="control-section">
-                            <label class="control-label">Symmetry</label>
-                            <div class="toggle-group">
-                                <button class="toggle-btn active" data-value="auto">Auto</button>
-                                <button class="toggle-btn" data-value="on">On</button>
+                            <!-- Topology Control -->
+                            <div class="settings-item">
+                                <label class="settings-item-label">Topology</label>
+                                <div class="toggle-group">
+                                    <button class="toggle-btn active" data-value="triangle">Triangles</button>
+                                    <button class="toggle-btn" data-value="quad">Quads</button>
+                                </div>
+                            </div>
+
+                            <!-- Polycount Control -->
+                            <div class="settings-item">
+                                <label class="settings-item-label">Polycount: <span id="polycountValue">30000</span></label>
+                                <input type="range" id="polycountSlider" min="100" max="300000" value="30000" step="100" class="polycount-slider"/>
+                                <div class="polycount-labels">
+                                    <span>100</span>
+                                    <span>300K</span>
+                                </div>
+                            </div>
+
+                            <!-- Texture Control -->
+                            <div class="settings-item">
+                                <label class="settings-item-label">Texture</label>
+                                <div class="toggle-group">
+                                    <button class="toggle-btn active" data-value="true">Yes</button>
+                                    <button class="toggle-btn" data-value="false">No</button>
+                                </div>
+                            </div>
+
+                            <!-- PBR Control -->
+                            <div class="settings-item" id="pbrSection">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="pbrCheckbox" class="premium-checkbox"/>
+                                    <span class="checkbox-custom"></span>
+                                    <span>PBR Materials</span>
+                                </label>
                             </div>
                         </div>
-
-                        <!-- Topology Control -->
-                        <div class="control-section">
-                            <label class="control-label">Topology</label>
-                            <div class="toggle-group">
-                                <button class="toggle-btn active" data-value="triangle">Triangles</button>
-                                <button class="toggle-btn" data-value="quad">Quads</button>
-                            </div>
-                        </div>
-
-                        <!-- Polycount Control -->
-                        <div class="control-section">
-                            <label class="control-label">Polycount: <span id="polycountValue">30000</span></label>
-                            <input type="range" id="polycountSlider" min="100" max="300000" value="30000" step="100" class="polycount-slider"/>
-                            <div class="polycount-labels">
-                                <span>100</span>
-                                <span>300K</span>
-                            </div>
-                        </div>
-
-                        <!-- Texture Control -->
-                        <div class="control-section">
-                            <label class="control-label">Texture</label>
-                            <div class="toggle-group">
-                                <button class="toggle-btn active" data-value="true">Yes</button>
-                                <button class="toggle-btn" data-value="false">No</button>
-                            </div>
-                        </div>
-
-                        <!-- PBR Control -->
-                        <div class="control-section" id="pbrSection">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="pbrCheckbox" class="premium-checkbox"/>
-                                <span class="checkbox-custom"></span>
-                                <span>PBR Enabled</span>
-                            </label>
-                        </div>
-
-                        <!-- Generate Button -->
-                        <button class="generate-model-btn" id="generateModelBtn">
-                            <span class="btn-text">Generate Model</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- LOADING STATE -->
-                <div class="generate-loading-state" id="generateLoadingState" style="display: none;">
-                    <div class="loading-background">
-                        <!-- Animated background particles -->
-                        <div class="particle"></div>
-                        <div class="particle"></div>
-                        <div class="particle"></div>
-                        <div class="particle"></div>
-                        <div class="particle"></div>
-                    </div>
-                    
-                    <div class="loading-content">
-                        <h2 class="loading-title">Creating Your 3D Model</h2>
-                        
-                        <!-- Enhanced Progress Circle -->
-                        <div class="progress-circle-container">
-                            <div class="progress-glow"></div>
-                            <svg class="progress-circle" width="180" height="180" viewBox="0 0 180 180">
-    <defs>
-        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#00bcd4;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#00e5ff;stop-opacity:1" />
-        </linearGradient>
-    </defs>
-    <circle cx="90" cy="90" r="85" class="progress-bg"/>
-    <circle cx="90" cy="90" r="85" class="progress-fill" id="progressFill" stroke="url(#progressGradient)"/>
-</svg>
-                            <div class="progress-text">
-                                <span class="progress-percent" id="progressPercent">0%</span>
-                                <span class="progress-status" id="progressStatus">Initializing...</span>
-                            </div>
-                            
-                            <!-- Boost Indicators -->
-                            <div class="boost-indicators" id="boostIndicators"></div>
-                        </div>
-
-                        <!-- 3D Facts with enhanced styling -->
-                        <div class="dog-fact-container">
-                            <p class="dog-fact-text" id="dogFactText">3D modeling transforms flat images into immersive experiences</p>
-                        </div>
-
-                        <!-- Enhanced Watch Ad Button -->
-                        <div class="ad-boost-section">
-                            <button class="watch-ad-btn" id="watchAdBtn">
-    <span class="ad-icon">⚡</span>
-    <span class="ad-text">Speed Boost</span>
-    <span class="ad-boost">2x Faster</span>
-</button>
-<p class="ad-info">⚡ Watch ads for unlimited speed boosts!</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- VIEWER STATE -->
-                <div class="generate-viewer-state" id="generateViewerState" style="display: none;">
-                    <!-- 3D Viewer -->
-                    <div class="model-viewer" id="modelViewer">
-                        <div id="viewer3d"></div>
                     </div>
 
-                    <!-- Model Actions -->
-                    <div class="model-actions">
-                        <button class="action-btn download-btn" id="downloadBtn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-                            </svg>
-                            <span>Download</span>
-                        </button>
-                        
-                        <button class="action-btn export-btn" id="exportBtn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20 6L9 17l-5-5"/>
-                            </svg>
-                            <span>Export</span>
-                        </button>
-                        
-                        <button class="action-btn rig-btn" id="rigBtn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="3"/>
-                                <path d="M12 1v6m0 6v6m4.22-10.22l4.24 4.24m-4.24 4.24l4.24 4.24M20 12h6m-6 0h-6"/>
-                            </svg>
-                            <span>Rig & Animate</span>
-                        </button>
-                        
-                        <button class="action-btn favorite-btn" id="favoriteBtn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-                            </svg>
-                            <span>Save to Favorites</span>
-                        </button>
-                    </div>
-
-                    <!-- New Model Button -->
-                    <button class="new-model-btn" id="newModelBtn">Create New Model</button>
+                    <!-- Generate Button -->
+                    <button class="generate-model-btn" id="generateModelBtn">
+                        <span class="btn-text">Generate Model</span>
+                    </button>
                 </div>
             </div>
-        `;
-    }
+
+            <!-- LOADING STATE -->
+            <div class="generate-loading-state" id="generateLoadingState" style="display: none;">
+                <div class="loading-background">
+                    <!-- Animated background particles -->
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                </div>
+                
+                <div class="loading-content">
+                    <h2 class="loading-title">Creating Your 3D Model</h2>
+                    
+                    <!-- Enhanced Progress Circle -->
+                    <div class="progress-circle-container">
+                        <div class="progress-glow"></div>
+                        <svg class="progress-circle" width="180" height="180" viewBox="0 0 180 180">
+                            <defs>
+                                <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#00bcd4;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#00e5ff;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="90" cy="90" r="85" class="progress-bg"/>
+                            <circle cx="90" cy="90" r="85" class="progress-fill" id="progressFill" stroke="url(#progressGradient)"/>
+                        </svg>
+                        <div class="progress-text">
+                            <span class="progress-percent" id="progressPercent">0%</span>
+                            <span class="progress-status" id="progressStatus">Initializing...</span>
+                        </div>
+                        
+                        <!-- Boost Indicators -->
+                        <div class="boost-indicators" id="boostIndicators"></div>
+                    </div>
+
+                    <!-- 3D Facts with enhanced styling -->
+                    <div class="dog-fact-container">
+                        <p class="dog-fact-text" id="dogFactText">3D modeling transforms flat images into immersive experiences</p>
+                    </div>
+
+                    <!-- Enhanced Watch Ad Button -->
+                    <div class="ad-boost-section">
+                        <button class="watch-ad-btn" id="watchAdBtn">
+                            <span class="ad-icon">⚡</span>
+                            <span class="ad-text">Speed Boost</span>
+                            <span class="ad-boost">2x Faster</span>
+                        </button>
+                        <p class="ad-info">⚡ Watch ads for unlimited speed boosts!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEWER STATE -->
+            <div class="generate-viewer-state" id="generateViewerState" style="display: none;">
+                <!-- 3D Viewer -->
+                <div class="model-viewer" id="modelViewer">
+                    <div id="viewer3d"></div>
+                </div>
+
+                <!-- Model Actions -->
+                <div class="model-actions">
+                    <button class="action-btn download-btn" id="downloadBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                        </svg>
+                        <span>Download</span>
+                    </button>
+                    
+                    <button class="action-btn export-btn" id="exportBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 6L9 17l-5-5"/>
+                        </svg>
+                        <span>Export</span>
+                    </button>
+                    
+                    <button class="action-btn rig-btn" id="rigBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 1v6m0 6v6m4.22-10.22l4.24 4.24m-4.24 4.24l4.24 4.24M20 12h6m-6 0h-6"/>
+                        </svg>
+                        <span>Rig & Animate</span>
+                    </button>
+                    
+                    <button class="action-btn favorite-btn" id="favoriteBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+                        </svg>
+                        <span>Save to Favorites</span>
+                    </button>
+                </div>
+
+                <!-- New Model Button -->
+                <button class="new-model-btn" id="newModelBtn">Create New Model</button>
+            </div>
+        </div>
+    `;
+}
 
     async loadAssetsContent() {
         return `

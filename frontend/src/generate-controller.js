@@ -119,6 +119,39 @@ class GenerateController {
         }
     }, 100);
     
+    // Settings toggle
+    const settingsToggle = document.getElementById('settingsToggle');
+    const settingsSection = settingsToggle?.closest('.settings-section');
+    const settingsContent = document.getElementById('settingsContent');
+    const settingsSummary = document.getElementById('settingsSummary');
+
+    if (settingsToggle && settingsSection) {
+        settingsToggle.addEventListener('click', () => {
+            const isExpanded = settingsSection.classList.contains('expanded');
+            
+            if (isExpanded) {
+                settingsSection.classList.remove('expanded');
+                settingsContent.style.display = 'none';
+            } else {
+                settingsSection.classList.add('expanded');
+                settingsContent.style.display = 'block';
+            }
+        });
+    }
+
+    // Update settings summary function
+    this.updateSettingsSummary = () => {
+        if (settingsSummary) {
+            const polycount = (this.generateState.settings.targetPolycount / 1000).toFixed(0) + 'K';
+            const texture = this.generateState.settings.shouldTexture ? 'Textured' : 'No Texture';
+            const pbr = this.generateState.settings.enablePBR ? ' + PBR' : '';
+            settingsSummary.textContent = `${polycount} polys, ${texture}${pbr}`.trim();
+        }
+    };
+
+    // Initial summary update
+    this.updateSettingsSummary();
+    
     // Toggle buttons
     document.querySelectorAll('.toggle-group').forEach(group => {
         const buttons = group.querySelectorAll('.toggle-btn');
@@ -128,8 +161,9 @@ class GenerateController {
                 btn.classList.add('active');
                 
                 // Update settings based on parent control
-                const parentSection = btn.closest('.control-section');
-                const label = parentSection.querySelector('.control-label').textContent;
+                const parentSection = btn.closest('.settings-item');
+                const label = parentSection?.querySelector('.settings-item-label')?.textContent || 
+                             btn.closest('.control-section')?.querySelector('.control-label')?.textContent || '';
                 
                 if (label.includes('Symmetry')) {
                     this.generateState.settings.symmetryMode = btn.dataset.value;
@@ -137,12 +171,30 @@ class GenerateController {
                     this.generateState.settings.topology = btn.dataset.value;
                 } else if (label.includes('Texture')) {
                     this.generateState.settings.shouldTexture = btn.dataset.value === 'true';
-                    // Show/hide PBR section
+                    
+                    // Show/hide PBR section based on texture setting
                     const pbrSection = document.getElementById('pbrSection');
                     if (pbrSection) {
-                        pbrSection.style.display = this.generateState.settings.shouldTexture ? 'block' : 'none';
+                        if (this.generateState.settings.shouldTexture) {
+                            pbrSection.style.display = 'block';
+                            pbrSection.style.opacity = '1';
+                            pbrSection.style.transform = 'translateY(0)';
+                        } else {
+                            pbrSection.style.display = 'none';
+                            pbrSection.style.opacity = '0';
+                            pbrSection.style.transform = 'translateY(-10px)';
+                            // Also uncheck PBR when hiding
+                            this.generateState.settings.enablePBR = false;
+                            const pbrCheckbox = document.getElementById('pbrCheckbox');
+                            if (pbrCheckbox) {
+                                pbrCheckbox.checked = false;
+                            }
+                        }
                     }
                 }
+                
+                // Update summary after any toggle change
+                this.updateSettingsSummary();
             });
         });
     });
@@ -156,6 +208,8 @@ class GenerateController {
             const value = parseInt(e.target.value);
             polycountValue.textContent = value.toLocaleString();
             this.generateState.settings.targetPolycount = value;
+            // Update summary after polycount change
+            this.updateSettingsSummary();
         });
     }
     
@@ -164,6 +218,8 @@ class GenerateController {
     if (pbrCheckbox) {
         pbrCheckbox.addEventListener('change', (e) => {
             this.generateState.settings.enablePBR = e.target.checked;
+            // Update summary after PBR change
+            this.updateSettingsSummary();
         });
     }
     
