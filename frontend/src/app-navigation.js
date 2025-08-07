@@ -46,21 +46,176 @@ class AppNavigation {
             }
         }
     }
-
     updateTopBarAccountButton() {
-        const accountBtn = document.querySelector('.header-actions .account-btn');
-        if (accountBtn) {
-            const isAuthenticated = window.authManager?.isAuthenticated();
-            if (isAuthenticated) {
-                const userData = window.authManager?.currentUser || {};
-                const username = userData.email || 'User';
-                const displayName = username.length > 12 ? username.substring(0, 12) + '...' : username;
-                accountBtn.textContent = displayName;
-            } else {
-                accountBtn.textContent = 'Login';
-            }
+    const accountBtn = document.querySelector('.header-actions .account-btn');
+    if (accountBtn) {
+        const isAuthenticated = window.authManager?.isAuthenticated();
+        if (isAuthenticated) {
+            const userData = window.authManager?.currentUser || {};
+            const username = userData.email || 'User';
+            const displayName = username.length > 12 ? username.substring(0, 12) + '...' : username;
+            accountBtn.textContent = displayName;
+        } else {
+            accountBtn.textContent = 'Login';
         }
     }
+}
+// Update liked models count from backend
+async updateLikedModelsCount() {
+    try {
+        const response = await fetch(`${this.getApiBaseUrl()}/auth/liked-assets`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const count = data.assets ? data.assets.length : 0;
+            
+            // Update the count in the account section
+            const countElement = document.getElementById('accountModelsCount');
+            if (countElement) {
+                countElement.textContent = count;
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching liked models count:', error);
+    }
+}
+
+// Load liked models from backend
+async loadLikedModels() {
+    const likedModelsGrid = document.getElementById('likedModelsGrid');
+    const likedModelsEmpty = document.getElementById('likedModelsEmpty');
+    const likedModelsLoading = document.getElementById('likedModelsLoading');
+    const likedModelsError = document.getElementById('likedModelsError');
+    
+    if (!likedModelsGrid) return;
+    
+    // Show loading
+    if (likedModelsLoading) likedModelsLoading.style.display = 'block';
+    if (likedModelsEmpty) likedModelsEmpty.style.display = 'none';
+    if (likedModelsError) likedModelsError.style.display = 'none';
+    
+    try {
+        // Get liked models from backend
+        const response = await fetch(`${this.getApiBaseUrl()}/auth/liked-assets`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch liked models');
+        
+        const data = await response.json();
+        const likedModels = data.assets || [];
+        
+        // Hide loading
+        if (likedModelsLoading) likedModelsLoading.style.display = 'none';
+        
+        if (likedModels.length === 0) {
+            // Show empty state
+            if (likedModelsEmpty) likedModelsEmpty.style.display = 'block';
+            likedModelsGrid.innerHTML = '';
+            return;
+        }
+        
+        // Render liked models
+        likedModelsGrid.innerHTML = likedModels.map(model => {
+            const modelId = model._id || model.id || model.meshyTaskId || model.assetId;
+            const thumbnail = model.thumbnailUrl || model.thumbnail || model.originalImage?.url || '/api/placeholder/180/180';
+            const name = model.name || 'Untitled Model';
+            const views = model.views || 0;
+            const downloads = model.downloads || 0;
+            
+            return `
+                <div class="model-card" onclick="window.MobileAssetViewer.openAsset('${modelId}')" 
+                     style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s ease;">
+                    <div style="aspect-ratio: 1; background: url('${thumbnail}') center/cover; position: relative;">
+                        <button onclick="event.stopPropagation(); window.AppNavigation.removeLikedModel('${modelId}')" 
+                                style="position: absolute; top: 8px; right: 8px; background: rgba(220,53,69,0.9); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div style="padding: 0.8rem;">
+                        <h4 style="color: white; font-size: 0.9rem; margin-bottom: 0.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</h4>
+                        <div style="display: flex; gap: 1rem; color: rgba(255,255,255,0.5); font-size: 0.75rem;">
+                            <span>${views} views</span>
+                            <span>${downloads} downloads</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+    } catch (error) {
+        console.error('Error loading liked models:', error);
+        if (likedModelsLoading) likedModelsLoading.style.display = 'none';
+        if (likedModelsError) likedModelsError.style.display = 'block';
+    }
+}
+
+// Remove a liked model via backend
+async removeLikedModel(modelId) {
+    try {
+        const response = await fetch(`${this.getApiBaseUrl()}/auth/like-asset`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ assetId: modelId })
+        });
+        
+        if (response.ok) {
+            // Reload the liked models view
+            this.loadLikedModels();
+            // Update the count
+            this.updateLikedModelsCount();
+        }
+    } catch (error) {
+        console.error('Error removing liked model:', error);
+    }
+}
+
+// Updated showLikedModels method
+async showLikedModels() {
+    console.log('💖 Showing liked models view...');
+    
+    const mainView = document.getElementById('accountMainView');
+    const likedView = document.getElementById('likedModelsView');
+    
+    if (mainView && likedView) {
+        mainView.style.display = 'none';
+        likedView.style.display = 'block';
+        
+        // Setup liked models functionality
+        this.setupLikedModelsEventListeners();
+        
+        // Load liked models from backend
+        await this.loadLikedModels();
+    }
+}
+
+// Update initializeAccount to call updateLikedModelsCount
+async initializeAccount() {
+    console.log('🎯 Initializing account section...');
+    
+    const isAuthenticated = window.authManager?.isAuthenticated();
+    if (isAuthenticated) {
+        const userData = window.authManager?.currentUser || {};
+        this.updateAccountNavLabel(userData.email);
+        this.updateTopBarAccountButton();
+        
+        // Update liked models count from backend
+        await this.updateLikedModelsCount();
+        
+        // Update credits
+        this.updateAccountStats();
+    } else {
+        this.updateAccountNavLabel(null);
+        this.updateTopBarAccountButton();
+    }
+}
 
     // COMPLETE REPLACEMENT of init function
 init(initialSection = null) {
@@ -532,7 +687,7 @@ init(initialSection = null) {
 
     async loadAssetsContent() {
         return `
-            <div class="assets-mobile-container" style="height: 100%; overflow-y: auto; background: #0a0a0a; padding: 1rem; padding-bottom: 2rem;">
+            <div class="assets-mobile-container" style="height: 100%; overflow-y: auto; background: #0a0a0a; padding: 1rem; padding-bottom: 0rem;">
                 <!-- Public Assets Header - No authentication required -->
                 <div class="assets-header" style="margin-bottom: 1.5rem;">
                     <h2 class="assets-title" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: white; margin: 0 0 1rem 0;">3D Dog Gallery</h2>
@@ -600,307 +755,243 @@ init(initialSection = null) {
     }
 
     async loadAccountContent() {
-        // Check if user is authenticated
-        const isAuthenticated = window.authManager?.isAuthenticated();
-        
-        if (!isAuthenticated) {
-            return `
-                <div class="account-section" style="padding: 2rem 1rem; text-align: center; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; background: #0a0a0a;">
-                    <div style="background: radial-gradient(circle at center, rgba(0,188,212,0.2), transparent 70%); width: 120px; height: 120px; margin: 0 auto 2rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; animation: pulse 2s ease-in-out infinite;">
-                        <div style="background: rgba(0,188,212,0.1); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(0,188,212,0.3);">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2">
-                                <rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect>
-                                <path d="M7 11V7a5 5 0 0110 0v4"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <h2 style="font-family: 'Sora', sans-serif; color: white; margin-bottom: 1rem; font-size: 2rem;">Account Access Required</h2>
-                    <p style="color: rgba(255,255,255,0.7); margin-bottom: 2rem; max-width: 300px; margin-left: auto; margin-right: auto; line-height: 1.5;">Please log in to access your account settings and view your models.</p>
-                    <button onclick="window.authManager.showLoginModal()" 
-                            style="background: linear-gradient(135deg, #00bcd4, #00acc1); color: white; border: none; padding: 1rem 3rem; border-radius: 50px; font-family: 'Sora', sans-serif; font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 20px rgba(0,188,212,0.3); transition: all 0.3s ease;">
-                        Login
-                    </button>
-                    
-                    <style>
-                        @keyframes pulse {
-                            0%, 100% { transform: scale(1); opacity: 1; }
-                            50% { transform: scale(1.05); opacity: 0.8; }
-                        }
-                    </style>
-                </div>
-            `;
-        }
-        
-        // Get user data
-        const userData = window.authManager?.currentUser || {};
-        const userEmail = userData.email || 'User';
-        const userInitial = userEmail.charAt(0).toUpperCase();
-        
-        // Update navigation to show username
-        this.updateAccountNavLabel(userEmail);
-        
-        // Enhanced account content for authenticated users with liked models integration
+    // Check if user is authenticated
+    const isAuthenticated = window.authManager?.isAuthenticated();
+    
+    if (!isAuthenticated) {
         return `
-            <div class="account-section" style="height: 100%; background: #0a0a0a; position: relative; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;">
-                <!-- Animated Background -->
-                <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none;">
-                    <div style="position: absolute; width: 300px; height: 300px; background: radial-gradient(circle, rgba(0,188,212,0.15) 0%, transparent 70%); top: -150px; right: -150px; filter: blur(60px); animation: float-1 20s ease-in-out infinite;"></div>
-                    <div style="position: absolute; width: 400px; height: 400px; background: radial-gradient(circle, rgba(0,229,255,0.1) 0%, transparent 70%); bottom: -200px; left: -200px; filter: blur(80px); animation: float-2 25s ease-in-out infinite;"></div>
-                </div>
-                
-                <!-- Default Account View -->
-                <div class="account-main-view" id="accountMainView" style="position: relative; z-index: 1; padding: 1rem 1rem 8rem 1rem; min-height: calc(100vh - 2rem); box-sizing: border-box;">
-                    <!-- Profile Header -->
-                    <div style="text-align: center; margin-bottom: 3rem; padding-top: 1rem;">
-                        <div style="width: 100px; height: 100px; margin: 0 auto 1.5rem; background: linear-gradient(135deg, #00bcd4, #00acc1); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 32px rgba(0,188,212,0.3); position: relative; animation: profileFloat 3s ease-in-out infinite;">
-                            <span style="font-family: 'Sora', sans-serif; font-size: 2.5rem; font-weight: 700; color: white;">${userInitial}</span>
-                            <div style="position: absolute; bottom: 0; right: 0; width: 30px; height: 30px; background: #4caf50; border-radius: 50%; border: 3px solid #0a0a0a; display: flex; align-items: center; justify-content: center;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                                    <path d="M9 11.75L11.25 14 15 10.25M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="white" stroke-width="2" fill="none"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <h2 style="font-family: 'Sora', sans-serif; color: white; margin-bottom: 0.5rem; font-size: 1.8rem;">${userEmail}</h2>
-                        <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem;">Premium Member</p>
-                    </div>
-
-                    <!-- Stats Cards with animations -->
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 2.5rem;">
-                        <div style="background: linear-gradient(135deg, rgba(0,188,212,0.1), rgba(0,188,212,0.05)); border: 1px solid rgba(0,188,212,0.3); border-radius: 16px; padding: 1.5rem; text-align: center; position: relative; overflow: hidden; animation: cardSlideUp 0.5s ease-out;">
-                            <div style="position: absolute; top: -20px; right: -20px; width: 60px; height: 60px; background: rgba(0,188,212,0.1); border-radius: 50%; filter: blur(20px);"></div>
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2" style="margin-bottom: 0.5rem;">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <path d="M12 6v6l4 2"></path>
-                            </svg>
-                            <div style="font-family: 'Sora', sans-serif; font-size: 2rem; color: #00bcd4; margin-bottom: 0.3rem; font-weight: 700;" id="accountCreditsCount">0</div>
-                            <div style="color: rgba(255,255,255,0.8); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Credits</div>
-                        </div>
-                        <div style="background: linear-gradient(135deg, rgba(0,188,212,0.1), rgba(0,188,212,0.05)); border: 1px solid rgba(0,188,212,0.3); border-radius: 16px; padding: 1.5rem; text-align: center; position: relative; overflow: hidden; animation: cardSlideUp 0.5s ease-out 0.1s; animation-fill-mode: both;">
-                            <div style="position: absolute; top: -20px; right: -20px; width: 60px; height: 60px; background: rgba(0,188,212,0.1); border-radius: 50%; filter: blur(20px);"></div>
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2" style="margin-bottom: 0.5rem;">
-                                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"></path>
-                            </svg>
-                            <div style="font-family: 'Sora', sans-serif; font-size: 2rem; color: #00bcd4; margin-bottom: 0.3rem; font-weight: 700;" id="accountModelsCount">0</div>
-                            <div style="color: rgba(255,255,255,0.8); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Liked Models</div>
-                        </div>
-                    </div>
-
-                    <!-- Quick Actions Section -->
-                    <div style="margin-bottom: 2rem;">
-                        <h3 style="font-family: 'Sora', sans-serif; color: white; margin-bottom: 1rem; font-size: 1.2rem;">Quick Actions</h3>
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem;">
-                            <button onclick="window.AppNavigation.navigateToSection('generate')" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.2); border-radius: 12px; padding: 1rem 0.5rem; text-align: center; transition: all 0.3s ease; cursor: pointer;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2" style="margin-bottom: 0.5rem;">
-                                    <path d="M12 2v20m10-10H2"></path>
-                                </svg>
-                                <div style="color: white; font-size: 0.85rem;">Create</div>
-                            </button>
-                            <button onclick="window.AppNavigation.navigateToSection('assets')" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.2); border-radius: 12px; padding: 1rem 0.5rem; text-align: center; transition: all 0.3s ease; cursor: pointer;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2" style="margin-bottom: 0.5rem;">
-                                    <rect x="3" y="3" width="7" height="7"></rect>
-                                    <rect x="14" y="3" width="7" height="7"></rect>
-                                    <rect x="14" y="14" width="7" height="7"></rect>
-                                    <rect x="3" y="14" width="7" height="7"></rect>
-                                </svg>
-                                <div style="color: white; font-size: 0.85rem;">Browse</div>
-                            </button>
-                            <button style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.2); border-radius: 12px; padding: 1rem 0.5rem; text-align: center; transition: all 0.3s ease; cursor: pointer;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2" style="margin-bottom: 0.5rem;">
-                                    <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline>
-                                    <path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"></path>
-                                </svg>
-                                <div style="color: white; font-size: 0.85rem;">Archive</div>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Menu Items -->
-                    <div style="display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 2rem;">
-                        <button onclick="window.AppNavigation.showLikedModels()" 
-                                style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 1.2rem; color: white; text-align: left; font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 1rem; position: relative; overflow: hidden;">
-                            <div style="background: rgba(255,255,255,0.05); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"></path>
-                                </svg>
-                            </div>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.2rem;">My Liked Models</div>
-                                <div style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">View your favorite creations</div>
-                            </div>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </button>
-                        
-                        <button onclick="window.MobileMonetization.showPricingModal()" 
-                                style="background: linear-gradient(135deg, rgba(0,188,212,0.15), rgba(0,188,212,0.05)); border: 1px solid rgba(0,188,212,0.3); border-radius: 16px; padding: 1.2rem; color: #00bcd4; text-align: left; font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 1rem; position: relative; overflow: hidden;">
-                            <div style="background: rgba(0,188,212,0.1); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2">
-                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                                    <line x1="1" y1="10" x2="23" y2="10"></line>
-                                </svg>
-                            </div>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.2rem; color: #00bcd4;">Buy More Credits</div>
-                                <div style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">Top up your generation balance</div>
-                            </div>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,188,212,0.5)" stroke-width="2">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </button>
-                        
-                        <button style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 1.2rem; color: white; text-align: left; font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 1rem; position: relative; overflow: hidden;">
-                            <div style="background: rgba(255,255,255,0.05); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                    <path d="M12 1v6m0 6v6m4.22-10.22l4.24 4.24m-4.24 4.24l4.24 4.24M20 12h6m-6 0h-6m-2.22 4.22l-4.24 4.24m4.24-4.24l-4.24-4.24M12 20v6m0-6v-6"></path>
-                                </svg>
-                            </div>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.2rem;">Settings</div>
-                                <div style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">Manage your preferences</div>
-                            </div>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </button>
-                        
-                        <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 0.5rem 0;"></div>
-                        
-                        <button onclick="window.AppNavigation.handleLogout()" 
-                                style="background: rgba(220,53,69,0.05); border: 1px solid rgba(220,53,69,0.2); border-radius: 16px; padding: 1.2rem; color: #dc3545; text-align: left; font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 1rem; position: relative; overflow: hidden;">
-                            <div style="background: rgba(220,53,69,0.1); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc3545" stroke-width="2">
-                                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"></path>
-                                    <polyline points="16 17 21 12 16 7"></polyline>
-                                    <line x1="21" y1="12" x2="9" y2="12"></line>
-                                </svg>
-                            </div>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.2rem;">Logout</div>
-                                <div style="color: rgba(220,53,69,0.7); font-size: 0.85rem;">Sign out of your account</div>
-                            </div>
-                        </button>
+            <div class="account-section" style="padding: 2rem 1rem; text-align: center; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; background: #0a0a0a;">
+                <div style="background: radial-gradient(circle at center, rgba(0,188,212,0.2), transparent 70%); width: 120px; height: 120px; margin: 0 auto 2rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; animation: pulse 2s ease-in-out infinite;">
+                    <div style="background: rgba(0,188,212,0.1); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(0,188,212,0.3);">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0110 0v4"></path>
+                        </svg>
                     </div>
                 </div>
-
-                <!-- Liked Models View -->
-                <div class="liked-models-view" id="likedModelsView" style="position: relative; z-index: 1; padding: 1rem; min-height: 100%; display: none;">
-                    <!-- Header with back button -->
-                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; padding-top: 0.5rem;">
-                        <button onclick="window.AppNavigation.hideLikedModels()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 0.6rem; color: white; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="15 18 9 12 15 6"></polyline>
-                            </svg>
-                        </button>
-                        <h2 style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: white; margin: 0; flex: 1;">My Liked Models</h2>
-                    </div>
-
-                    <!-- Search and Sort Controls in One Row -->
-                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem;">
-                        <div style="position: relative; flex: 1;">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: rgba(0, 188, 212, 0.6); pointer-events: none;">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <path d="m21 21-4.35-4.35"></path>
-                            </svg>
-                            <input type="text" placeholder="Search liked models..." id="likedModelsSearchInput" style="width: 100%; padding: 0.8rem 1.2rem 0.8rem 3rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 188, 212, 0.3); border-radius: 24px; color: white; font-family: 'Inter', sans-serif; font-size: 0.95rem; transition: all 0.3s ease; backdrop-filter: blur(10px);">
-                        </div>
-                        <select id="likedModelsSortSelect" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; font-family: 'Inter', sans-serif; font-size: 0.85rem; padding: 0.6rem 0.8rem; cursor: pointer; min-width: 120px;">
-                            <option value="recent">Recent</option>
-                            <option value="name">Name</option>
-                            <option value="popular">Popular</option>
-                            <option value="downloads">Downloads</option>
-                        </select>
-                    </div>
-
-                    <!-- Loading State -->
-                    <div id="likedModelsLoading" style="display: none; text-align: center; padding: 3rem 1rem; color: #00bcd4;">
-                        <div style="width: 50px; height: 50px; border: 3px solid rgba(0, 188, 212, 0.2); border-top: 3px solid #00bcd4; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
-                        <p style="font-family: 'Sora', sans-serif; font-weight: 500;">Loading your liked models...</p>
-                    </div>
-
-                    <!-- Liked Models Grid -->
-                    <div id="likedModelsGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 2rem;">
-                        <!-- Liked models will be loaded here -->
-                    </div>
-
-                    <!-- Empty State -->
-                    <div id="likedModelsEmpty" style="display: none; text-align: center; padding: 3rem 1rem; color: rgba(255, 255, 255, 0.6);">
-                        <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.6;">💔</div>
-                        <h3 style="color: white; font-family: 'Sora', sans-serif; margin-bottom: 0.5rem; font-size: 1.2rem;">No liked models yet</h3>
-                        <p style="margin-bottom: 2rem; line-height: 1.5;">Start liking models to build your collection!</p>
-                        <button onclick="window.AppNavigation.navigateToSection('assets')" style="background: #00bcd4; color: white; border: none; padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
-                            Browse Models
-                        </button>
-                    </div>
-
-                    <!-- Error State -->
-                    <div id="likedModelsError" style="display: none; text-align: center; padding: 3rem 1rem; color: rgba(255, 255, 255, 0.6);">
-                        <div style="font-size: 4rem; margin-bottom: 1rem; color: #dc3545;">⚠️</div>
-                        <h3 style="color: white; font-family: 'Sora', sans-serif; margin-bottom: 0.5rem; font-size: 1.2rem;">Error Loading Models</h3>
-                        <p style="margin-bottom: 2rem; line-height: 1.5;">Failed to load your liked models. Please try again.</p>
-                        <button onclick="window.AppNavigation.loadLikedModels()" style="background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 500; cursor: pointer; transition: all 0.3s ease;">
-                            Try Again
-                        </button>
-                    </div>
-
-                    <!-- Load More Button -->
-                    <div style="text-align: center; margin-top: 2rem;">
-                        <button id="likedModelsLoadMore" style="background: rgba(0, 188, 212, 0.1); color: #00bcd4; border: 2px solid #00bcd4; padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: none;">
-                            Load More Models
-                        </button>
-                    </div>
-                </div>
+                <h2 style="font-family: 'Sora', sans-serif; color: white; margin-bottom: 1rem; font-size: 2rem;">Account Access Required</h2>
+                <p style="color: rgba(255,255,255,0.7); margin-bottom: 2rem; max-width: 300px; margin-left: auto; margin-right: auto; line-height: 1.5;">Please log in to access your account settings and view your models.</p>
+                <button onclick="window.authManager.showLoginModal()" 
+                        style="background: linear-gradient(135deg, #00bcd4, #00acc1); color: white; border: none; padding: 1rem 3rem; border-radius: 50px; font-family: 'Sora', sans-serif; font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 20px rgba(0,188,212,0.3); transition: all 0.3s ease;">
+                    Login
+                </button>
                 
                 <style>
-                    @keyframes float-1 {
-                        0%, 100% { transform: translate(0, 0); }
-                        50% { transform: translate(30px, -30px); }
-                    }
-                    @keyframes float-2 {
-                        0%, 100% { transform: translate(0, 0); }
-                        50% { transform: translate(-40px, 40px); }
-                    }
-                    @keyframes profileFloat {
-                        0%, 100% { transform: translateY(0); }
-                        50% { transform: translateY(-5px); }
-                    }
-                    @keyframes cardSlideUp {
-                        from {
-                            opacity: 0;
-                            transform: translateY(20px);
-                        }
-                        to {
-                            opacity: 1;
-                            transform: translateY(0);
-                        }
-                    }
-                    @keyframes spin {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                    }
-                    .account-section button {
-                        pointer-events: auto;
-                        touch-action: manipulation;
-                    }
-                    
-                    .account-section button:active {
-                        transform: translateY(0);
-                    }
-                    
-                    .account-section button:hover {
-                        transform: translateY(-1px);
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                    }
-                    
-                    .account-section .animated-bg {
-                        position: fixed !important;
-                        pointer-events: none !important;
+                    @keyframes pulse {
+                        0%, 100% { transform: scale(1); opacity: 1; }
+                        50% { transform: scale(1.05); opacity: 0.8; }
                     }
                 </style>
             </div>
         `;
     }
+    
+    // Get user data
+    const userData = window.authManager?.currentUser || {};
+    const userEmail = userData.email || 'User';
+    const userInitial = userEmail.charAt(0).toUpperCase();
+    
+    // Update navigation to show username
+    this.updateAccountNavLabel(userEmail);
+    
+    // Non-scrollable account content with clickable stats and modified quick actions
+    return `
+        <div class="account-section" style="height: 100%; background: #0a0a0a; position: relative; overflow: hidden;">
+            <!-- Animated Background -->
+            <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none;">
+                <div style="position: absolute; width: 300px; height: 300px; background: radial-gradient(circle, rgba(0,188,212,0.15) 0%, transparent 70%); top: -150px; right: -150px; filter: blur(60px); animation: float-1 20s ease-in-out infinite;"></div>
+                <div style="position: absolute; width: 400px; height: 400px; background: radial-gradient(circle, rgba(0,229,255,0.1) 0%, transparent 70%); bottom: -200px; left: -200px; filter: blur(80px); animation: float-2 25s ease-in-out infinite;"></div>
+            </div>
+            
+            <!-- Account View - No scroll needed -->
+            <div class="account-main-view" id="accountMainView" style="position: relative; z-index: 1; padding: 1rem; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+                <!-- Profile Header -->
+                <div style="text-align: center; padding-top: 1rem;">
+                    <div style="width: 100px; height: 100px; margin: 0 auto 1.5rem; background: linear-gradient(135deg, #00bcd4, #00acc1); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 32px rgba(0,188,212,0.3); position: relative; animation: profileFloat 3s ease-in-out infinite;">
+                        <span style="font-family: 'Sora', sans-serif; font-size: 2.5rem; font-weight: 700; color: white;">${userInitial}</span>
+                        <div style="position: absolute; bottom: 0; right: 0; width: 30px; height: 30px; background: #4caf50; border-radius: 50%; border: 3px solid #0a0a0a; display: flex; align-items: center; justify-content: center;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                                <path d="M9 11.75L11.25 14 15 10.25M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="white" stroke-width="2" fill="none"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <h2 style="font-family: 'Sora', sans-serif; color: white; margin-bottom: 0.5rem; font-size: 1.8rem;">${userEmail}</h2>
+                    <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem;">Premium Member</p>
+                </div>
+
+                <!-- CLICKABLE Stats Cards -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 2rem 0;">
+                    <!-- Credits Card - Links to Buy Credits -->
+                    <button onclick="window.MobileMonetization.showPricingModal()" style="background: linear-gradient(135deg, rgba(0,188,212,0.1), rgba(0,188,212,0.05)); border: 1px solid rgba(0,188,212,0.3); border-radius: 16px; padding: 1.5rem; text-align: center; position: relative; overflow: hidden; animation: cardSlideUp 0.5s ease-out; cursor: pointer; transition: all 0.3s ease;">
+                        <div style="position: absolute; top: -20px; right: -20px; width: 60px; height: 60px; background: rgba(0,188,212,0.1); border-radius: 50%; filter: blur(20px);"></div>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2" style="margin-bottom: 0.5rem;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 6v6l4 2"></path>
+                        </svg>
+                        <div style="font-family: 'Sora', sans-serif; font-size: 2rem; color: #00bcd4; margin-bottom: 0.3rem; font-weight: 700;" id="accountCreditsCount">0</div>
+                        <div style="color: rgba(255,255,255,0.8); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Credits</div>
+                    </button>
+                    
+                    <!-- Liked Models Card - Links to Liked Models -->
+                    <button onclick="window.AppNavigation.showLikedModels()" style="background: linear-gradient(135deg, rgba(0,188,212,0.1), rgba(0,188,212,0.05)); border: 1px solid rgba(0,188,212,0.3); border-radius: 16px; padding: 1.5rem; text-align: center; position: relative; overflow: hidden; animation: cardSlideUp 0.5s ease-out 0.1s; animation-fill-mode: both; cursor: pointer; transition: all 0.3s ease;">
+                        <div style="position: absolute; top: -20px; right: -20px; width: 60px; height: 60px; background: rgba(0,188,212,0.1); border-radius: 50%; filter: blur(20px);"></div>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2" style="margin-bottom: 0.5rem;">
+                            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"></path>
+                        </svg>
+                        <div style="font-family: 'Sora', sans-serif; font-size: 2rem; color: #00bcd4; margin-bottom: 0.3rem; font-weight: 700;" id="accountModelsCount">0</div>
+                        <div style="color: rgba(255,255,255,0.8); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Liked Models</div>
+                    </button>
+                </div>
+
+                <!-- Quick Actions Section with Logout replacing Archive -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="font-family: 'Sora', sans-serif; color: white; margin-bottom: 1rem; font-size: 1.2rem;">Quick Actions</h3>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem;">
+                        <button onclick="window.AppNavigation.navigateToSection('generate')" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.2); border-radius: 12px; padding: 1rem 0.5rem; text-align: center; transition: all 0.3s ease; cursor: pointer;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2" style="margin-bottom: 0.5rem;">
+                                <path d="M12 2v20m10-10H2"></path>
+                            </svg>
+                            <div style="color: white; font-size: 0.85rem;">Create</div>
+                        </button>
+                        <button onclick="window.AppNavigation.navigateToSection('assets')" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.2); border-radius: 12px; padding: 1rem 0.5rem; text-align: center; transition: all 0.3s ease; cursor: pointer;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2" style="margin-bottom: 0.5rem;">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                            <div style="color: white; font-size: 0.85rem;">Browse</div>
+                        </button>
+                        <!-- Logout button replacing Archive -->
+                        <button onclick="window.AppNavigation.handleLogout()" style="background: rgba(220,53,69,0.1); border: 1px solid rgba(220,53,69,0.2); border-radius: 12px; padding: 1rem 0.5rem; text-align: center; transition: all 0.3s ease; cursor: pointer;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc3545" stroke-width="2" style="margin-bottom: 0.5rem;">
+                                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                            <div style="color: #dc3545; font-size: 0.85rem;">Logout</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liked Models View (kept as is) -->
+            <div class="liked-models-view" id="likedModelsView" style="position: relative; z-index: 1; padding: 1rem; min-height: 100%; display: none;">
+                <!-- Header with back button -->
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; padding-top: 0.5rem;">
+                    <button onclick="window.AppNavigation.hideLikedModels()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 0.6rem; color: white; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                    <h2 style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: white; margin: 0; flex: 1;">My Liked Models</h2>
+                </div>
+
+                <!-- Search and Sort Controls in One Row -->
+                <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem;">
+                    <div style="position: relative; flex: 1;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: rgba(0, 188, 212, 0.6); pointer-events: none;">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <input type="text" placeholder="Search liked models..." id="likedModelsSearchInput" style="width: 100%; padding: 0.8rem 1.2rem 0.8rem 3rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 188, 212, 0.3); border-radius: 24px; color: white; font-family: 'Inter', sans-serif; font-size: 0.95rem; transition: all 0.3s ease; backdrop-filter: blur(10px);">
+                    </div>
+                    <select id="likedModelsSortSelect" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; font-family: 'Inter', sans-serif; font-size: 0.85rem; padding: 0.6rem 0.8rem; cursor: pointer; min-width: 120px;">
+                        <option value="recent">Recent</option>
+                        <option value="name">Name</option>
+                        <option value="popular">Popular</option>
+                        <option value="downloads">Downloads</option>
+                    </select>
+                </div>
+
+                <!-- Loading State -->
+                <div id="likedModelsLoading" style="display: none; text-align: center; padding: 3rem 1rem; color: #00bcd4;">
+                    <div style="width: 50px; height: 50px; border: 3px solid rgba(0, 188, 212, 0.2); border-top: 3px solid #00bcd4; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+                    <p style="font-family: 'Sora', sans-serif; font-weight: 500;">Loading your liked models...</p>
+                </div>
+
+                <!-- Liked Models Grid -->
+                <div id="likedModelsGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 2rem;">
+                    <!-- Liked models will be loaded here -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="likedModelsEmpty" style="display: none; text-align: center; padding: 3rem 1rem; color: rgba(255, 255, 255, 0.6);">
+                    <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.6;">💔</div>
+                    <h3 style="color: white; font-family: 'Sora', sans-serif; margin-bottom: 0.5rem; font-size: 1.2rem;">No liked models yet</h3>
+                    <p style="margin-bottom: 2rem; line-height: 1.5;">Start liking models to build your collection!</p>
+                    <button onclick="window.AppNavigation.navigateToSection('assets')" style="background: #00bcd4; color: white; border: none; padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        Browse Models
+                    </button>
+                </div>
+
+                <!-- Error State -->
+                <div id="likedModelsError" style="display: none; text-align: center; padding: 3rem 1rem; color: rgba(255, 255, 255, 0.6);">
+                    <div style="font-size: 4rem; margin-bottom: 1rem; color: #dc3545;">⚠️</div>
+                    <h3 style="color: white; font-family: 'Sora', sans-serif; margin-bottom: 0.5rem; font-size: 1.2rem;">Error Loading Models</h3>
+                    <p style="margin-bottom: 2rem; line-height: 1.5;">Failed to load your liked models. Please try again.</p>
+                    <button onclick="window.AppNavigation.loadLikedModels()" style="background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 500; cursor: pointer; transition: all 0.3s ease;">
+                        Try Again
+                    </button>
+                </div>
+
+                <!-- Load More Button -->
+                <div style="text-align: center; margin-top: 2rem;">
+                    <button id="likedModelsLoadMore" style="background: rgba(0, 188, 212, 0.1); color: #00bcd4; border: 2px solid #00bcd4; padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: none;">
+                        Load More Models
+                    </button>
+                </div>
+            </div>
+            
+            <style>
+                @keyframes float-1 {
+                    0%, 100% { transform: translate(0, 0); }
+                    50% { transform: translate(30px, -30px); }
+                }
+                @keyframes float-2 {
+                    0%, 100% { transform: translate(0, 0); }
+                    50% { transform: translate(-40px, 40px); }
+                }
+                @keyframes profileFloat {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-5px); }
+                }
+                @keyframes cardSlideUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(20px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+                .account-section button {
+                    pointer-events: auto;
+                    touch-action: manipulation;
+                }
+                
+                .account-section button:active {
+                    transform: translateY(0);
+                }
+                
+                .account-section button:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                }
+                
+                .account-section .animated-bg {
+                    position: fixed !important;
+                    pointer-events: none !important;
+                }
+            </style>
+        </div>
+    `;
+}
 
     async loadAboutContent() {
     return `
@@ -1220,19 +1311,26 @@ async initializeAssets() {
 }
 
     async initializeAccount() {
-        console.log('🎯 Initializing account section...');
+    console.log('🎯 Initializing account section...');
+    
+    const isAuthenticated = window.authManager?.isAuthenticated();
+    if (isAuthenticated) {
+        const userData = window.authManager?.currentUser || {};
+        this.updateAccountNavLabel(userData.email);
+        this.updateTopBarAccountButton();
+        
+        // Update credits
         this.updateAccountStats();
         
-        const isAuthenticated = window.authManager?.isAuthenticated();
-        if (isAuthenticated) {
-            const userData = window.authManager?.currentUser || {};
-            this.updateAccountNavLabel(userData.email);
-            this.updateTopBarAccountButton();
-        } else {
-            this.updateAccountNavLabel(null);
-            this.updateTopBarAccountButton();
-        }
+        // Update liked models count from backend with a small delay to ensure auth is ready
+        setTimeout(async () => {
+            await this.updateLikedModelsCount();
+        }, 100);
+    } else {
+        this.updateAccountNavLabel(null);
+        this.updateTopBarAccountButton();
     }
+}
 
     async initializeAbout() {
         console.log('🎯 Initializing about section animations...');
@@ -1553,74 +1651,73 @@ if (particleField) {
     
     return assetCard;
 }
-    async toggleLike(assetId, assetName) {
-        const isAuthenticated = await this.checkAuthentication();
-        if (!isAuthenticated) {
-            console.log('❌ User not authenticated, showing login modal');
-            // Store the pending like action for after login
-            sessionStorage.setItem('pendingLikeAction', JSON.stringify({ assetId, assetName }));
-            
-            if (window.MobileAuth) {
-                window.MobileAuth.showAuth('like', { assetId, assetName });
-            } else if (window.authManager) {
-                window.authManager.showLoginModal();
-            }
-            return;
+   async toggleLike(assetId, assetName) {
+    const isAuthenticated = await this.checkAuthentication();
+    if (!isAuthenticated) {
+        console.log('❌ User not authenticated, showing login modal');
+        sessionStorage.setItem('pendingLikeAction', JSON.stringify({ assetId, assetName }));
+        
+        if (window.MobileAuth) {
+            window.MobileAuth.showAuth('like', { assetId, assetName });
+        } else if (window.authManager) {
+            window.authManager.showLoginModal();
+        }
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${this.getApiBaseUrl()}/auth/like-asset`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ assetId: assetId })
+        });
+        
+        if (!response.ok) throw new Error('Failed to update like status');
+        
+        const data = await response.json();
+        const isLiked = data.isLiked;
+        
+        if (isLiked) {
+            this.assetsData.likedAssets.add(assetId);
+        } else {
+            this.assetsData.likedAssets.delete(assetId);
         }
         
-        try {
-            const response = await fetch(`${this.getApiBaseUrl()}/auth/like-asset`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ assetId: assetId })
-            });
-            
-            if (!response.ok) throw new Error('Failed to update like status');
-            
-            const data = await response.json();
-            const isLiked = data.isLiked;
-            
+        // Update like button states
+        document.querySelectorAll(`[data-asset-id="${assetId}"]`).forEach(button => {
             if (isLiked) {
-                this.assetsData.likedAssets.add(assetId);
+                button.classList.add('liked');
+                button.style.background = 'rgba(0, 188, 212, 0.2)';
+                button.style.borderColor = '#00bcd4';
+                button.style.color = '#00bcd4';
             } else {
-                this.assetsData.likedAssets.delete(assetId);
+                button.classList.remove('liked');
+                button.style.background = 'rgba(0, 0, 0, 0.7)';
+                button.style.borderColor = 'rgba(0, 188, 212, 0.4)';
+                button.style.color = 'rgba(0, 188, 212, 0.8)';
             }
             
-            // Update like button states
-            document.querySelectorAll(`[data-asset-id="${assetId}"]`).forEach(button => {
-                if (isLiked) {
-                    button.classList.add('liked');
-                    button.style.background = 'rgba(0, 188, 212, 0.2)';
-                    button.style.borderColor = '#00bcd4';
-                    button.style.color = '#00bcd4';
-                } else {
-                    button.classList.remove('liked');
-                    button.style.background = 'rgba(0, 0, 0, 0.7)';
-                    button.style.borderColor = 'rgba(0, 188, 212, 0.4)';
-                    button.style.color = 'rgba(0, 188, 212, 0.8)';
-                }
-                
-                // Update SVG fill
-                const svg = button.querySelector('path');
-                if (svg) {
-                    svg.setAttribute('fill', isLiked ? 'currentColor' : 'none');
-                }
-            });
-            
-            const message = isLiked 
-                ? `Added "${assetName}" to your liked models ❤️` 
-                : `Removed "${assetName}" from your liked models`;
-            this.showFeedback(message, 'success');
-            
-            // Update account stats
-            this.updateAccountStats();
-            
-        } catch (error) {
-            console.error('❌ Like error:', error);
-            this.showFeedback('Failed to update like status. Please try again.', 'error');
-        }
+            // Update SVG fill
+            const svg = button.querySelector('path');
+            if (svg) {
+                svg.setAttribute('fill', isLiked ? 'currentColor' : 'none');
+            }
+        });
+        
+        const message = isLiked 
+            ? `Added "${assetName}" to your liked models ❤️` 
+            : `Removed "${assetName}" from your liked models`;
+        this.showFeedback(message, 'success');
+        
+        // Update account stats - THIS IS THE KEY PART
+        await this.updateLikedModelsCount();
+        
+    } catch (error) {
+        console.error('❌ Like error:', error);
+        this.showFeedback('Failed to update like status. Please try again.', 'error');
     }
+}
 
     showFeedback(message, type = 'success') {
         const existingFeedback = document.querySelector('.mobile-feedback-message');

@@ -369,7 +369,6 @@ button, .button, .btn {
 .section-content {
     min-height: 100%;
     position: relative;
-    padding-bottom: 0.5rem;
     box-sizing: border-box;
     background: #0a0a0a;
 }
@@ -642,15 +641,9 @@ button, .button, .btn {
 .account-section {
     height: 100% !important;
     max-height: 100% !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
+    overflow: hidden !important; /* Changed from auto to hidden */
     position: relative;
-    -webkit-overflow-scrolling: touch;
     background: #0a0a0a;
-    overscroll-behavior: contain !important;
-    overscroll-behavior-y: contain !important;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
 }
 
 .account-section::-webkit-scrollbar {
@@ -660,30 +653,19 @@ button, .button, .btn {
 
 #accountSection {
     height: 100% !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    overscroll-behavior: contain !important;
-    overscroll-behavior-y: contain !important;
+    overflow: hidden !important; /* Changed from auto to hidden */
     background: #0a0a0a !important;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
 }
 
 #accountSection::-webkit-scrollbar {
     width: 0px;
     background: transparent;
 }
-
 #accountSection .section-content {
     height: 100% !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    padding-bottom: 0.5rem !important;
-    overscroll-behavior: contain !important;
-    overscroll-behavior-y: contain !important;
+    overflow: hidden !important; /* Changed from auto to hidden */
+    padding-bottom: 0 !important;
     background: #0a0a0a !important;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
 }
 
 #accountSection .section-content::-webkit-scrollbar {

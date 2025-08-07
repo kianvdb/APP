@@ -99,15 +99,6 @@ constructor() {
                                 <span>Share</span>
                             </button>
                             
-                            <button class="action-btn info-btn" id="infoBtn">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <line x1="12" y1="16" x2="12" y2="12"/>
-                                    <line x1="12" y1="8" x2="12.01" y2="8"/>
-                                </svg>
-                                <span>Info</span>
-                            </button>
-                            
                             <button class="action-btn disabled-btn" disabled>
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="3"/>
@@ -720,35 +711,40 @@ frameModel() {
         this.isLiked = isLiked;
     }
 
-    // Toggle like
-    async toggleLike() {
-        const isAuthenticated = await this.checkAuthentication();
-        if (!isAuthenticated) {
-            console.log('❌ User not authenticated');
-            if (window.authManager) {
-                window.authManager.showLoginModal();
-            }
-            return;
+   // Toggle like
+async toggleLike() {
+    const isAuthenticated = await this.checkAuthentication();
+    if (!isAuthenticated) {
+        console.log('❌ User not authenticated');
+        if (window.authManager) {
+            window.authManager.showLoginModal();
         }
-        
-        try {
-            const response = await fetch(`${this.getApiBaseUrl()}/auth/like-asset`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ assetId: this.currentAssetId })
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                this.updateLikeButton(data.isLiked);
-                this.showFeedback(data.isLiked ? 'Added to likes!' : 'Removed from likes');
-            }
-        } catch (error) {
-            console.error('❌ Error toggling like:', error);
-            this.showFeedback('Failed to update like status', 'error');
-        }
+        return;
     }
+    
+    try {
+        const response = await fetch(`${this.getApiBaseUrl()}/auth/like-asset`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ assetId: this.currentAssetId })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            this.updateLikeButton(data.isLiked);
+            this.showFeedback(data.isLiked ? 'Added to likes!' : 'Removed from likes');
+            
+            // Update the liked models count in account section
+            if (window.AppNavigation) {
+                window.AppNavigation.updateLikedModelsCount();
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error toggling like:', error);
+        this.showFeedback('Failed to update like status', 'error');
+    }
+}
 
     // Handle download
     async handleDownload() {
@@ -832,21 +828,6 @@ frameModel() {
         }
     }
 
-    // Toggle info overlay
-    toggleInfo() {
-        const overlay = document.getElementById('assetInfoOverlay');
-        const infoBtn = document.getElementById('infoBtn');
-        
-        if (overlay && infoBtn) {
-            if (overlay.style.display === 'none') {
-                overlay.style.display = 'block';
-                infoBtn.classList.add('active');
-            } else {
-                overlay.style.display = 'none';
-                infoBtn.classList.remove('active');
-            }
-        }
-    }
 
     // Check authentication
     async checkAuthentication() {
