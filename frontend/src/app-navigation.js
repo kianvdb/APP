@@ -62,56 +62,82 @@ class AppNavigation {
         }
     }
 
-    init(initialSection = null) {
-        console.log('🎯 Setting up app navigation with public assets access...');
-        
-        this.setupBottomNavigation();
-        
-        // Check for redirect section first
-        const urlParams = new URLSearchParams(window.location.search);
-        const redirectSection = urlParams.get('redirect') || localStorage.getItem('dalma_redirectAfterLogin');
-        
-        // Determine which section to load initially
-        const sectionToLoad = initialSection || redirectSection || 'home';
-        console.log('📍 Initial section to load:', sectionToLoad);
-        
-        // Update navigation state immediately if not home
-        if (sectionToLoad !== 'home') {
-            this.currentSection = sectionToLoad;
-            this.updateNavigation(sectionToLoad);
-        }
-        
-        // Load the appropriate section (skip animation for initial load)
-        this.loadSectionContent(sectionToLoad).then(() => {
-            this.showSection(sectionToLoad, true); // Skip animation for initial load
-        });
-        
-        // Check authentication and update navigation labels
-        const isAuthenticated = window.authManager?.isAuthenticated();
-        if (isAuthenticated) {
-            const userData = window.authManager?.currentUser || {};
-            this.updateAccountNavLabel(userData.email);
-            this.updateTopBarAccountButton();
-        } else {
-            this.updateAccountNavLabel(null);
-            this.updateTopBarAccountButton();
-        }
-        
-        // Set up account button click handler
-        const accountBtn = document.querySelector('.header-actions .account-btn');
-        if (accountBtn) {
-            accountBtn.addEventListener('click', () => {
-                const isAuth = window.authManager?.isAuthenticated();
-                if (!isAuth) {
-                    window.authManager?.showLoginModal();
-                } else {
-                    this.navigateToSection('account');
-                }
-            });
-        }
-        
-        console.log('✅ App navigation ready with public assets access');
+    // COMPLETE REPLACEMENT of init function
+init(initialSection = null) {
+    console.log('🎯 Setting up app navigation with public assets access...');
+    
+    this.setupBottomNavigation();
+    
+    // Initialize Mobile Asset Viewer immediately - ENHANCED CHECK
+    if (typeof MobileAssetViewer !== 'undefined' && !window.MobileAssetViewer) {
+        window.MobileAssetViewer = new MobileAssetViewer();
+        console.log('✅ Created new MobileAssetViewer instance');
     }
+    
+    if (window.MobileAssetViewer && !window.MobileAssetViewer.viewerInitialized) {
+        window.MobileAssetViewer.initializeViewerHTML();
+        console.log('✅ Mobile Asset Viewer HTML initialized');
+    } else if (window.MobileAssetViewer && window.MobileAssetViewer.viewerInitialized) {
+        console.log('✅ Mobile Asset Viewer already initialized');
+    } else {
+        console.warn('⚠️ MobileAssetViewer not available, will retry later');
+        // Try again after a short delay if script hasn't loaded yet
+        setTimeout(() => {
+            if (typeof MobileAssetViewer !== 'undefined' && !window.MobileAssetViewer) {
+                window.MobileAssetViewer = new MobileAssetViewer();
+            }
+            if (window.MobileAssetViewer && !window.MobileAssetViewer.viewerInitialized) {
+                window.MobileAssetViewer.initializeViewerHTML();
+                console.log('✅ Mobile Asset Viewer initialized (delayed)');
+            }
+        }, 1000);
+    }
+    
+    // Check for redirect section first
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectSection = urlParams.get('redirect') || localStorage.getItem('dalma_redirectAfterLogin');
+    
+    // Determine which section to load initially
+    const sectionToLoad = initialSection || redirectSection || 'home';
+    console.log('📍 Initial section to load:', sectionToLoad);
+    
+    // Update navigation state immediately if not home
+    if (sectionToLoad !== 'home') {
+        this.currentSection = sectionToLoad;
+        this.updateNavigation(sectionToLoad);
+    }
+    
+    // Load the appropriate section (skip animation for initial load)
+    this.loadSectionContent(sectionToLoad).then(() => {
+        this.showSection(sectionToLoad, true); // Skip animation for initial load
+    });
+    
+    // Check authentication and update navigation labels
+    const isAuthenticated = window.authManager?.isAuthenticated();
+    if (isAuthenticated) {
+        const userData = window.authManager?.currentUser || {};
+        this.updateAccountNavLabel(userData.email);
+        this.updateTopBarAccountButton();
+    } else {
+        this.updateAccountNavLabel(null);
+        this.updateTopBarAccountButton();
+    }
+    
+    // Set up account button click handler
+    const accountBtn = document.querySelector('.header-actions .account-btn');
+    if (accountBtn) {
+        accountBtn.addEventListener('click', () => {
+            const isAuth = window.authManager?.isAuthenticated();
+            if (!isAuth) {
+                window.authManager?.showLoginModal();
+            } else {
+                this.navigateToSection('account');
+            }
+        });
+    }
+    
+    console.log('✅ App navigation ready with public assets access');
+}
 
     setupBottomNavigation() {
         const navItems = document.querySelectorAll('.nav-item');
@@ -877,201 +903,181 @@ class AppNavigation {
     }
 
     async loadAboutContent() {
-        return `
-            <!-- About Section with Premium Animations -->
-            <div class="about-container" style="height: 100%; overflow-y: auto; overflow-x: hidden; background: #0a0a0a; position: relative;">
-                <!-- Animated Background - Fixed position -->
-                <div class="animated-bg" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none;">
-                    <div class="particle-field" id="particleField" style="position: absolute; width: 100%; height: 100%;">
-                        <!-- Particles will be added via JS -->
-                    </div>
-                    <div class="gradient-orb orb-1" style="position: absolute; width: 300px; height: 300px; background: radial-gradient(circle, rgba(0,188,212,0.3) 0%, transparent 70%); top: 10%; left: -150px; filter: blur(40px); animation: float-1 15s ease-in-out infinite;"></div>
-                    <div class="gradient-orb orb-2" style="position: absolute; width: 400px; height: 400px; background: radial-gradient(circle, rgba(0,229,255,0.2) 0%, transparent 70%); bottom: 10%; right: -200px; filter: blur(50px); animation: float-2 20s ease-in-out infinite;"></div>
-                    <div class="gradient-orb orb-3" style="position: absolute; width: 350px; height: 350px; background: radial-gradient(circle, rgba(0,151,167,0.25) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%, -50%); filter: blur(45px); animation: float-3 18s ease-in-out infinite;"></div>
+    return `
+        <!-- About Section with Premium Animations -->
+        <div class="about-container" style="height: 100%; overflow-y: auto; overflow-x: hidden; background: #0a0a0a; position: relative; max-height: 100vh;">
+            <!-- Animated Background - Fixed position -->
+            <div class="animated-bg" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none;">
+                <div class="particle-field" id="particleField" style="position: absolute; width: 100%; height: 100%;">
+                    <!-- Particles will be added via JS -->
                 </div>
-
-                <!-- Scrollable Content -->
-                <div style="position: relative; z-index: 1; padding: 1rem; padding-bottom: 4rem; min-height: 100%;">
-                    <!-- Header -->
-                    <div style="text-align: center; margin-bottom: 2rem; padding-top: 1rem;">
-                        <h1 style="font-family: 'Sora', sans-serif; font-size: 2.5rem; font-weight: 700; color: white; margin-bottom: 0.5rem; text-shadow: 0 0 30px rgba(0,188,212,0.5);">About Threely</h1>
-                        <p style="color: rgba(255,255,255,0.8); font-size: 1rem; line-height: 1.4; max-width: 500px; margin: 0 auto;">Transform every picture into professional 3D models with cutting-edge AI technology.</p>
-                    </div>
-
-                    <!-- Stats with animation -->
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin-bottom: 2rem;">
-                        <div class="stat-card" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.3); border-radius: 12px; padding: 1.2rem 0.5rem; text-align: center; backdrop-filter: blur(10px); animation: fadeInUp 0.6s ease-out 0.1s forwards; opacity: 0;">
-                            <div class="stat-number" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: #00bcd4; margin-bottom: 0.3rem;" data-target="50000">0</div>
-                            <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">Models Created</div>
-                        </div>
-                        <div class="stat-card" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.3); border-radius: 12px; padding: 1.2rem 0.5rem; text-align: center; backdrop-filter: blur(10px); animation: fadeInUp 0.6s ease-out 0.2s forwards; opacity: 0;">
-                            <div class="stat-number" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: #00bcd4; margin-bottom: 0.3rem;" data-target="5">0</div>
-                            <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">Min Generation</div>
-                        </div>
-                        <div class="stat-card" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.3); border-radius: 12px; padding: 1.2rem 0.5rem; text-align: center; backdrop-filter: blur(10px); animation: fadeInUp 0.6s ease-out 0.3s forwards; opacity: 0;">
-                            <div class="stat-number" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: #00bcd4; margin-bottom: 0.3rem;" data-target="98">0</div>
-                            <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">% Satisfaction</div>0.3rem;" data-target="98">0</div>
-                            <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">% Satisfaction</div>
-                        </div>
-                    </div>
-
-                    <!-- How It Works -->
-                    <div style="background: rgba(255,255,255,0.05); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; backdrop-filter: blur(10px);">
-                        <h2 style="font-family: 'Sora', sans-serif; font-size: 1.5rem; color: white; margin-bottom: 1.2rem; text-align: center;">How It Works</h2>
-                        <div style="display: flex; flex-direction: column; gap: 0.8rem;">
-                            <div class="step-item" style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 12px; animation: slideInLeft 0.5s ease-out 0.4s forwards; opacity: 0; transform: translateX(-20px);">
-                                <div style="background: #00bcd4; color: #0a0a0a; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 1.1rem;">1</div>
-                                <div>
-                                    <h3 style="color: white; font-size: 1rem; margin-bottom: 0.2rem; font-weight: 600;">Upload Photo</h3>
-                                    <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0; line-height: 1.3;">Take or select a clear picture of your object</p>
-                                </div>
-                            </div>
-                            <div class="step-item" style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 12px; animation: slideInLeft 0.5s ease-out 0.5s forwards; opacity: 0; transform: translateX(-20px);">
-                                <div style="background: #00bcd4; color: #0a0a0a; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 1.1rem;">2</div>
-                                <div>
-                                    <h3 style="color: white; font-size: 1rem; margin-bottom: 0.2rem; font-weight: 600;">AI Processing</h3>
-                                    <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0; line-height: 1.3;">Our AI analyzes and creates a 3D model</p>
-                                </div>
-                            </div>
-                            <div class="step-item" style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 12px; animation: slideInLeft 0.5s ease-out 0.6s forwards; opacity: 0; transform: translateX(-20px);">
-                                <div style="background: #00bcd4; color: #0a0a0a; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 1.1rem;">3</div>
-                                <div>
-                                    <h3 style="color: white; font-size: 1rem; margin-bottom: 0.2rem; font-weight: 600;">Download & Use</h3>
-                                    <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0; line-height: 1.3;">Export in multiple formats for any project</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- FAQ Section -->
-                    <div style="background: rgba(255,255,255,0.05); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; backdrop-filter: blur(10px);">
-                        <h2 style="font-family: 'Sora', sans-serif; font-size: 1.5rem; color: white; margin-bottom: 1.2rem; text-align: center;">FAQ</h2>
-                        <div style="display: flex; flex-direction: column; gap: 0.8rem;">
-                            <details class="faq-item" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem;">
-                                <summary style="font-weight: 600; color: #00bcd4; font-size: 0.95rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
-                                    What image formats are supported?
-                                    <span class="faq-arrow" style="transition: transform 0.3s; display: inline-block;">▼</span>
-                                </summary>
-                                <p style="color: rgba(255,255,255,0.8); margin-top: 0.8rem; font-size: 0.85rem; line-height: 1.4;">We support JPG, PNG, and WEBP formats up to 10MB. For best results, use clear, well-lit pictures with the object as the main subject.</p>
-                            </details>
-                            
-                            <details class="faq-item" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem;">
-                                <summary style="font-weight: 600; color: #00bcd4; font-size: 0.95rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
-                                    Can I get a refund?
-                                    <span class="faq-arrow" style="transition: transform 0.3s; display: inline-block;">▼</span>
-                                </summary>
-                                <p style="color: rgba(255,255,255,0.8); margin-top: 0.8rem; font-size: 0.85rem; line-height: 1.4;">Due to the computational resources required for each generation, we do not offer refunds for credits once purchased. However, we're always here to help if you experience any issues.</p>
-                            </details>
-                            
-                            <details class="faq-item" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem;">
-                                <summary style="font-weight: 600; color: #00bcd4; font-size: 0.95rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
-                                    Who owns the generated models?
-                                    <span class="faq-arrow" style="transition: transform 0.3s; display: inline-block;">▼</span>
-                                </summary>
-                                <p style="color: rgba(255,255,255,0.8); margin-top: 0.8rem; font-size: 0.85rem; line-height: 1.4;">You retain full ownership and commercial rights to all models generated with paid credits. Use them freely in games, animations, NFTs, or any other projects.</p>
-                            </details>
-                            
-                            <details class="faq-item" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem;">
-                                <summary style="font-weight: 600; color: #00bcd4; font-size: 0.95rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
-                                    What export formats are available?
-                                    <span class="faq-arrow" style="transition: transform 0.3s; display: inline-block;">▼</span>
-                                </summary>
-                                <p style="color: rgba(255,255,255,0.8); margin-top: 0.8rem; font-size: 0.85rem; line-height: 1.4;">We support GLB, FBX, OBJ, and USDZ formats, compatible with Unity, Unreal Engine, Blender, and more.</p>
-                            </details>
-                        </div>
-                    </div>
-
-                    <!-- Legal & Privacy -->
-                    <div style="background: rgba(255,255,255,0.05); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; backdrop-filter: blur(10px);">
-                        <h2 style="font-family: 'Sora', sans-serif; font-size: 1.5rem; color: white; margin-bottom: 1.2rem; text-align: center;">Legal & Privacy</h2>
-                        <div style="display: flex; flex-direction: column; gap: 1.2rem;">
-                            <div>
-                                <h3 style="color: #00bcd4; font-size: 1rem; margin-bottom: 0.4rem;">Terms of Service</h3>
-                                <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.4;">By using Threely, you agree to our terms. All generated models from paid credits are yours to use commercially without restrictions.</p>
-                            </div>
-                            <div>
-                                <h3 style="color: #00bcd4; font-size: 1rem; margin-bottom: 0.4rem;">Privacy Policy</h3>
-                                <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.4;">Uploaded images are processed securely and deleted after 24 hours. We never share your data with third parties.</p>
-                            </div>
-                            <div>
-                                <h3 style="color: #00bcd4; font-size: 1rem; margin-bottom: 0.4rem;">Content Guidelines</h3>
-                                <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.4;">Use your imagination! Our AI model is trained on any object.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Contact - Final Section with Limited Scroll -->
-                    <div style="text-align: center; padding: 2rem 0; margin-bottom: 0;">
-                        <h3 style="color: white; margin-bottom: 0.8rem; font-size: 1.3rem;">Need Help?</h3>
-                        <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.2rem; font-size: 0.9rem;">Our support team is here to assist you</p>
-                        <a href="mailto:threely.service@gmail.com" style="background: #00bcd4; color: white; padding: 0.8rem 2rem; border-radius: 50px; text-decoration: none; display: inline-block; font-weight: 600; font-size: 0.95rem;">Contact Support</a>
-                    </div>
-                </div>
-
-                <style>
-                    /* Make sure the about container takes full height */
-                    #aboutSection {
-                        height: 100%;
-                        overflow: hidden;
-                    }
-                    
-                    #aboutSection .section-content {
-                        height: 100%;
-                        overflow: hidden;
-                    }
-                    
-                    @keyframes float-1 {
-                        0%, 100% { transform: translate(0, 0) scale(1); }
-                        33% { transform: translate(30px, -30px) scale(1.1); }
-                        66% { transform: translate(-20px, 20px) scale(0.9); }
-                    }
-                    @keyframes float-2 {
-                        0%, 100% { transform: translate(0, 0) scale(1); }
-                        33% { transform: translate(-40px, 20px) scale(0.9); }
-                        66% { transform: translate(20px, -40px) scale(1.1); }
-                    }
-                    @keyframes float-3 {
-                        0%, 100% { transform: translate(-50%, -50%) scale(1); }
-                        50% { transform: translate(-50%, -50%) scale(1.15); }
-                    }
-                    @keyframes fadeInUp {
-                        from {
-                            opacity: 0;
-                            transform: translateY(20px);
-                        }
-                        to {
-                            opacity: 1;
-                            transform: translateY(0);
-                        }
-                    }
-                    @keyframes slideInLeft {
-                        from {
-                            opacity: 0;
-                            transform: translateX(-20px);
-                        }
-                        to {
-                            opacity: 1;
-                            transform: translateX(0);
-                        }
-                    }
-                    @keyframes particle-float {
-                        from {
-                            transform: translateY(100vh) translateX(-50px);
-                        }
-                        to {
-                            transform: translateY(-100px) translateX(50px);
-                        }
-                    }
-                    .faq-item[open] .faq-arrow {
-                        transform: rotate(180deg);
-                    }
-                    .faq-item summary::-webkit-details-marker {
-                        display: none;
-                    }
-                </style>
+                <div class="gradient-orb orb-1" style="position: absolute; width: 300px; height: 300px; background: radial-gradient(circle, rgba(0,188,212,0.3) 0%, transparent 70%); top: 10%; left: -150px; filter: blur(40px); animation: float-1 15s ease-in-out infinite;"></div>
+                <div class="gradient-orb orb-2" style="position: absolute; width: 400px; height: 400px; background: radial-gradient(circle, rgba(0,229,255,0.2) 0%, transparent 70%); bottom: 10%; right: -200px; filter: blur(50px); animation: float-2 20s ease-in-out infinite;"></div>
+                <div class="gradient-orb orb-3" style="position: absolute; width: 350px; height: 350px; background: radial-gradient(circle, rgba(0,151,167,0.25) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%, -50%); filter: blur(45px); animation: float-3 18s ease-in-out infinite;"></div>
             </div>
-        `;
-    }
+
+            <!-- Scrollable Content -->
+            <div style="position: relative; z-index: 1; padding: 1rem; padding-bottom: 2rem; min-height: 100%;">
+                <!-- Header -->
+                <div style="text-align: center; margin-bottom: 2rem; padding-top: 1rem;">
+                    <h1 style="font-family: 'Sora', sans-serif; font-size: 2.5rem; font-weight: 700; color: white; margin-bottom: 0.5rem; text-shadow: 0 0 30px rgba(0,188,212,0.5);">About Threely</h1>
+                    <p style="color: rgba(255,255,255,0.8); font-size: 1rem; line-height: 1.4; max-width: 500px; margin: 0 auto;">Transform every picture into professional 3D models with cutting-edge AI technology.</p>
+                </div>
+
+                <!-- Stats with animation -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin-bottom: 2rem;">
+                    <div class="stat-card" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.3); border-radius: 12px; padding: 1.2rem 0.5rem; text-align: center; backdrop-filter: blur(10px); animation: fadeInUp 0.6s ease-out 0.1s forwards; opacity: 0;">
+                        <div class="stat-number" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: #00bcd4; margin-bottom: 0.3rem;" data-target="50000">0</div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">Models Created</div>
+                    </div>
+                    <div class="stat-card" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.3); border-radius: 12px; padding: 1.2rem 0.5rem; text-align: center; backdrop-filter: blur(10px); animation: fadeInUp 0.6s ease-out 0.2s forwards; opacity: 0;">
+                        <div class="stat-number" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: #00bcd4; margin-bottom: 0.3rem;" data-target="5">0</div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">Min Generation</div>
+                    </div>
+                    <div class="stat-card" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.3); border-radius: 12px; padding: 1.2rem 0.5rem; text-align: center; backdrop-filter: blur(10px); animation: fadeInUp 0.6s ease-out 0.3s forwards; opacity: 0;">
+                        <div class="stat-number" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: #00bcd4; margin-bottom: 0.3rem;" data-target="98">0</div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">% Satisfaction</div>
+                    </div>
+                </div>
+
+                <!-- How It Works -->
+                <div style="background: rgba(255,255,255,0.05); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; backdrop-filter: blur(10px);">
+                    <h2 style="font-family: 'Sora', sans-serif; font-size: 1.5rem; color: white; margin-bottom: 1.2rem; text-align: center;">How It Works</h2>
+                    <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                        <div class="step-item" style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 12px; animation: slideInLeft 0.5s ease-out 0.4s forwards; opacity: 0; transform: translateX(-20px);">
+                            <div style="background: #00bcd4; color: #0a0a0a; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 1.1rem;">1</div>
+                            <div>
+                                <h3 style="color: white; font-size: 1rem; margin-bottom: 0.2rem; font-weight: 600;">Upload Photo</h3>
+                                <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0; line-height: 1.3;">Take or select a clear picture of your object</p>
+                            </div>
+                        </div>
+                        <div class="step-item" style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 12px; animation: slideInLeft 0.5s ease-out 0.5s forwards; opacity: 0; transform: translateX(-20px);">
+                            <div style="background: #00bcd4; color: #0a0a0a; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 1.1rem;">2</div>
+                            <div>
+                                <h3 style="color: white; font-size: 1rem; margin-bottom: 0.2rem; font-weight: 600;">AI Processing</h3>
+                                <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0; line-height: 1.3;">Our AI analyzes and creates a 3D model</p>
+                            </div>
+                        </div>
+                        <div class="step-item" style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 12px; animation: slideInLeft 0.5s ease-out 0.6s forwards; opacity: 0; transform: translateX(-20px);">
+                            <div style="background: #00bcd4; color: #0a0a0a; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 1.1rem;">3</div>
+                            <div>
+                                <h3 style="color: white; font-size: 1rem; margin-bottom: 0.2rem; font-weight: 600;">Download & Use</h3>
+                                <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0; line-height: 1.3;">Export in multiple formats for any project</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ Section -->
+                <div style="background: rgba(255,255,255,0.05); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; backdrop-filter: blur(10px);">
+                    <h2 style="font-family: 'Sora', sans-serif; font-size: 1.5rem; color: white; margin-bottom: 1.2rem; text-align: center;">FAQ</h2>
+                    <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                        <details class="faq-item" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem;">
+                            <summary style="font-weight: 600; color: #00bcd4; font-size: 0.95rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                                What image formats are supported?
+                                <span class="faq-arrow" style="transition: transform 0.3s; display: inline-block;">▼</span>
+                            </summary>
+                            <p style="color: rgba(255,255,255,0.8); margin-top: 0.8rem; font-size: 0.85rem; line-height: 1.4;">We support JPG, PNG, and WEBP formats up to 10MB. For best results, use clear, well-lit pictures with the object as the main subject.</p>
+                        </details>
+                        
+                        <details class="faq-item" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem;">
+                            <summary style="font-weight: 600; color: #00bcd4; font-size: 0.95rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                                Can I get a refund?
+                                <span class="faq-arrow" style="transition: transform 0.3s; display: inline-block;">▼</span>
+                            </summary>
+                            <p style="color: rgba(255,255,255,0.8); margin-top: 0.8rem; font-size: 0.85rem; line-height: 1.4;">Due to the computational resources required for each generation, we do not offer refunds for credits once purchased. However, we're always here to help if you experience any issues.</p>
+                        </details>
+                        
+                        <details class="faq-item" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem;">
+                            <summary style="font-weight: 600; color: #00bcd4; font-size: 0.95rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                                Who owns the generated models?
+                                <span class="faq-arrow" style="transition: transform 0.3s; display: inline-block;">▼</span>
+                            </summary>
+                            <p style="color: rgba(255,255,255,0.8); margin-top: 0.8rem; font-size: 0.85rem; line-height: 1.4;">You retain full ownership and commercial rights to all models generated with paid credits. Use them freely in games, animations, NFTs, or any other projects.</p>
+                        </details>
+                        
+                        <details class="faq-item" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem;">
+                            <summary style="font-weight: 600; color: #00bcd4; font-size: 0.95rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                                What export formats are available?
+                                <span class="faq-arrow" style="transition: transform 0.3s; display: inline-block;">▼</span>
+                            </summary>
+                            <p style="color: rgba(255,255,255,0.8); margin-top: 0.8rem; font-size: 0.85rem; line-height: 1.4;">We support GLB, FBX, OBJ, and USDZ formats, compatible with Unity, Unreal Engine, Blender, and more.</p>
+                        </details>
+                    </div>
+                </div>
+
+                <!-- Legal & Privacy -->
+                <div style="background: rgba(255,255,255,0.05); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; backdrop-filter: blur(10px);">
+                    <h2 style="font-family: 'Sora', sans-serif; font-size: 1.5rem; color: white; margin-bottom: 1.2rem; text-align: center;">Legal & Privacy</h2>
+                    <div style="display: flex; flex-direction: column; gap: 1.2rem;">
+                        <div>
+                            <h3 style="color: #00bcd4; font-size: 1rem; margin-bottom: 0.4rem;">Terms of Service</h3>
+                            <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.4;">By using Threely, you agree to our terms. All generated models from paid credits are yours to use commercially without restrictions.</p>
+                        </div>
+                        <div>
+                            <h3 style="color: #00bcd4; font-size: 1rem; margin-bottom: 0.4rem;">Privacy Policy</h3>
+                            <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.4;">Uploaded images are processed securely and deleted after 24 hours. We never share your data with third parties.</p>
+                        </div>
+                        <div>
+                            <h3 style="color: #00bcd4; font-size: 1rem; margin-bottom: 0.4rem;">Content Guidelines</h3>
+                            <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.4;">Use your imagination! Our AI model is trained on any object.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact - Final Section -->
+                <div style="text-align: center; padding: 2rem 0 1rem 0; margin-bottom: 0;">
+                    <h3 style="color: white; margin-bottom: 0.8rem; font-size: 1.3rem;">Need Help?</h3>
+                    <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.2rem; font-size: 0.9rem;">Our support team is here to assist you</p>
+                    <a href="mailto:threely.service@gmail.com" style="background: #00bcd4; color: white; padding: 0.8rem 2rem; border-radius: 50px; text-decoration: none; display: inline-block; font-weight: 600; font-size: 0.95rem;">Contact Support</a>
+                </div>
+            </div>
+
+            <style>
+                @keyframes float-1 {
+                    0%, 100% { transform: translate(0, 0) scale(1); }
+                    33% { transform: translate(30px, -30px) scale(1.1); }
+                    66% { transform: translate(-20px, 20px) scale(0.9); }
+                }
+                @keyframes float-2 {
+                    0%, 100% { transform: translate(0, 0) scale(1); }
+                    33% { transform: translate(-40px, 20px) scale(0.9); }
+                    66% { transform: translate(20px, -40px) scale(1.1); }
+                }
+                @keyframes float-3 {
+                    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+                    50% { transform: translate(-50%, -50%) scale(1.15); }
+                }
+                @keyframes fadeInUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(20px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                @keyframes slideInLeft {
+                    from {
+                        opacity: 0;
+                        transform: translateX(-20px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateX(0);
+                    }
+                }
+                .faq-item[open] .faq-arrow {
+                    transform: rotate(180deg);
+                }
+                .faq-item summary::-webkit-details-marker {
+                    display: none;
+                }
+            </style>
+        </div>
+    `;
+}
 
     async initializeSectionFunctionality(sectionName) {
         switch (sectionName) {
@@ -1154,44 +1160,64 @@ class AppNavigation {
     }, 100);
 }
 
-    async initializeAssets() {
-        console.log('🎯 Initializing public assets section...');
-        
-        // Setup search functionality
-        const searchInput = document.getElementById('mobileAssetSearchInput');
-        if (searchInput) {
-            searchInput.addEventListener('input', this.debounce((e) => {
-                this.assetsData.searchTerm = e.target.value.toLowerCase().trim();
-                this.assetsData.currentPage = 1;
-                this.filterAndRenderAssets();
-            }, 300));
+    // COMPLETE REPLACEMENT of initializeAssets function
+async initializeAssets() {
+    console.log('🎯 Initializing public assets section...');
+    
+    // Ensure Mobile Asset Viewer is initialized
+    if (!window.MobileAssetViewer) {
+        console.warn('⚠️ MobileAssetViewer not found, creating new instance...');
+        // Import the script if not loaded
+        if (typeof MobileAssetViewer === 'undefined') {
+            console.error('❌ MobileAssetViewer class not defined. Check if mobile-asset-viewer.js is loaded.');
+            return;
         }
-
-        // Setup sort functionality
-        const sortSelect = document.getElementById('mobileSortSelect');
-        if (sortSelect) {
-            sortSelect.addEventListener('change', (e) => {
-                this.assetsData.sortBy = e.target.value;
-                this.assetsData.currentPage = 1;
-                this.filterAndRenderAssets();
-            });
-        }
-
-        // Setup load more button
-        const loadMoreBtn = document.getElementById('loadMoreBtn');
-        if (loadMoreBtn) {
-            loadMoreBtn.addEventListener('click', () => {
-                this.assetsData.currentPage++;
-                this.filterAndRenderAssets(false); // Don't clear existing assets
-            });
-        }
-
-        // Load user likes only if authenticated (for button states)
-        await this.loadUserLikedAssets();
-        
-        // Load all assets - public access
-        await this.loadAllAssets();
+        window.MobileAssetViewer = new MobileAssetViewer();
     }
+    
+    // Initialize viewer HTML if not already done
+    if (!window.MobileAssetViewer.viewerInitialized) {
+        console.log('📱 Initializing Mobile Asset Viewer HTML...');
+        window.MobileAssetViewer.initializeViewerHTML();
+    }
+    
+    // Setup search functionality
+    const searchInput = document.getElementById('mobileAssetSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', this.debounce((e) => {
+            this.assetsData.searchTerm = e.target.value.toLowerCase().trim();
+            this.assetsData.currentPage = 1;
+            this.filterAndRenderAssets();
+        }, 300));
+    }
+
+    // Setup sort functionality
+    const sortSelect = document.getElementById('mobileSortSelect');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', (e) => {
+            this.assetsData.sortBy = e.target.value;
+            this.assetsData.currentPage = 1;
+            this.filterAndRenderAssets();
+        });
+    }
+
+    // Setup load more button
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', () => {
+            this.assetsData.currentPage++;
+            this.filterAndRenderAssets(false); // Don't clear existing assets
+        });
+    }
+
+    // Load user likes only if authenticated (for button states)
+    await this.loadUserLikedAssets();
+    
+    // Load all assets - public access
+    await this.loadAllAssets();
+    
+    console.log('✅ Assets section initialized with MobileAssetViewer');
+}
 
     async initializeAccount() {
         console.log('🎯 Initializing account section...');
@@ -1212,23 +1238,32 @@ class AppNavigation {
         console.log('🎯 Initializing about section animations...');
         
         // Create floating particles
-        const particleField = document.getElementById('particleField');
-        if (particleField) {
-            for (let i = 0; i < 30; i++) {
-                const particle = document.createElement('div');
-                particle.style.cssText = `
-                    position: absolute;
-                    width: 2px;
-                    height: 2px;
-                    background: #00bcd4;
-                    opacity: ${Math.random() * 0.5 + 0.2};
-                    left: ${Math.random() * 100}%;
-                    top: ${Math.random() * 100}%;
-                    animation: particle-float ${10 + Math.random() * 20}s linear infinite;
-                `;
-                particleField.appendChild(particle);
-            }
-        }
+const particleField = document.getElementById('particleField');
+if (particleField) {
+    // Clear existing particles first
+    particleField.innerHTML = '';
+    
+    for (let i = 0; i < 30; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle'; // Use existing particle class
+        particle.style.cssText = `
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(0, 188, 212, 0.6);
+            border-radius: 50%;
+            opacity: 0;
+            left: ${Math.random() * 100}%;
+            top: ${Math.random() * 100}%;
+            animation: float-particle ${10 + Math.random() * 20}s linear infinite;
+            animation-delay: ${Math.random() * 10}s;
+        `;
+        particleField.appendChild(particle);
+    }
+    console.log('✅ Created 30 floating particles');
+} else {
+    console.log('❌ particleField not found');
+}
         
         // Animate stats numbers when they come into view
         setTimeout(() => {
@@ -1425,95 +1460,99 @@ class AppNavigation {
     }
 
     createLikedModelCard(asset) {
-        const assetCard = document.createElement('div');
-        assetCard.className = 'mobile-asset-card liked-model-card';
-        assetCard.style.cssText = `
-            background: rgba(20, 20, 20, 0.6);
-            border-radius: 16px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            cursor: pointer;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        `;
-        
-        // Determine image URL
-        let imageUrl = null;
-        if (asset.originalImage?.url) imageUrl = asset.originalImage.url;
-        else if (asset.inputImage?.url) imageUrl = asset.inputImage.url;
-        else if (asset.previewImage?.url) imageUrl = asset.previewImage.url;
-        
-        assetCard.innerHTML = `
-            ${imageUrl ? `
-                <div class="asset-preview" style="width: 100%; height: 200px; position: relative; background: rgba(0, 0, 0, 0.3); display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                    <div class="image-loading-placeholder" style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%); background-size: 200% 100%; animation: shimmer 2s infinite;"></div>
-                    <img src="${imageUrl}" alt="${this.escapeHtml(asset.name)}" style="width: 100%; height: 100%; object-fit: cover; object-position: center; background: #0a0a0a; opacity: 0; transition: opacity 0.3s ease;" 
-                         onload="this.style.opacity='1'; this.parentElement.querySelector('.image-loading-placeholder').style.display='none';"
-                         onerror="this.parentElement.innerHTML = '<div style=\\'font-size: 3rem; opacity: 0.6;\\'>${asset.icon || '🐕'}</div>';">
-                    <button class="mobile-like-button liked" data-asset-id="${asset._id}" style="position: absolute; top: 8px; right: 8px; background: rgba(0, 188, 212, 0.2); border: 2px solid #00bcd4; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); color: #00bcd4; z-index: 10;">
-                        <svg width="14" height="14" viewBox="0 0 24 24">
-                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="asset-info" style="padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; background: rgba(10, 10, 10, 0.5);">
-                    <h3 style="font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 600; color: white; margin: 0; text-align: center; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;">${this.escapeHtml(asset.name)}</h3>
-                    <div style="margin-top: 0.5rem; text-align: center; color: #00bcd4; font-family: 'Inter', sans-serif; font-size: 0.75rem;">
-                        <small>${asset.views || 0} views • ${asset.downloads || 0} downloads</small>
-                    </div>
-                </div>
-            ` : `
-                <div style="font-size: 3rem; opacity: 0.6; text-align: center; padding: 2rem;">${asset.icon || '🐕'}</div>
-                <h3 style="font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 600; color: white; margin: 0; padding: 0 1rem; text-align: center;">${this.escapeHtml(asset.name)}</h3>
-                <div style="padding: 1rem; text-align: center; color: #00bcd4; font-family: 'Inter', sans-serif; font-size: 0.75rem;">
-                    <small>${asset.views || 0} views • ${asset.downloads || 0} downloads</small>
-                </div>
-                <button class="mobile-like-button liked" data-asset-id="${asset._id}" style="position: absolute; top: 8px; right: 8px; background: rgba(0, 188, 212, 0.2); border: 2px solid #00bcd4; border-radius: 50%; width: 32px; height: 32px; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); color: #00bcd4; z-index: 10; touch-action: manipulation;">
+    const assetCard = document.createElement('div');
+    assetCard.className = 'mobile-asset-card liked-model-card';
+    assetCard.style.cssText = `
+        background: rgba(20, 20, 20, 0.6);
+        border-radius: 16px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    `;
+    
+    // Determine image URL
+    let imageUrl = null;
+    if (asset.originalImage?.url) imageUrl = asset.originalImage.url;
+    else if (asset.inputImage?.url) imageUrl = asset.inputImage.url;
+    else if (asset.previewImage?.url) imageUrl = asset.previewImage.url;
+    
+    assetCard.innerHTML = `
+        ${imageUrl ? `
+            <div class="asset-preview" style="width: 100%; height: 200px; position: relative; background: rgba(0, 0, 0, 0.3); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                <div class="image-loading-placeholder" style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%); background-size: 200% 100%; animation: shimmer 2s infinite;"></div>
+                <img src="${imageUrl}" alt="${this.escapeHtml(asset.name)}" style="width: 100%; height: 100%; object-fit: cover; object-position: center; background: #0a0a0a; opacity: 0; transition: opacity 0.3s ease;" 
+                     onload="this.style.opacity='1'; this.parentElement.querySelector('.image-loading-placeholder').style.display='none';"
+                     onerror="this.parentElement.innerHTML = '<div style=\\'font-size: 3rem; opacity: 0.6;\\'>${asset.icon || '🐕'}</div>';">
+                <button class="mobile-like-button liked" data-asset-id="${asset._id}" style="position: absolute; top: 8px; right: 8px; background: rgba(0, 188, 212, 0.2); border: 2px solid #00bcd4; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); color: #00bcd4; z-index: 10;">
                     <svg width="14" height="14" viewBox="0 0 24 24">
                         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" stroke="currentColor" stroke-width="2"/>
                     </svg>
                 </button>
-            `}
-        `;
-        
-        // Add hover effects
-        assetCard.addEventListener('mouseenter', () => {
-            assetCard.style.transform = 'translateY(-5px)';
-            assetCard.style.background = 'rgba(30, 30, 30, 0.8)';
-            assetCard.style.borderColor = 'rgba(0, 188, 212, 0.3)';
-            assetCard.style.boxShadow = '0 10px 30px rgba(0, 188, 212, 0.2)';
-        });
-        
-        assetCard.addEventListener('mouseleave', () => {
-            assetCard.style.transform = 'translateY(0)';
-            assetCard.style.background = 'rgba(20, 20, 20, 0.6)';
-            assetCard.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-            assetCard.style.boxShadow = 'none';
-        });
-        
-        // Add click handler for viewing asset
-        assetCard.addEventListener('click', (e) => {
-            if (!e.target.closest('.mobile-like-button')) {
+            </div>
+            <div class="asset-info" style="padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; background: rgba(10, 10, 10, 0.5);">
+                <h3 style="font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 600; color: white; margin: 0; text-align: center; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;">${this.escapeHtml(asset.name)}</h3>
+                <div style="margin-top: 0.5rem; text-align: center; color: #00bcd4; font-family: 'Inter', sans-serif; font-size: 0.75rem;">
+                    <small>${asset.views || 0} views • ${asset.downloads || 0} downloads</small>
+                </div>
+            </div>
+        ` : `
+            <div style="font-size: 3rem; opacity: 0.6; text-align: center; padding: 2rem;">${asset.icon || '🐕'}</div>
+            <h3 style="font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 600; color: white; margin: 0; padding: 0 1rem; text-align: center;">${this.escapeHtml(asset.name)}</h3>
+            <div style="padding: 1rem; text-align: center; color: #00bcd4; font-family: 'Inter', sans-serif; font-size: 0.75rem;">
+                <small>${asset.views || 0} views • ${asset.downloads || 0} downloads</small>
+            </div>
+            <button class="mobile-like-button liked" data-asset-id="${asset._id}" style="position: absolute; top: 8px; right: 8px; background: rgba(0, 188, 212, 0.2); border: 2px solid #00bcd4; border-radius: 50%; width: 32px; height: 32px; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); color: #00bcd4; z-index: 10; touch-action: manipulation;">
+                <svg width="14" height="14" viewBox="0 0 24 24">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" stroke="currentColor" stroke-width="2"/>
+                </svg>
+            </button>
+        `}
+    `;
+    
+    // Add hover effects
+    assetCard.addEventListener('mouseenter', () => {
+        assetCard.style.transform = 'translateY(-5px)';
+        assetCard.style.background = 'rgba(30, 30, 30, 0.8)';
+        assetCard.style.borderColor = 'rgba(0, 188, 212, 0.3)';
+        assetCard.style.boxShadow = '0 10px 30px rgba(0, 188, 212, 0.2)';
+    });
+    
+    assetCard.addEventListener('mouseleave', () => {
+        assetCard.style.transform = 'translateY(0)';
+        assetCard.style.background = 'rgba(20, 20, 20, 0.6)';
+        assetCard.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        assetCard.style.boxShadow = 'none';
+    });
+    
+    // UPDATED CLICK HANDLER - Uses Mobile Viewer
+    assetCard.addEventListener('click', (e) => {
+        if (!e.target.closest('.mobile-like-button')) {
+            // Use mobile viewer
+            if (window.MobileAssetViewer) {
+                window.MobileAssetViewer.openAsset(asset._id);
+            } else {
                 this.viewAsset(asset._id);
             }
-        });
-        
-        // Add like button handler - REQUIRES AUTHENTICATION
-        const likeButton = assetCard.querySelector('.mobile-like-button');
-        if (likeButton) {
-            likeButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleLike(asset._id, asset.name);
-            });
         }
-        
-        return assetCard;
+    });
+    
+    // Add like button handler - REQUIRES AUTHENTICATION
+    const likeButton = assetCard.querySelector('.mobile-like-button');
+    if (likeButton) {
+        likeButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleLike(asset._id, asset.name);
+        });
     }
-
+    
+    return assetCard;
+}
     async toggleLike(assetId, assetName) {
         const isAuthenticated = await this.checkAuthentication();
         if (!isAuthenticated) {
@@ -1639,12 +1678,19 @@ class AppNavigation {
         });
     }
 
-    viewAsset(assetId) {
-        console.log('🎯 Viewing asset:', assetId);
-        // Create URL for view-asset page with mobile-friendly parameters
+   viewAsset(assetId) {
+    console.log('🎯 Opening asset viewer for:', assetId);
+    
+    // Use the mobile asset viewer instead of navigating to a new page
+    if (window.MobileAssetViewer) {
+        window.MobileAssetViewer.openAsset(assetId);
+    } else {
+        console.error('❌ Mobile Asset Viewer not initialized');
+        // Fallback to web version
         const viewUrl = `view-asset.html?id=${assetId}&from=mobile-app`;
         window.location.href = viewUrl;
     }
+}
 
     // Assets functionality methods (existing methods remain the same)
     getApiBaseUrl() {
@@ -1838,96 +1884,102 @@ class AppNavigation {
     }
 
     createMobileAssetCard(asset) {
-        const assetCard = document.createElement('div');
-        assetCard.className = 'mobile-asset-card';
-        assetCard.style.cssText = `
-            background: rgba(20, 20, 20, 0.6);
-            border-radius: 16px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            cursor: pointer;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        `;
-        
-        // Determine image URL
-        let imageUrl = null;
-        if (asset.originalImage?.url) imageUrl = asset.originalImage.url;
-        else if (asset.inputImage?.url) imageUrl = asset.inputImage.url;
-        else if (asset.previewImage?.url) imageUrl = asset.previewImage.url;
-        
-        const isLiked = this.assetsData.likedAssets.has(asset._id);
-        
-        assetCard.innerHTML = `
-            ${imageUrl ? `
-                <div class="asset-preview" style="width: 100%; height: 200px; position: relative; background: rgba(0, 0, 0, 0.3); display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                    <div class="image-loading-placeholder" style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%); background-size: 200% 100%; animation: shimmer 2s infinite;"></div>
-                    <img src="${imageUrl}" alt="${this.escapeHtml(asset.name)}" style="width: 100%; height: 100%; object-fit: cover; object-position: center; background: #0a0a0a; opacity: 0; transition: opacity 0.3s ease;" 
-                         onload="this.style.opacity='1'; this.parentElement.querySelector('.image-loading-placeholder').style.display='none';"
-                         onerror="this.parentElement.innerHTML = '<div style=\\'font-size: 3rem; opacity: 0.6;\\'>${asset.icon || '🐕'}</div>';">
-                    <button class="mobile-like-button ${isLiked ? 'liked' : ''}" data-asset-id="${asset._id}" style="position: absolute; top: 8px; right: 8px; background: rgba(0, 0, 0, 0.7); border: 2px solid rgba(0, 188, 212, 0.4); border-radius: 50%; width: 32px; height: 32px; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); color: rgba(0, 188, 212, 0.8); z-index: 10; touch-action: manipulation;">
-                        <svg width="14" height="14" viewBox="0 0 24 24">
-                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="asset-info" style="padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; background: rgba(10, 10, 10, 0.5);">
-                    <h3 style="font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 600; color: white; margin: 0; text-align: center; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;">${this.escapeHtml(asset.name)}</h3>
-                    <div style="margin-top: 0.5rem; text-align: center; color: #00bcd4; font-family: 'Inter', sans-serif; font-size: 0.75rem;">
-                        <small>${asset.views || 0} views • ${asset.downloads || 0} downloads</small>
-                    </div>
-                </div>
-            ` : `
-                <div style="font-size: 3rem; opacity: 0.6; text-align: center; padding: 2rem;">${asset.icon || '🐕'}</div>
-                <h3 style="font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 600; color: white; margin: 0; padding: 0 1rem; text-align: center;">${this.escapeHtml(asset.name)}</h3>
-                <div style="padding: 1rem; text-align: center; color: #00bcd4; font-family: 'Inter', sans-serif; font-size: 0.75rem;">
-                    <small>${asset.views || 0} views • ${asset.downloads || 0} downloads</small>
-                </div>
+    const assetCard = document.createElement('div');
+    assetCard.className = 'mobile-asset-card';
+    assetCard.style.cssText = `
+        background: rgba(20, 20, 20, 0.6);
+        border-radius: 16px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    `;
+    
+    // Determine image URL
+    let imageUrl = null;
+    if (asset.originalImage?.url) imageUrl = asset.originalImage.url;
+    else if (asset.inputImage?.url) imageUrl = asset.inputImage.url;
+    else if (asset.previewImage?.url) imageUrl = asset.previewImage.url;
+    
+    const isLiked = this.assetsData.likedAssets.has(asset._id);
+    
+    assetCard.innerHTML = `
+        ${imageUrl ? `
+            <div class="asset-preview" style="width: 100%; height: 200px; position: relative; background: rgba(0, 0, 0, 0.3); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                <div class="image-loading-placeholder" style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%); background-size: 200% 100%; animation: shimmer 2s infinite;"></div>
+                <img src="${imageUrl}" alt="${this.escapeHtml(asset.name)}" style="width: 100%; height: 100%; object-fit: cover; object-position: center; background: #0a0a0a; opacity: 0; transition: opacity 0.3s ease;" 
+                     onload="this.style.opacity='1'; this.parentElement.querySelector('.image-loading-placeholder').style.display='none';"
+                     onerror="this.parentElement.innerHTML = '<div style=\\'font-size: 3rem; opacity: 0.6;\\'>${asset.icon || '🐕'}</div>';">
                 <button class="mobile-like-button ${isLiked ? 'liked' : ''}" data-asset-id="${asset._id}" style="position: absolute; top: 8px; right: 8px; background: rgba(0, 0, 0, 0.7); border: 2px solid rgba(0, 188, 212, 0.4); border-radius: 50%; width: 32px; height: 32px; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); color: rgba(0, 188, 212, 0.8); z-index: 10; touch-action: manipulation;">
                     <svg width="14" height="14" viewBox="0 0 24 24">
                         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"/>
                     </svg>
                 </button>
-            `}
-        `;
-        
-        // Add hover effects
-        assetCard.addEventListener('mouseenter', () => {
-            assetCard.style.transform = 'translateY(-5px)';
-            assetCard.style.background = 'rgba(30, 30, 30, 0.8)';
-            assetCard.style.borderColor = 'rgba(0, 188, 212, 0.3)';
-            assetCard.style.boxShadow = '0 10px 30px rgba(0, 188, 212, 0.2)';
-        });
-        
-        assetCard.addEventListener('mouseleave', () => {
-            assetCard.style.transform = 'translateY(0)';
-            assetCard.style.background = 'rgba(20, 20, 20, 0.6)';
-            assetCard.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-            assetCard.style.boxShadow = 'none';
-        });
-        
-        // Add click handler for viewing asset
-        assetCard.addEventListener('click', (e) => {
-            if (!e.target.closest('.mobile-like-button')) {
+            </div>
+            <div class="asset-info" style="padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; background: rgba(10, 10, 10, 0.5);">
+                <h3 style="font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 600; color: white; margin: 0; text-align: center; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;">${this.escapeHtml(asset.name)}</h3>
+                <div style="margin-top: 0.5rem; text-align: center; color: #00bcd4; font-family: 'Inter', sans-serif; font-size: 0.75rem;">
+                    <small>${asset.views || 0} views • ${asset.downloads || 0} downloads</small>
+                </div>
+            </div>
+        ` : `
+            <div style="font-size: 3rem; opacity: 0.6; text-align: center; padding: 2rem;">${asset.icon || '🐕'}</div>
+            <h3 style="font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 600; color: white; margin: 0; padding: 0 1rem; text-align: center;">${this.escapeHtml(asset.name)}</h3>
+            <div style="padding: 1rem; text-align: center; color: #00bcd4; font-family: 'Inter', sans-serif; font-size: 0.75rem;">
+                <small>${asset.views || 0} views • ${asset.downloads || 0} downloads</small>
+            </div>
+            <button class="mobile-like-button ${isLiked ? 'liked' : ''}" data-asset-id="${asset._id}" style="position: absolute; top: 8px; right: 8px; background: rgba(0, 0, 0, 0.7); border: 2px solid rgba(0, 188, 212, 0.4); border-radius: 50%; width: 32px; height: 32px; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); color: rgba(0, 188, 212, 0.8); z-index: 10; touch-action: manipulation;">
+                <svg width="14" height="14" viewBox="0 0 24 24">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"/>
+                </svg>
+            </button>
+        `}
+    `;
+    
+    // Add hover effects
+    assetCard.addEventListener('mouseenter', () => {
+        assetCard.style.transform = 'translateY(-5px)';
+        assetCard.style.background = 'rgba(30, 30, 30, 0.8)';
+        assetCard.style.borderColor = 'rgba(0, 188, 212, 0.3)';
+        assetCard.style.boxShadow = '0 10px 30px rgba(0, 188, 212, 0.2)';
+    });
+    
+    assetCard.addEventListener('mouseleave', () => {
+        assetCard.style.transform = 'translateY(0)';
+        assetCard.style.background = 'rgba(20, 20, 20, 0.6)';
+        assetCard.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        assetCard.style.boxShadow = 'none';
+    });
+    
+    // UPDATED CLICK HANDLER - Uses Mobile Viewer
+    assetCard.addEventListener('click', (e) => {
+        if (!e.target.closest('.mobile-like-button')) {
+            // Use mobile viewer
+            if (window.MobileAssetViewer) {
+                window.MobileAssetViewer.openAsset(asset._id);
+            } else {
                 this.viewAsset(asset._id);
             }
-        });
-        
-        // Add like button handler - REQUIRES AUTHENTICATION
-        const likeButton = assetCard.querySelector('.mobile-like-button');
-        if (likeButton) {
-            likeButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleLike(asset._id, asset.name);
-            });
         }
-        
-        return assetCard;
+    });
+    
+    // Add like button handler - REQUIRES AUTHENTICATION
+    const likeButton = assetCard.querySelector('.mobile-like-button');
+    if (likeButton) {
+        likeButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleLike(asset._id, asset.name);
+        });
     }
+    
+    return assetCard;
+}
+        
 
     showAssetsError() {
         const grid = document.getElementById('mobileAssetsGrid');
