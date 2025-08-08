@@ -1613,20 +1613,7 @@ if (particleField) {
         `}
     `;
     
-    // Add hover effects
-    assetCard.addEventListener('mouseenter', () => {
-        assetCard.style.transform = 'translateY(-5px)';
-        assetCard.style.background = 'rgba(30, 30, 30, 0.8)';
-        assetCard.style.borderColor = 'rgba(0, 188, 212, 0.3)';
-        assetCard.style.boxShadow = '0 10px 30px rgba(0, 188, 212, 0.2)';
-    });
     
-    assetCard.addEventListener('mouseleave', () => {
-        assetCard.style.transform = 'translateY(0)';
-        assetCard.style.background = 'rgba(20, 20, 20, 0.6)';
-        assetCard.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-        assetCard.style.boxShadow = 'none';
-    });
     
     // UPDATED CLICK HANDLER - Uses Mobile Viewer
     assetCard.addEventListener('click', (e) => {
@@ -1749,11 +1736,14 @@ if (particleField) {
         }, 3000);
     }
 
-    showLikedModelsLoading() {
-        this.hideLikedModelsStates();
-        const loading = document.getElementById('likedModelsLoading');
-        if (loading) loading.style.display = 'block';
+   showLikedModelsLoading() {
+    this.hideLikedModelsStates();
+    // Don't show the loading spinner - just clear the grid or show nothing
+    const grid = document.getElementById('likedModelsGrid');
+    if (grid) {
+        grid.innerHTML = ''; // Just clear it, let the cards load with their shimmer effect
     }
+}
 
     showLikedModelsEmpty() {
         this.hideLikedModelsStates();
@@ -1888,24 +1878,15 @@ if (particleField) {
             this.showAssetsError();
         }
     }
-
-    showAssetsLoading() {
-        const grid = document.getElementById('mobileAssetsGrid');
-        if (grid) {
-            grid.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; color: #00bcd4;">
-                    <div style="width: 50px; height: 50px; border: 3px solid rgba(0, 188, 212, 0.2); border-top: 3px solid #00bcd4; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
-                    <p style="font-family: 'Sora', sans-serif; font-weight: 500;">Loading amazing 3D models...</p>
-                </div>
-                <style>
-                    @keyframes spin {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                    }
-                </style>
-            `;
-        }
+showAssetsLoading() {
+    const grid = document.getElementById('mobileAssetsGrid');
+    if (grid) {
+    
+        grid.innerHTML = '';
+        
+       
     }
+}
 
     filterAndRenderAssets(clearExisting = true) {
         let filtered = [...this.assetsData.allAssets];
@@ -2038,21 +2019,7 @@ if (particleField) {
         `}
     `;
     
-    // Add hover effects
-    assetCard.addEventListener('mouseenter', () => {
-        assetCard.style.transform = 'translateY(-5px)';
-        assetCard.style.background = 'rgba(30, 30, 30, 0.8)';
-        assetCard.style.borderColor = 'rgba(0, 188, 212, 0.3)';
-        assetCard.style.boxShadow = '0 10px 30px rgba(0, 188, 212, 0.2)';
-    });
-    
-    assetCard.addEventListener('mouseleave', () => {
-        assetCard.style.transform = 'translateY(0)';
-        assetCard.style.background = 'rgba(20, 20, 20, 0.6)';
-        assetCard.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-        assetCard.style.boxShadow = 'none';
-    });
-    
+
     // UPDATED CLICK HANDLER - Uses Mobile Viewer
     assetCard.addEventListener('click', (e) => {
         if (!e.target.closest('.mobile-like-button')) {

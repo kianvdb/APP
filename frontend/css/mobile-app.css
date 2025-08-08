@@ -1,7 +1,3 @@
-/* Enhanced Mobile App CSS - DALMA AI with Liked Assets Integration
-   Transforms existing web pages into single-page mobile app
-   Now includes comprehensive assets functionality and liked assets view
-*/
 
 /* Reset for mobile app */
 * {
@@ -524,7 +520,6 @@ button, .button, .btn {
     background: rgba(20, 20, 20, 0.6);
     border-radius: 16px;
     overflow: hidden;
-    transition: all 0.3s ease;
     border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     cursor: pointer;
@@ -535,12 +530,6 @@ button, .button, .btn {
     min-height: 44px;
 }
 
-.mobile-asset-card:hover {
-    transform: translateY(-5px);
-    background: rgba(30, 30, 30, 0.8);
-    border-color: rgba(0, 188, 212, 0.3);
-    box-shadow: 0 10px 30px rgba(0, 188, 212, 0.2);
-}
 
 .mobile-like-button {
     position: absolute;
@@ -722,21 +711,6 @@ button, .button, .btn {
     background: transparent;
 }
 
-.liked-model-card {
-    /* Inherits all mobile-asset-card styles */
-    animation: likedModelSlideIn 0.4s ease-out;
-}
-
-@keyframes likedModelSlideIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
 
 /* Liked models search input styling */
 #likedModelsSearchInput {
@@ -1469,25 +1443,6 @@ html, body {
     z-index: 99999;
 }
 
-/* ========================================
-   ASSETS SECTION ANIMATIONS
-   ======================================== */
-
-@keyframes assetCardSlideIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.mobile-asset-card,
-.liked-model-card {
-    animation: assetCardSlideIn 0.4s ease-out;
-}
 
 /* Stagger animation for asset cards */
 .mobile-asset-card:nth-child(1),
