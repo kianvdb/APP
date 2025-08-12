@@ -391,11 +391,10 @@ button, .button, .btn {
 
 .assets-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;  /* Changed to column for vertical stacking */
+    align-items: center;      /* Center everything */
     margin-bottom: 2rem;
-    flex-wrap: wrap;
-    gap: 1rem;
+    gap: 1.5rem;              /* Better spacing between elements */
 }
 
 .assets-title {
@@ -404,105 +403,82 @@ button, .button, .btn {
     font-weight: 700;
     color: white;
     margin: 0;
+    text-align: center;       /* Center the title */
 }
 
 .assets-search {
     position: relative;
     width: 100%;
-    max-width: 300px;
+    max-width: 400px;         /* Slightly wider for better proportion */
 }
 
 .assets-search-icon {
     position: absolute;
-    left: 1rem;
+    left: 1.2rem;             /* Adjusted for pill shape */
     top: 50%;
     transform: translateY(-50%);
-    color: rgba(0, 188, 212, 0.6);
+    color: rgba(255, 255, 255, 0.4);  /* Softer, more subtle color */
     pointer-events: none;
 }
 
 .assets-search-input {
     width: 100%;
-    padding: 0.8rem 1.2rem 0.8rem 3rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(0, 188, 212, 0.3);
-    border-radius: 24px;
+    padding: 0.9rem 1.2rem 0.9rem 3.2rem;  /* Better padding */
+    background: rgba(255, 255, 255, 0.03);  /* More subtle background */
+    border: 1px solid rgba(255, 255, 255, 0.1);  /* Softer border */
+    border-radius: 50px;      /* Pill shape */
     color: white;
     font-family: 'Inter', sans-serif;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
 }
 
 .assets-search-input:focus {
     outline: none;
-    background: rgba(255, 255, 255, 0.08);
-    border-color: #00bcd4;
-    box-shadow: 0 0 20px rgba(0, 188, 212, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);  /* Subtle focus ring */
+}
+
+.assets-search-input:active {
+    transform: scale(0.99);   /* Touch feedback */
 }
 
 .assets-search-input::placeholder {
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.4);  /* Softer placeholder */
 }
 
+/* Remove this section if not using filter buttons */
 .assets-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    gap: 1rem;
-    flex-wrap: wrap;
+    display: none;  /* Hide if not needed */
 }
 
 .filter-buttons {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+    display: none;  /* Hide if not needed */
 }
 
 .filter-btn {
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-family: 'Sora', sans-serif;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.filter-btn.active,
-.filter-btn:hover {
-    background: rgba(0, 188, 212, 0.2);
-    color: #00bcd4;
-    border-color: rgba(0, 188, 212, 0.3);
-    transform: translateY(-1px);
+    display: none;  /* Hide if not needed */
 }
 
 .sort-select {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);  /* More subtle background */
+    border: 1px solid rgba(255, 255, 255, 0.1);  /* Softer border */
+    border-radius: 50px;      /* Pill shape */
     color: white;
     font-family: 'Inter', sans-serif;
     font-size: 0.85rem;
-    padding: 0.6rem 0.8rem;
+    padding: 0.7rem 2.5rem 0.7rem 1.2rem;  /* Adjusted for custom arrow */
     cursor: pointer;
-    min-width: 120px;
+    min-width: 140px;
     min-height: 44px;
+    text-align: center;
+    appearance: none;         /* Remove default arrow */
+    position: relative;
+    transition: all 0.3s ease;
 }
 
-.sort-select:focus {
-    outline: none;
-    border-color: #00bcd4;
-    background: rgba(0, 188, 212, 0.1);
-}
 
 .sort-select option {
     background: #1a1a1a;
@@ -530,7 +506,6 @@ button, .button, .btn {
     min-height: 44px;
 }
 
-
 .mobile-like-button {
     position: absolute;
     top: 8px;
@@ -553,11 +528,9 @@ button, .button, .btn {
     touch-action: manipulation;
 }
 
-.mobile-like-button:hover {
-    background: rgba(0, 0, 0, 0.8);
-    border-color: rgba(0, 188, 212, 0.8);
-    transform: scale(1.1);
-    color: #00bcd4;
+/* Remove hover states for mobile */
+.mobile-like-button:active {
+    transform: scale(0.9);    /* Touch feedback only */
 }
 
 .mobile-like-button.liked {
@@ -565,13 +538,6 @@ button, .button, .btn {
     border-color: #00bcd4;
     color: #00bcd4;
     box-shadow: 0 0 15px rgba(0, 188, 212, 0.4);
-}
-
-.mobile-like-button.liked:hover {
-    background: rgba(0, 188, 212, 0.3);
-    border-color: #00e5ff;
-    color: #00e5ff;
-    box-shadow: 0 0 20px rgba(0, 188, 212, 0.6);
 }
 
 .load-more-container {
@@ -584,7 +550,7 @@ button, .button, .btn {
     color: #00bcd4;
     border: 2px solid #00bcd4;
     padding: 0.8rem 2rem;
-    border-radius: 8px;
+    border-radius: 50px;      /* Pill shape to match design */
     font-family: 'Sora', sans-serif;
     font-weight: 600;
     cursor: pointer;
@@ -594,12 +560,8 @@ button, .button, .btn {
     touch-action: manipulation;
 }
 
-.load-more-btn:hover {
-    background: rgba(0, 188, 212, 0.2);
-    border-color: #00e5ff;
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 0 20px rgba(0, 188, 212, 0.4);
+.load-more-btn:active {
+    transform: scale(0.98);   /* Touch feedback */
 }
 
 .mobile-feedback-message {
@@ -621,6 +583,10 @@ button, .button, .btn {
     font-size: 0.9rem;
     max-width: 400px;
     margin: 0 auto;
+}
+#mobileSortSelect {
+    border-color: rgba(0, 188, 212, 0.3) !important;
+    outline: none !important;
 }
 
 /* ========================================

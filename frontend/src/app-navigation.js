@@ -686,73 +686,54 @@ init(initialSection = null) {
 }
 
     async loadAssetsContent() {
-        return `
-            <div class="assets-mobile-container" style="height: 100%; overflow-y: auto; background: #0a0a0a; padding: 1rem; padding-bottom: 0rem;">
-                <!-- Public Assets Header - No authentication required -->
-                <div class="assets-header" style="margin-bottom: 1.5rem;">
-                    <h2 class="assets-title" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: white; margin: 0 0 1rem 0;">3D Dog Gallery</h2>
-                    <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.5rem; font-size: 0.9rem;">Browse amazing 3D models created by our community. Sign in to like or download models.</p>
-                    
-                    <!-- Search and Sort Controls in One Row -->
-                    <div class="search-sort-row" style="display: flex; gap: 1rem; align-items: center;">
-                        <div class="assets-search" style="position: relative; flex: 1;">
-                            <svg class="assets-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: rgba(0, 188, 212, 0.6); pointer-events: none;">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <path d="m21 21-4.35-4.35"></path>
-                            </svg>
-                            <input type="text" class="assets-search-input" placeholder="Search models..." id="mobileAssetSearchInput" style="width: 100%; padding: 0.8rem 1.2rem 0.8rem 3rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 188, 212, 0.3); border-radius: 24px; color: white; font-family: 'Inter', sans-serif; font-size: 0.95rem; transition: all 0.3s ease; backdrop-filter: blur(10px);">
-                        </div>
-                        <select class="sort-select" id="mobileSortSelect" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; font-family: 'Inter', sans-serif; font-size: 0.85rem; padding: 0.6rem 0.8rem; cursor: pointer; min-width: 120px;">
-                            <option value="recent">Recent</option>
-                            <option value="popular">Popular</option>
-                            <option value="name">Name</option>
-                            <option value="downloads">Downloads</option>
-                        </select>
-                    </div>
-                </div>
+    return `
+        <div class="assets-mobile-container" style="height: 100%; overflow-y: auto; background: #0a0a0a; padding: 1rem; padding-bottom: 0rem;">
+            <!-- Premium Centered Header -->
+            <div class="assets-header" style="margin-bottom: 2rem; margin-top: 0.25rem;">
+                <div style="text-align: center; margin-bottom: 0.5rem; width: 100%;">
+    <h2 class="assets-title" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: white; margin: 0 auto 0.5rem auto; text-align: center;">3D Assets Gallery</h2>
+    <p style="color: rgba(255,255,255,0.5); font-size: 0.85rem; line-height: 1.4; max-width: 280px; margin: 0 auto; text-align: center;">Browse amazing 3D models created by our community. Sign in to like or download models.</p>
+</div>
                 
-                <!-- Assets Grid with Loading State -->
-                <div class="mobile-assets-grid" id="mobileAssetsGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 2rem;">
-                    <!-- Loading skeleton cards -->
-                    <div class="skeleton-card">
-                        <div class="skeleton-preview"></div>
-                        <div class="skeleton-info">
-                            <div class="skeleton-title"></div>
-                            <div class="skeleton-stats"></div>
-                        </div>
+                <!-- Search and Filter in one row -->
+                <div style="display: flex; gap: 0.8rem; width: 100%; max-width: 400px; margin: 0 auto;">
+                    <!-- Search Bar (left, takes more space) -->
+                    <div class="assets-search" style="position: relative; flex: 1.5;">
+                       <input type="text" class="assets-search-input" placeholder="Search models..." id="mobileAssetSearchInput" 
+       style="width: 100%; padding: 0.75rem 1rem 0.75rem 1.5rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 50px; color: white; font-family: 'Inter', sans-serif; font-size: 0.9rem; transition: all 0.3s ease; backdrop-filter: blur(10px); text-align: left;">
                     </div>
-                    <div class="skeleton-card">
-                        <div class="skeleton-preview"></div>
-                        <div class="skeleton-info">
-                            <div class="skeleton-title"></div>
-                            <div class="skeleton-stats"></div>
-                        </div>
-                    </div>
-                    <div class="skeleton-card">
-                        <div class="skeleton-preview"></div>
-                        <div class="skeleton-info">
-                            <div class="skeleton-title"></div>
-                            <div class="skeleton-stats"></div>
-                        </div>
-                    </div>
-                    <div class="skeleton-card">
-                        <div class="skeleton-preview"></div>
-                        <div class="skeleton-info">
-                            <div class="skeleton-title"></div>
-                            <div class="skeleton-stats"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Load More Button -->
-                <div class="load-more-container" style="text-align: center; margin-top: 2rem;">
-                    <button class="load-more-btn" id="loadMoreBtn" style="background: rgba(0, 188, 212, 0.1); color: #00bcd4; border: 2px solid #00bcd4; padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: none;">
-                        Load More Models
-                    </button>
+                    
+                   <!-- Sort Dropdown (right, fixed width) -->
+<div style="position: relative; flex: 0 0 auto;">
+    <select class="sort-select" id="mobileSortSelect" 
+            style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 188, 212, 0.3) !important; border-radius: 50px; color: white; font-family: 'Inter', sans-serif; font-size: 0.9rem; padding: 0.75rem 2.2rem 0.75rem 1rem; cursor: pointer; appearance: none; -webkit-appearance: none; -moz-appearance: none; min-width: 150px; width: 150px; text-align: left; height: 100%; transform: translateZ(0); backface-visibility: hidden; outline: none !important;">
+        <option value="recent">Recent</option>
+        <option value="popular">Popular</option>
+        <option value="name">Name</option>
+        <option value="downloads">Downloads</option>
+    </select>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
+         style="position: absolute; right: 0.8rem; top: 50%; transform: translateY(-50%); color: rgba(255, 255, 255, 0.4); pointer-events: none;">
+        <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+</div>
                 </div>
             </div>
-        `;
-    }
+            
+            <!-- Assets Grid with Loading State -->
+            <div class="mobile-assets-grid" id="mobileAssetsGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 2rem;">
+                <!-- Asset cards will be loaded here -->
+            </div>
+
+            <!-- Load More Button -->
+            <div class="load-more-container" style="text-align: center; margin-top: 2rem;">
+                <button class="load-more-btn" id="loadMoreBtn" style="background: rgba(0, 188, 212, 0.1); color: #00bcd4; border: 2px solid #00bcd4; padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: none;">
+                    Load More Models
+                </button>
+            </div>
+        </div>
+    `;
+}
 
     async loadAccountContent() {
     // Check if user is authenticated
@@ -2000,7 +1981,7 @@ showAssetsLoading() {
                 </button>
             </div>
             <div class="asset-info" style="padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; background: rgba(10, 10, 10, 0.5);">
-                <h3 style="font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 600; color: white; margin: 0; text-align: center; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;">${this.escapeHtml(asset.name)}</h3>
+<h3 style="font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 600; color: white; margin: 0; text-align: center; line-height: 1.3; height: 2.6rem; display: flex; align-items: center; justify-content: center; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;">${this.escapeHtml(asset.name)}</h3>
                 <div style="margin-top: 0.5rem; text-align: center; color: #00bcd4; font-family: 'Inter', sans-serif; font-size: 0.75rem;">
                     <small>${asset.views || 0} views • ${asset.downloads || 0} downloads</small>
                 </div>
