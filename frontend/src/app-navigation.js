@@ -35,17 +35,17 @@ class AppNavigation {
         console.log('🚀 AppNavigation initialized with public assets access');
     }
 
-    updateAccountNavLabel(username = null) {
-        const accountNavItem = document.querySelector('.nav-item[data-section="account"] .nav-label');
-        if (accountNavItem) {
-            if (username) {
-                const displayName = username.length > 10 ? username.substring(0, 10) + '...' : username;
-                accountNavItem.textContent = displayName;
-            } else {
-                accountNavItem.textContent = 'Login';
-            }
+updateAccountNavLabel(username = null) {
+    const accountNavItem = document.querySelector('.nav-item[data-section="account"] .nav-label');
+    if (accountNavItem) {
+        if (username) {
+            // Always show "Account" instead of username
+            accountNavItem.textContent = 'Account';
+        } else {
+            accountNavItem.textContent = 'Login';
         }
     }
+}
     updateTopBarAccountButton() {
     const accountBtn = document.querySelector('.header-actions .account-btn');
     if (accountBtn) {
