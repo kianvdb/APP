@@ -856,122 +856,129 @@ init(initialSection = null) {
                 </div>
             </div>
 
-            <!-- Liked Models View (kept as is) -->
-            <div class="liked-models-view" id="likedModelsView" style="position: relative; z-index: 1; padding: 1rem; min-height: 100%; display: none;">
-                <!-- Header with back button -->
-                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; padding-top: 0.5rem;">
-                    <button onclick="window.AppNavigation.hideLikedModels()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 0.6rem; color: white; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="15 18 9 12 15 6"></polyline>
-                        </svg>
-                    </button>
-                    <h2 style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: white; margin: 0; flex: 1;">My Liked Models</h2>
-                </div>
+           <!-- Liked Models View (kept as is) -->
+<div class="liked-models-view" id="likedModelsView" style="position: relative; z-index: 1; padding: 1rem; padding-bottom: 0rem; min-height: 100%; display: none;">
+    <!-- Header with back button -->
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; padding-top: 0.5rem;">
+        <button onclick="window.AppNavigation.hideLikedModels()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 0.6rem; color: white; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </button>
+        <h2 style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: white; margin: 0; flex: 1;">My Liked Models</h2>
+    </div>
 
-                <!-- Search and Sort Controls in One Row -->
-                <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem;">
-                    <div style="position: relative; flex: 1;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: rgba(0, 188, 212, 0.6); pointer-events: none;">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <path d="m21 21-4.35-4.35"></path>
-                        </svg>
-                        <input type="text" placeholder="Search liked models..." id="likedModelsSearchInput" style="width: 100%; padding: 0.8rem 1.2rem 0.8rem 3rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 188, 212, 0.3); border-radius: 24px; color: white; font-family: 'Inter', sans-serif; font-size: 0.95rem; transition: all 0.3s ease; backdrop-filter: blur(10px);">
-                    </div>
-                    <select id="likedModelsSortSelect" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; font-family: 'Inter', sans-serif; font-size: 0.85rem; padding: 0.6rem 0.8rem; cursor: pointer; min-width: 120px;">
-                        <option value="recent">Recent</option>
-                        <option value="name">Name</option>
-                        <option value="popular">Popular</option>
-                        <option value="downloads">Downloads</option>
-                    </select>
-                </div>
-
-                <!-- Loading State -->
-                <div id="likedModelsLoading" style="display: none; text-align: center; padding: 3rem 1rem; color: #00bcd4;">
-                    <div style="width: 50px; height: 50px; border: 3px solid rgba(0, 188, 212, 0.2); border-top: 3px solid #00bcd4; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
-                    <p style="font-family: 'Sora', sans-serif; font-weight: 500;">Loading your liked models...</p>
-                </div>
-
-                <!-- Liked Models Grid -->
-                <div id="likedModelsGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 2rem;">
-                    <!-- Liked models will be loaded here -->
-                </div>
-
-                <!-- Empty State -->
-                <div id="likedModelsEmpty" style="display: none; text-align: center; padding: 3rem 1rem; color: rgba(255, 255, 255, 0.6);">
-                    <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.6;">💔</div>
-                    <h3 style="color: white; font-family: 'Sora', sans-serif; margin-bottom: 0.5rem; font-size: 1.2rem;">No liked models yet</h3>
-                    <p style="margin-bottom: 2rem; line-height: 1.5;">Start liking models to build your collection!</p>
-                    <button onclick="window.AppNavigation.navigateToSection('assets')" style="background: #00bcd4; color: white; border: none; padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
-                        Browse Models
-                    </button>
-                </div>
-
-                <!-- Error State -->
-                <div id="likedModelsError" style="display: none; text-align: center; padding: 3rem 1rem; color: rgba(255, 255, 255, 0.6);">
-                    <div style="font-size: 4rem; margin-bottom: 1rem; color: #dc3545;">⚠️</div>
-                    <h3 style="color: white; font-family: 'Sora', sans-serif; margin-bottom: 0.5rem; font-size: 1.2rem;">Error Loading Models</h3>
-                    <p style="margin-bottom: 2rem; line-height: 1.5;">Failed to load your liked models. Please try again.</p>
-                    <button onclick="window.AppNavigation.loadLikedModels()" style="background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 500; cursor: pointer; transition: all 0.3s ease;">
-                        Try Again
-                    </button>
-                </div>
-
-                <!-- Load More Button -->
-                <div style="text-align: center; margin-top: 2rem;">
-                    <button id="likedModelsLoadMore" style="background: rgba(0, 188, 212, 0.1); color: #00bcd4; border: 2px solid #00bcd4; padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: none;">
-                        Load More Models
-                    </button>
-                </div>
-            </div>
-            
-            <style>
-                @keyframes float-1 {
-                    0%, 100% { transform: translate(0, 0); }
-                    50% { transform: translate(30px, -30px); }
-                }
-                @keyframes float-2 {
-                    0%, 100% { transform: translate(0, 0); }
-                    50% { transform: translate(-40px, 40px); }
-                }
-                @keyframes profileFloat {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-5px); }
-                }
-                @keyframes cardSlideUp {
-                    from {
-                        opacity: 0;
-                        transform: translateY(20px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-                .account-section button {
-                    pointer-events: auto;
-                    touch-action: manipulation;
-                }
-                
-                .account-section button:active {
-                    transform: translateY(0);
-                }
-                
-                .account-section button:hover {
-                    transform: translateY(-1px);
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                }
-                
-                .account-section .animated-bg {
-                    position: fixed !important;
-                    pointer-events: none !important;
-                }
-            </style>
+    <!-- Search and Filter in one row - SAME AS GALLERY -->
+    <div style="display: flex; gap: 0.8rem; width: 100%; max-width: 400px; margin: 0 auto 1.5rem auto;">
+        <!-- Search Bar (left, takes more space) -->
+        <div style="position: relative; flex: 1.5;">
+            <input type="text" placeholder="Search models..." id="likedModelsSearchInput" 
+                   style="width: 100%; padding: 0.75rem 1rem 0.75rem 1rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 50px; color: white; font-family: 'Inter', sans-serif; font-size: 0.9rem; transition: all 0.3s ease; backdrop-filter: blur(10px); text-align: left;">
         </div>
-    `;
+        
+        <!-- Sort Dropdown (right, fixed width) -->
+        <div style="position: relative; flex: 0 0 auto;">
+            <select id="likedModelsSortSelect" 
+                    style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 188, 212, 0.3) !important; border-radius: 50px; color: white; font-family: 'Inter', sans-serif; font-size: 0.9rem; padding: 0.75rem 2.2rem 0.75rem 1rem; cursor: pointer; appearance: none; -webkit-appearance: none; -moz-appearance: none; min-width: 150px; width: 150px; text-align: left; height: 100%; transform: translateZ(0); backface-visibility: hidden; outline: none !important;">
+                <option value="recent">Recent</option>
+                <option value="name">Name</option>
+                <option value="popular">Popular</option>
+                <option value="downloads">Downloads</option>
+            </select>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
+                 style="position: absolute; right: 0.8rem; top: 50%; transform: translateY(-50%); color: rgba(255, 255, 255, 0.4); pointer-events: none;">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="likedModelsLoading" style="display: none; text-align: center; padding: 3rem 1rem; color: #00bcd4;">
+        <div style="width: 50px; height: 50px; border: 3px solid rgba(0, 188, 212, 0.2); border-top: 3px solid #00bcd4; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+        <p style="font-family: 'Sora', sans-serif; font-weight: 500;">Loading your liked models...</p>
+    </div>
+
+    <!-- Liked Models Grid -->
+    <div id="likedModelsGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 2rem;">
+        <!-- Liked models will be loaded here -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="likedModelsEmpty" style="display: none; text-align: center; padding: 3rem 1rem; color: rgba(255, 255, 255, 0.6);">
+        <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.6;">💔</div>
+        <h3 style="color: white; font-family: 'Sora', sans-serif; margin-bottom: 0.5rem; font-size: 1.2rem;">No liked models yet</h3>
+        <p style="margin-bottom: 2rem; line-height: 1.5;">Start liking models to build your collection!</p>
+        <button onclick="window.AppNavigation.navigateToSection('assets')" style="background: #00bcd4; color: white; border: none; padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+            Browse Models
+        </button>
+    </div>
+
+    <!-- Error State -->
+    <div id="likedModelsError" style="display: none; text-align: center; padding: 3rem 1rem; color: rgba(255, 255, 255, 0.6);">
+        <div style="font-size: 4rem; margin-bottom: 1rem; color: #dc3545;">⚠️</div>
+        <h3 style="color: white; font-family: 'Sora', sans-serif; margin-bottom: 0.5rem; font-size: 1.2rem;">Error Loading Models</h3>
+        <p style="margin-bottom: 2rem; line-height: 1.5;">Failed to load your liked models. Please try again.</p>
+        <button onclick="window.AppNavigation.loadLikedModels()" style="background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 500; cursor: pointer; transition: all 0.3s ease;">
+            Try Again
+        </button>
+    </div>
+
+    <!-- Load More Button -->
+    <div style="text-align: center; margin-top: 2rem;">
+        <button id="likedModelsLoadMore" style="background: rgba(0, 188, 212, 0.1); color: #00bcd4; border: 2px solid #00bcd4; padding: 0.8rem 2rem; border-radius: 8px; font-family: 'Sora', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: none;">
+            Load More Models
+        </button>
+    </div>
+</div>
+
+<style>
+    @keyframes float-1 {
+        0%, 100% { transform: translate(0, 0); }
+        50% { transform: translate(30px, -30px); }
+    }
+    @keyframes float-2 {
+        0%, 100% { transform: translate(0, 0); }
+        50% { transform: translate(-40px, 40px); }
+    }
+    @keyframes profileFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+    @keyframes cardSlideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .account-section button {
+        pointer-events: auto;
+        touch-action: manipulation;
+    }
+    
+    .account-section button:active {
+        transform: translateY(0);
+    }
+    
+    .account-section button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .account-section .animated-bg {
+        position: fixed !important;
+        pointer-events: none !important;
+    }
+</style>
+</div>
+`;
 }
 
     async loadAboutContent() {
@@ -989,7 +996,7 @@ init(initialSection = null) {
             </div>
 
             <!-- Scrollable Content -->
-            <div style="position: relative; z-index: 1; padding: 1rem; padding-bottom: 2rem; min-height: 100%;">
+            <div style="position: relative; z-index: 1; padding: 1rem; padding-bottom: 1.5rem; min-height: 100%;">
                 <!-- Header -->
                 <div style="text-align: center; margin-bottom: 2rem; padding-top: 1rem;">
                     <h1 style="font-family: 'Sora', sans-serif; font-size: 2.5rem; font-weight: 700; color: white; margin-bottom: 0.5rem; text-shadow: 0 0 30px rgba(0,188,212,0.5);">About Threely</h1>
@@ -1079,7 +1086,7 @@ init(initialSection = null) {
                 </div>
 
                 <!-- Legal & Privacy -->
-                <div style="background: rgba(255,255,255,0.05); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; backdrop-filter: blur(10px);">
+                <div style="background: rgba(255,255,255,0.05); border-radius: 16px; padding: 1.5rem; margin-bottom: 0.5rem; backdrop-filter: blur(10px);">
                     <h2 style="font-family: 'Sora', sans-serif; font-size: 1.5rem; color: white; margin-bottom: 1.2rem; text-align: center;">Legal & Privacy</h2>
                     <div style="display: flex; flex-direction: column; gap: 1.2rem;">
                         <div>

@@ -781,6 +781,10 @@ button, .button, .btn {
 #likedModelsEmpty {
     color: rgba(255, 255, 255, 0.6);
 }
+#likedModelsSortSelect {
+    border-color: rgba(0, 188, 212, 0.3) !important;
+    outline: none !important;
+}
 
 /* ========================================
    BOTTOM NAVIGATION
