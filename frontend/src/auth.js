@@ -743,218 +743,198 @@ class AuthManager {
     }
 
     // Handle modal login
-    async handleModalLogin(e) {
-        e.preventDefault();
-        
-        const username = document.getElementById('premiumLoginUsername').value.trim();
-        const password = document.getElementById('premiumLoginPassword').value;
+async handleModalLogin(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('premiumLoginUsername').value.trim();
+    const password = document.getElementById('premiumLoginPassword').value;
 
-        if (!username || !password) {
-            this.showModalMessage('premiumLoginMessage', 'Please fill in all fields', 'error');
-            return;
-        }
-
-        this.setModalLoading('premium-login-form', true);
-        this.clearModalMessages();
-
-        try {
-            const response = await fetch(`${this.apiBaseUrl}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ username, password })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                this.user = data.user;
-                this.currentUser = data.user; // For backward compatibility
-                this.updateUI();
-                
-                // Check if we have a redirect to show appropriate message
-                const redirectUrl = localStorage.getItem('dalma_redirectAfterLogin');
-                const redirectMessage = redirectUrl ? 'Welcome back! Loading...' : 'Welcome back!';
-                this.showModalMessage('premiumLoginMessage', redirectMessage, 'success');
-                
-                // Dispatch auth state change event
-                this.dispatchAuthStateChange();
-                
-                // Wait longer to ensure cookie is set
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                this.hideLoginModal();
-                document.getElementById('premium-login-form').reset();
-                
-                // Check if we're on view-asset page and just reload to update auth state
-                if (window.location.pathname.includes('view-asset.html')) {
-                    window.location.reload();
-                    return;
-                }
-                
-                // Check for redirect using localStorage
-                const loginRedirectUrl = localStorage.getItem('dalma_redirectAfterLogin');
-                console.log('🔄 Checking redirect URL:', loginRedirectUrl);
-                console.log('📍 All localStorage keys:', Object.keys(localStorage));
-                
-                if (loginRedirectUrl) {
-                    // Handle section-based redirects (like 'generate')
-                    if (['generate', 'assets', 'account', 'about'].includes(loginRedirectUrl)) {
-                        console.log('🚀 Section redirect detected:', loginRedirectUrl);
-                        // Use URL parameter to preserve redirect across reload
-                        window.location.href = `index.html?redirect=${loginRedirectUrl}`;
-                        return;
-                    } else {
-                        localStorage.removeItem('dalma_redirectAfterLogin');
-                        
-                        if (loginRedirectUrl.includes('index.html')) {
-                            console.log('🚀 Redirecting to index.html');
-                            window.location.href = 'index.html';
-                            return;
-                        } else {
-                            // For other redirects (full URLs), use them
-                            window.location.href = loginRedirectUrl;
-                            return;
-                        }
-                    }
-                }
-                
-                // Default: reload current page
-                window.location.reload();
-            } else {
-                this.showModalMessage('premiumLoginMessage', data.error || 'Login failed', 'error');
-            }
-        } catch (error) {
-            console.error('Modal login error:', error);
-            this.showModalMessage('premiumLoginMessage', 'Network error. Please try again.', 'error');
-        } finally {
-            this.setModalLoading('premium-login-form', false);
-        }
+    if (!username || !password) {
+        this.showModalMessage('premiumLoginMessage', 'Please fill in all fields', 'error');
+        return;
     }
 
-    // Handle modal register
-    async handleModalRegister(e) {
-        e.preventDefault();
-        
-        const username = document.getElementById('premiumRegisterUsername').value.trim();
-        const email = document.getElementById('premiumRegisterEmail').value.trim();
-        const password = document.getElementById('premiumRegisterPassword').value;
+    this.setModalLoading('premium-login-form', true);
+    this.clearModalMessages();
 
-        if (!username || !email || !password) {
-            this.showModalMessage('premiumRegisterMessage', 'Please fill in all fields', 'error');
-            return;
-        }
+    try {
+        const response = await fetch(`${this.apiBaseUrl}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ username, password })
+        });
 
-        if (username.length < 3) {
-            this.showModalMessage('premiumRegisterMessage', 'Username must be at least 3 characters long', 'error');
-            return;
-        }
+        const data = await response.json();
 
-        if (password.length < 6) {
-            this.showModalMessage('premiumRegisterMessage', 'Password must be at least 6 characters long', 'error');
-            return;
-        }
-
-        this.setModalLoading('premium-register-form', true);
-        this.clearModalMessages();
-
-        try {
-            const response = await fetch(`${this.apiBaseUrl}/auth/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ username, email, password })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                this.user = data.user;
-                this.currentUser = data.user; // For backward compatibility
-                this.updateUI();
-                this.showModalMessage('premiumRegisterMessage', 'Account created! Welcome to Dalma AI!', 'success');
-                
-                // Dispatch auth state change event
-                this.dispatchAuthStateChange();
-                
-                // Wait longer to ensure cookie is set
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                
-                this.hideLoginModal();
-                document.getElementById('premium-register-form').reset();
-                
-                // Check if we're on view-asset page and just reload to update auth state
-                if (window.location.pathname.includes('view-asset.html')) {
-                    window.location.reload();
-                    return;
-                }
-                
-                // Check for redirect using localStorage
-                const registerRedirectUrl = localStorage.getItem('dalma_redirectAfterLogin');
-                console.log('🔄 Checking redirect URL after register:', registerRedirectUrl);
-                
-                if (registerRedirectUrl) {
-                    // Handle section-based redirects (like 'generate')
-                    if (['generate', 'assets', 'account', 'about'].includes(registerRedirectUrl)) {
-                        console.log('🚀 Section redirect detected:', registerRedirectUrl);
-                        // Use URL parameter to preserve redirect across reload
-                        window.location.href = `index.html?redirect=${registerRedirectUrl}`;
-                        return;
-                    } else {
-                        localStorage.removeItem('dalma_redirectAfterLogin');
-                        
-                        if (registerRedirectUrl.includes('index.html')) {
-                            console.log('🚀 Redirecting to index.html');
-                            window.location.href = 'index.html';
-                            return;
-                        } else {
-                            // For other redirects (full URLs), use them
-                            window.location.href = registerRedirectUrl;
-                            return;
-                        }
-                    }
-                }
-                
-                // Default: reload current page
-                window.location.reload();
-            } else {
-                this.showModalMessage('premiumRegisterMessage', data.error || 'Registration failed', 'error');
-            }
-        } catch (error) {
-            console.error('Modal register error:', error);
-            this.showModalMessage('premiumRegisterMessage', 'Network error. Please try again.', 'error');
-        } finally {
-            this.setModalLoading('premium-register-form', false);
-        }
-    }
-
-    // Logout
-    async logout() {
-        try {
-            await fetch(`${this.apiBaseUrl}/auth/logout`, {
-                method: 'POST',
-                credentials: 'include'
-            });
-
-            this.user = null;
-            this.currentUser = null;
+        if (response.ok) {
+            this.user = data.user;
+            this.currentUser = data.user; // For backward compatibility
             this.updateUI();
-            console.log('✅ User logged out');
+            
+            // Check if we have a redirect to show appropriate message
+            const redirectUrl = localStorage.getItem('dalma_redirectAfterLogin');
+            const redirectMessage = redirectUrl ? 'Welcome back! Loading...' : 'Welcome back!';
+            this.showModalMessage('premiumLoginMessage', redirectMessage, 'success');
             
             // Dispatch auth state change event
             this.dispatchAuthStateChange();
             
-            // Clear any stored auth data
-            localStorage.removeItem('dalma_user');
-            localStorage.removeItem('dalma_redirectAfterLogin');
-            sessionStorage.removeItem('redirectAfterLogin');
+            // Wait a moment to ensure auth state is updated
+            await new Promise(resolve => setTimeout(resolve, 500));
             
-            // Redirect to homepage after logout
-            window.location.href = 'index.html';
-        } catch (error) {
-            console.error('❌ Logout error:', error);
+            this.hideLoginModal();
+            document.getElementById('premium-login-form').reset();
+            
+            // Handle redirect WITHOUT page reload
+            const loginRedirectUrl = localStorage.getItem('dalma_redirectAfterLogin');
+            console.log('🔄 Checking redirect URL:', loginRedirectUrl);
+            
+            if (loginRedirectUrl) {
+                localStorage.removeItem('dalma_redirectAfterLogin');
+                
+                if (['generate', 'assets', 'account', 'about'].includes(loginRedirectUrl)) {
+                    console.log('🚀 In-app redirect to section:', loginRedirectUrl);
+                    // Use in-app navigation instead of page reload
+                    setTimeout(() => {
+                        if (window.AppNavigation) {
+                            window.AppNavigation.navigateToSection(loginRedirectUrl);
+                        }
+                    }, 200);
+                    return;
+                }
+            }
+            
+            // No redirect needed - just update UI
+            console.log('✅ Login complete, staying on current section');
+            
+        } else {
+            this.showModalMessage('premiumLoginMessage', data.error || 'Login failed', 'error');
         }
+    } catch (error) {
+        console.error('Modal login error:', error);
+        this.showModalMessage('premiumLoginMessage', 'Network error. Please try again.', 'error');
+    } finally {
+        this.setModalLoading('premium-login-form', false);
     }
+}
+
+   // Handle modal register
+async handleModalRegister(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('premiumRegisterUsername').value.trim();
+    const email = document.getElementById('premiumRegisterEmail').value.trim();
+    const password = document.getElementById('premiumRegisterPassword').value;
+
+    if (!username || !email || !password) {
+        this.showModalMessage('premiumRegisterMessage', 'Please fill in all fields', 'error');
+        return;
+    }
+
+    if (username.length < 3) {
+        this.showModalMessage('premiumRegisterMessage', 'Username must be at least 3 characters long', 'error');
+        return;
+    }
+
+    if (password.length < 6) {
+        this.showModalMessage('premiumRegisterMessage', 'Password must be at least 6 characters long', 'error');
+        return;
+    }
+
+    this.setModalLoading('premium-register-form', true);
+    this.clearModalMessages();
+
+    try {
+        const response = await fetch(`${this.apiBaseUrl}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ username, email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            this.user = data.user;
+            this.currentUser = data.user; // For backward compatibility
+            this.updateUI();
+            this.showModalMessage('premiumRegisterMessage', 'Account created! Welcome to Dalma AI!', 'success');
+            
+            // Dispatch auth state change event
+            this.dispatchAuthStateChange();
+            
+            // Wait a moment to ensure auth state is updated  
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            this.hideLoginModal();
+            document.getElementById('premium-register-form').reset();
+            
+            // Handle redirect WITHOUT page reload
+            const registerRedirectUrl = localStorage.getItem('dalma_redirectAfterLogin');
+            console.log('🔄 Checking redirect URL after register:', registerRedirectUrl);
+            
+            if (registerRedirectUrl) {
+                localStorage.removeItem('dalma_redirectAfterLogin');
+                
+                if (['generate', 'assets', 'account', 'about'].includes(registerRedirectUrl)) {
+                    console.log('🚀 In-app redirect to section:', registerRedirectUrl);
+                    // Use in-app navigation instead of page reload
+                    setTimeout(() => {
+                        if (window.AppNavigation) {
+                            window.AppNavigation.navigateToSection(registerRedirectUrl);
+                        }
+                    }, 200);
+                    return;
+                }
+            }
+            
+            // No redirect needed - just update UI
+            console.log('✅ Registration complete, staying on current section');
+            
+        } else {
+            this.showModalMessage('premiumRegisterMessage', data.error || 'Registration failed', 'error');
+        }
+    } catch (error) {
+        console.error('Modal register error:', error);
+        this.showModalMessage('premiumRegisterMessage', 'Network error. Please try again.', 'error');
+    } finally {
+        this.setModalLoading('premium-register-form', false);
+    }
+}
+
+   // Logout
+async logout() {
+    try {
+        await fetch(`${this.apiBaseUrl}/auth/logout`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+
+        this.user = null;
+        this.currentUser = null;
+        this.updateUI();
+        console.log('✅ User logged out');
+        
+        // Dispatch auth state change event
+        this.dispatchAuthStateChange();
+        
+        // Clear any stored auth data
+        localStorage.removeItem('dalma_user');
+        localStorage.removeItem('dalma_redirectAfterLogin');
+        sessionStorage.removeItem('redirectAfterLogin');
+        
+        // Navigate to home section instead of page reload
+        if (window.AppNavigation) {
+            window.AppNavigation.navigateToSection('home');
+        }
+        
+        console.log('🏠 Navigated to home section after logout');
+        
+    } catch (error) {
+        console.error('❌ Logout error:', error);
+    }
+}
 
     // Update UI based on auth state
     updateUI() {

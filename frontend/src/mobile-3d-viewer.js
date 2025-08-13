@@ -88,8 +88,8 @@
         
         // Adjusted camera for better model presentation
         Mobile3D.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-        Mobile3D.camera.position.set(3, 8, 4); // Much closer position for zoom effect
-        Mobile3D.camera.lookAt(0, -2, 0); // Steeper downward angle
+        Mobile3D.camera.position.set(2, 5, 4); // Much closer position for zoom effect
+        Mobile3D.camera.lookAt(0, 2, 0); // Steeper downward angle
         
         // Renderer setup with better error handling
         try {
@@ -188,7 +188,7 @@
             Mobile3D.controls.enableDamping = true;
             Mobile3D.controls.dampingFactor = 0.05;
             Mobile3D.controls.autoRotate = false;
-            Mobile3D.controls.target.set(0, -2, 0); // Steeper tilt target
+            Mobile3D.controls.target.set(0, -1, 0); // Steeper tilt target
             
             // Restrict controls - only horizontal rotation
             Mobile3D.controls.enableZoom = false; // Disable zoom

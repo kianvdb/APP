@@ -165,17 +165,17 @@
 
   
 
-    <!-- Scripts -->
-    <script src="src/auth.js"></script>
+   <!-- Scripts -->
+<script src="src/auth.js"></script>
 
-    <script src="src/monetization.js"></script>
-    <script src="src/mobile-3d-viewer.js"></script>
-    
-    <!-- Enhanced App Navigation with Assets Integration -->
-    <script src="src/app-navigation.js"></script>
-    <script src="src/generate-controller.js"></script>
-    <script src="src/mobile-asset-viewer.js"></script>
-   <!-- Initialize the app -->
+<script src="src/monetization.js"></script>
+<script src="src/mobile-3d-viewer.js"></script>
+
+<!-- Enhanced App Navigation with Assets Integration -->
+<script src="src/app-navigation.js"></script>
+<script src="src/generate-controller.js"></script>
+<script src="src/mobile-asset-viewer.js"></script>
+<!-- Initialize the app -->
 <script>
     // Add CSS fix for hero content and 3D interaction
     const styleSheet = document.createElement('style');
@@ -234,303 +234,334 @@
     `;
     document.head.appendChild(styleSheet);
     
-    // App initialization state
+    // App initialization state - MOVED TO TOP
     let appInitialized = false;
     let loadingProgress = 0;
-        // Update UI based on auth state
-        function updateUIForAuthState(isAuthenticated) {
-            const creditsContainer = document.getElementById('creditsContainer');
-            const buyCreditsBtn = document.getElementById('buyCreditsBtn');
-            const accountBtn = document.getElementById('accountBtn');
-            const accountBtnText = accountBtn?.querySelector('.account-btn-text');
+    
+    // Update UI based on auth state
+    function updateUIForAuthState(isAuthenticated) {
+        const creditsContainer = document.getElementById('creditsContainer');
+        const buyCreditsBtn = document.getElementById('buyCreditsBtn');
+        const accountBtn = document.getElementById('accountBtn');
+        const accountBtnText = accountBtn?.querySelector('.account-btn-text');
+        
+        if (isAuthenticated) {
+            // Show authenticated UI elements
+            if (creditsContainer) creditsContainer.style.display = 'flex';
+            if (buyCreditsBtn) buyCreditsBtn.style.display = 'block';
+            if (accountBtnText) accountBtnText.textContent = 'Account';
             
-            if (isAuthenticated) {
-                // Show authenticated UI elements
-                if (creditsContainer) creditsContainer.style.display = 'flex';
-                if (buyCreditsBtn) buyCreditsBtn.style.display = 'block';
-                if (accountBtnText) accountBtnText.textContent = 'Account';
-                
-                // Update credits display
-                if (window.MobileMonetization) {
-                    const creditsCount = document.getElementById('creditsCount');
-                    if (creditsCount) {
-                        creditsCount.textContent = window.MobileMonetization.getUserCredits();
-                    }
+            // Update credits display
+            if (window.MobileMonetization) {
+                const creditsCount = document.getElementById('creditsCount');
+                if (creditsCount) {
+                    creditsCount.textContent = window.MobileMonetization.getUserCredits();
                 }
-            } else {
-                // Show unauthenticated UI
-                if (creditsContainer) creditsContainer.style.display = 'none';
-                if (buyCreditsBtn) buyCreditsBtn.style.display = 'none';
-                if (accountBtnText) accountBtnText.textContent = 'Login';
             }
+        } else {
+            // Show unauthenticated UI
+            if (creditsContainer) creditsContainer.style.display = 'none';
+            if (buyCreditsBtn) buyCreditsBtn.style.display = 'none';
+            if (accountBtnText) accountBtnText.textContent = 'Login';
         }
+    }
 
-        // Enhanced loading screen with smooth progression
-        function updateLoadingScreen(progress, text) {
-            const progressBar = document.getElementById('loadingProgressBar');
-            const loadingText = document.getElementById('loadingText');
-            
-            if (progressBar) {
-                progressBar.style.width = `${progress}%`;
-            }
-            
-            if (loadingText) {
-                loadingText.textContent = text;
-            }
-            
-            loadingProgress = progress;
+    // Enhanced loading screen with smooth progression
+    function updateLoadingScreen(progress, text) {
+        const progressBar = document.getElementById('loadingProgressBar');
+        const loadingText = document.getElementById('loadingText');
+        
+        if (progressBar) {
+            progressBar.style.width = `${progress}%`;
         }
-
-        // Hide loading screen with smooth animation
-        function hideLoadingScreen() {
-            const loadingScreen = document.getElementById('appLoadingScreen');
-            if (loadingScreen) {
-                loadingScreen.classList.add('hidden');
-                setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                }, 800);
-            }
+        
+        if (loadingText) {
+            loadingText.textContent = text;
         }
+        
+        loadingProgress = progress;
+    }
 
-        // Check authentication and initialize app
-        async function initializeApp() {
-            if (appInitialized) return;
-            
-            console.log('🚀 Initializing app with public assets access...');
-            updateLoadingScreen(20, 'Loading interface...');
-            
-            // Check for redirect in URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlRedirect = urlParams.get('redirect');
-            
-            // Store any pending redirect (from URL or sessionStorage)
-            const pendingRedirect = urlRedirect || sessionStorage.getItem('redirectAfterLogin');
-            console.log('📍 Pending redirect detected:', pendingRedirect);
-            console.log('📍 URL redirect:', urlRedirect);
-            console.log('📍 SessionStorage redirect:', sessionStorage.getItem('redirectAfterLogin'));
-            
-            // Clean up URL if we have a redirect parameter
-            if (urlRedirect) {
-                // Remove the redirect parameter from URL without reload
-                const newUrl = window.location.pathname + window.location.hash;
-                window.history.replaceState({}, document.title, newUrl);
-            }
-            
-            // Wait for auth manager to be ready
-            await new Promise(resolve => {
-                let attempts = 0;
-                const maxAttempts = 50;
-                
-                const checkAuth = setInterval(() => {
-                    attempts++;
-                    if (window.authManager?.isInitialized || attempts >= maxAttempts) {
-                        clearInterval(checkAuth);
-                        resolve();
-                    }
-                }, 100);
-            });
-            
-            updateLoadingScreen(50, 'Setting up app...');
-            
-            // Show the app container for everyone
-            document.getElementById('appContainer').style.display = 'flex';
-            
-            // Check authentication status
-            const isAuthenticated = window.authManager?.isAuthenticated();
-            console.log('🔐 User authenticated:', isAuthenticated);
-            
-            // Update UI based on auth state
-            updateUIForAuthState(isAuthenticated);
-            
-            // Initialize app navigation with public assets
-            updateLoadingScreen(70, 'Loading sections...');
-            
-            if (window.AppNavigation) {
-                await new Promise(resolve => {
-                    setTimeout(() => {
-                        // Pass the pending redirect to init if we have one and user is authenticated
-                        const initialSection = (isAuthenticated && pendingRedirect && ['generate', 'assets', 'account', 'about'].includes(pendingRedirect)) 
-                            ? pendingRedirect 
-                            : null;
-                            
-                        if (initialSection) {
-                            console.log('🎯 Initializing navigation with redirect section:', initialSection);
-                            localStorage.removeItem('dalma_redirectAfterLogin');
-                        }
-                        
-                        window.AppNavigation.init(initialSection);
-                        resolve();
-                    }, 300);
-                });
-            }
-            
-            // Setup restricted navigation - ONLY generate section requires auth
-            setupRestrictedNavigation(isAuthenticated);
-            
-            // Setup account button handler
-            setupAccountButton();
-            
-            // Handle pending redirect if authenticated
-            if (isAuthenticated && pendingRedirect && ['generate', 'assets', 'account', 'about'].includes(pendingRedirect)) {
-                console.log('🚀 Processing pending redirect to:', pendingRedirect);
-                sessionStorage.removeItem('redirectAfterLogin');
-                
-                // Wait a bit longer to ensure everything is ready
-                setTimeout(() => {
-                    if (window.AppNavigation) {
-                        console.log('🎯 Navigating to section:', pendingRedirect);
-                        window.AppNavigation.navigateToSection(pendingRedirect);
-                    }
-                }, 1000);
-            }
-            
-            updateLoadingScreen(100, 'Ready!');
-            
-            // Hide loading screen
+    // Hide loading screen with smooth animation
+    function hideLoadingScreen() {
+        const loadingScreen = document.getElementById('appLoadingScreen');
+        if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
             setTimeout(() => {
-                hideLoadingScreen();
-                appInitialized = true;
+                loadingScreen.style.display = 'none';
+            }, 800);
+        }
+    }
+
+    // Check authentication and initialize app
+    async function initializeApp() {
+        if (appInitialized) {
+            console.log('⚠️ App already initialized, skipping re-initialization');
+            return;
+        }
+        
+        console.log('🚀 Initializing app with public assets access...');
+        updateLoadingScreen(20, 'Loading interface...');
+        
+        // Check for redirect in URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlRedirect = urlParams.get('redirect');
+        
+        // Store any pending redirect (from URL or sessionStorage)
+        const pendingRedirect = urlRedirect || sessionStorage.getItem('redirectAfterLogin');
+        console.log('📍 Pending redirect detected:', pendingRedirect);
+        console.log('📍 URL redirect:', urlRedirect);
+        console.log('📍 SessionStorage redirect:', sessionStorage.getItem('redirectAfterLogin'));
+        
+        // Clean up URL if we have a redirect parameter
+        if (urlRedirect) {
+            // Remove the redirect parameter from URL without reload
+            const newUrl = window.location.pathname + window.location.hash;
+            window.history.replaceState({}, document.title, newUrl);
+        }
+        
+        // Wait for auth manager to be ready
+        await new Promise(resolve => {
+            let attempts = 0;
+            const maxAttempts = 50;
+            
+            const checkAuth = setInterval(() => {
+                attempts++;
+                if (window.authManager?.isInitialized || attempts >= maxAttempts) {
+                    clearInterval(checkAuth);
+                    resolve();
+                }
+            }, 100);
+        });
+        
+        updateLoadingScreen(50, 'Setting up app...');
+        
+        // Show the app container for everyone
+        document.getElementById('appContainer').style.display = 'flex';
+        
+        // Check authentication status
+        const isAuthenticated = window.authManager?.isAuthenticated();
+        console.log('🔐 User authenticated:', isAuthenticated);
+        
+        // Update UI based on auth state
+        updateUIForAuthState(isAuthenticated);
+        
+        // Initialize app navigation with public assets
+        updateLoadingScreen(70, 'Loading sections...');
+        
+        if (window.AppNavigation) {
+            await new Promise(resolve => {
+                setTimeout(() => {
+                    // Pass the pending redirect to init if we have one and user is authenticated
+                    const initialSection = (isAuthenticated && pendingRedirect && ['generate', 'assets', 'account', 'about'].includes(pendingRedirect)) 
+                        ? pendingRedirect 
+                        : null;
+                        
+                    if (initialSection) {
+                        console.log('🎯 Initializing navigation with redirect section:', initialSection);
+                        localStorage.removeItem('dalma_redirectAfterLogin');
+                    }
+                    
+                    window.AppNavigation.init(initialSection);
+                    resolve();
+                }, 300);
+            });
+        }
+        
+        // Setup restricted navigation - ONLY generate section requires auth
+        setupRestrictedNavigation(isAuthenticated);
+        
+        // Setup account button handler
+        setupAccountButton();
+        
+        // Handle pending redirect if authenticated
+        if (isAuthenticated && pendingRedirect && ['generate', 'assets', 'account', 'about'].includes(pendingRedirect)) {
+            console.log('🚀 Processing pending redirect to:', pendingRedirect);
+            sessionStorage.removeItem('redirectAfterLogin');
+            
+            // Wait a bit longer to ensure everything is ready
+            setTimeout(() => {
+                if (window.AppNavigation) {
+                    console.log('🎯 Navigating to section:', pendingRedirect);
+                    window.AppNavigation.navigateToSection(pendingRedirect);
+                }
             }, 1000);
         }
         
-       // Setup navigation with restrictions - UPDATED: Remove assets from restricted sections
-        function setupRestrictedNavigation(isAuthenticated) {
-            // Sections that require authentication - ONLY generate section now
-            const restrictedSections = ['generate']; // Removed 'assets' - now completely public
-            
-            // Override navigation for restricted sections
-            const originalNavigate = window.AppNavigation.navigateToSection;
-            window.AppNavigation.navigateToSection = function(sectionName) {
-                if (!window.authManager?.isAuthenticated() && restrictedSections.includes(sectionName)) {
-                    console.log('🔐 Section requires authentication:', sectionName);
-                    sessionStorage.setItem('redirectAfterLogin', sectionName);
-                    console.log('📍 Stored section redirect:', sessionStorage.getItem('redirectAfterLogin'));
-                    window.authManager.showLoginModal();
-                    return;
-                }
-                
-                // Account section special handling
-                if (sectionName === 'account' && !window.authManager?.isAuthenticated()) {
-                    sessionStorage.setItem('redirectAfterLogin', 'account');
-                    window.authManager.showLoginModal();
-                    return;
-                }
-                
-                originalNavigate.call(this, sectionName);
-            };
-        }
+        updateLoadingScreen(100, 'Ready!');
         
-        // Setup account button
-        function setupAccountButton() {
-            const accountBtn = document.getElementById('accountBtn');
-            if (accountBtn) {
-                accountBtn.addEventListener('click', () => {
-                    if (window.authManager?.isAuthenticated()) {
-                        window.AppNavigation.navigateToSection('account');
-                    } else {
-                        window.authManager.showLoginModal();
-                    }
-                });
+        // Hide loading screen and mark as initialized
+        setTimeout(() => {
+            hideLoadingScreen();
+            appInitialized = true; // Set flag here to prevent re-initialization
+        }, 1000);
+    }
+    
+   // Setup navigation with restrictions - UPDATED: Remove assets from restricted sections
+    function setupRestrictedNavigation(isAuthenticated) {
+        // Sections that require authentication - ONLY generate section now
+        const restrictedSections = ['generate']; // Removed 'assets' - now completely public
+        
+        // Override navigation for restricted sections
+        const originalNavigate = window.AppNavigation.navigateToSection;
+        window.AppNavigation.navigateToSection = function(sectionName) {
+            if (!window.authManager?.isAuthenticated() && restrictedSections.includes(sectionName)) {
+                console.log('🔐 Section requires authentication:', sectionName);
+                sessionStorage.setItem('redirectAfterLogin', sectionName);
+                console.log('📍 Stored section redirect:', sessionStorage.getItem('redirectAfterLogin'));
+                window.authManager.showLoginModal();
+                return;
             }
             
-            // Buy credits button
-            const buyCreditsBtn = document.getElementById('buyCreditsBtn');
-            if (buyCreditsBtn) {
-                buyCreditsBtn.addEventListener('click', () => {
-                    if (window.MobileMonetization) {
-                        window.MobileMonetization.showPricingModal();
-                    }
-                });
+            // Account section special handling
+            if (sectionName === 'account' && !window.authManager?.isAuthenticated()) {
+                sessionStorage.setItem('redirectAfterLogin', 'account');
+                window.authManager.showLoginModal();
+                return;
             }
-        }
-        
-        // Global loadSection function for compatibility
-        window.loadSection = function(sectionName) {
-            if (window.AppNavigation) {
-                window.AppNavigation.navigateToSection(sectionName);
-            } else {
-                console.error('❌ AppNavigation not available');
-            }
+            
+            originalNavigate.call(this, sectionName);
         };
-        
-        // Initialize when DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('📱 DOM loaded, showing loading screen...');
-            
-            // Show loading screen immediately
-            updateLoadingScreen(10, 'Loading application...');
-            
-            // Start initialization after brief delay
-            setTimeout(initializeApp, 300);
-        });
-       
-        // Listen for auth state changes
-        window.addEventListener('authStateChange', function(event) {
-            console.log('🔄 Auth state changed, updating UI...', event.detail);
-            const isAuthenticated = window.authManager?.isAuthenticated();
-            updateUIForAuthState(isAuthenticated);
-            setupRestrictedNavigation(isAuthenticated);
-            
-            // Handle redirect after login
-            if (isAuthenticated) {
-                const redirect = sessionStorage.getItem('redirectAfterLogin');
-                console.log('🎯 Post-auth redirect check:', redirect);
-                if (redirect) {
-                    sessionStorage.removeItem('redirectAfterLogin');
-                    if (['generate', 'assets', 'account', 'about'].includes(redirect)) {
-                        console.log('🚀 Navigating to section:', redirect);
-                        setTimeout(() => {
-                            if (window.AppNavigation) {
-                                window.AppNavigation.navigateToSection(redirect);
-                            }
-                        }, 500);
-                    }
+    }
+    
+    // Setup account button
+    function setupAccountButton() {
+        const accountBtn = document.getElementById('accountBtn');
+        if (accountBtn) {
+            accountBtn.addEventListener('click', () => {
+                if (window.authManager?.isAuthenticated()) {
+                    window.AppNavigation.navigateToSection('account');
+                } else {
+                    window.authManager.showLoginModal();
                 }
-            }
-        });
+            });
+        }
         
-        // Also check for redirect when app initializes
-        window.addEventListener('authManagerReady', function(event) {
-            console.log('🔐 Auth manager ready event:', event.detail);
-            if (event.detail.authenticated) {
-                const redirect = sessionStorage.getItem('redirectAfterLogin');
-                if (redirect && ['generate', 'assets', 'account', 'about'].includes(redirect)) {
-                    console.log('🚀 Auth ready - navigating to:', redirect);
-                    sessionStorage.removeItem('redirectAfterLogin');
+        // Buy credits button
+        const buyCreditsBtn = document.getElementById('buyCreditsBtn');
+        if (buyCreditsBtn) {
+            buyCreditsBtn.addEventListener('click', () => {
+                if (window.MobileMonetization) {
+                    window.MobileMonetization.showPricingModal();
+                }
+            });
+        }
+    }
+    
+    // Global loadSection function for compatibility
+    window.loadSection = function(sectionName) {
+        if (window.AppNavigation) {
+            window.AppNavigation.navigateToSection(sectionName);
+        } else {
+            console.error('❌ AppNavigation not available');
+        }
+    };
+    
+    // Initialize when DOM is ready - UPDATED WITH FIX
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if app is already initialized to prevent double initialization
+        if (appInitialized) {
+            console.log('📱 App already initialized, skipping loading screen');
+            
+            // Just ensure the app container is visible
+            const appContainer = document.getElementById('appContainer');
+            const loadingScreen = document.getElementById('appLoadingScreen');
+            
+            if (appContainer) appContainer.style.display = 'flex';
+            if (loadingScreen) loadingScreen.style.display = 'none';
+            
+            // Handle any pending redirects without loading screen
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlRedirect = urlParams.get('redirect');
+            if (urlRedirect && window.AppNavigation && ['generate', 'assets', 'account', 'about'].includes(urlRedirect)) {
+                // Clean up URL
+                const newUrl = window.location.pathname + window.location.hash;
+                window.history.replaceState({}, document.title, newUrl);
+                
+                // Navigate directly
+                setTimeout(() => {
+                    window.AppNavigation.navigateToSection(urlRedirect);
+                }, 100);
+            }
+            return;
+        }
+        
+        console.log('📱 DOM loaded, showing loading screen...');
+        
+        // Show loading screen immediately
+        updateLoadingScreen(10, 'Loading application...');
+        
+        // Start initialization after brief delay
+        setTimeout(initializeApp, 300);
+    });
+   
+    // Listen for auth state changes
+    window.addEventListener('authStateChange', function(event) {
+        console.log('🔄 Auth state changed, updating UI...', event.detail);
+        const isAuthenticated = window.authManager?.isAuthenticated();
+        updateUIForAuthState(isAuthenticated);
+        setupRestrictedNavigation(isAuthenticated);
+        
+        // Handle redirect after login - only if app is already initialized
+        if (isAuthenticated && appInitialized) {
+            const redirect = sessionStorage.getItem('redirectAfterLogin');
+            console.log('🎯 Post-auth redirect check:', redirect);
+            if (redirect) {
+                sessionStorage.removeItem('redirectAfterLogin');
+                if (['generate', 'assets', 'account', 'about'].includes(redirect)) {
+                    console.log('🚀 Navigating to section:', redirect);
                     setTimeout(() => {
                         if (window.AppNavigation) {
                             window.AppNavigation.navigateToSection(redirect);
                         }
-                    }, 800);
+                    }, 500);
                 }
             }
-        });
-
-        // Disable homepage.js navigation updates since we're using mobile navigation
-        window.disableHomepageNav = true;
-
-        // Handle window resize
-        window.addEventListener('resize', function() {
-            if (window.camera && window.renderer) {
-                const container = window.renderer.domElement.parentElement;
-                if (container && container.offsetWidth > 0) {
-                    window.camera.aspect = container.offsetWidth / container.offsetHeight;
-                    window.camera.updateProjectionMatrix();
-                    window.renderer.setSize(container.offsetWidth, container.offsetHeight);
-                }
+        }
+    });
+    
+    // Also check for redirect when app initializes
+    window.addEventListener('authManagerReady', function(event) {
+        console.log('🔐 Auth manager ready event:', event.detail);
+        if (event.detail.authenticated && appInitialized) {
+            const redirect = sessionStorage.getItem('redirectAfterLogin');
+            if (redirect && ['generate', 'assets', 'account', 'about'].includes(redirect)) {
+                console.log('🚀 Auth ready - navigating to:', redirect);
+                sessionStorage.removeItem('redirectAfterLogin');
+                setTimeout(() => {
+                    if (window.AppNavigation) {
+                        window.AppNavigation.navigateToSection(redirect);
+                    }
+                }, 800);
             }
-        });
+        }
+    });
 
-        // Debug functions for development
-        window.debugAppNavigation = () => window.AppNavigation;
-        window.debugAssetsData = () => window.AppNavigation?.assetsData;
-        window.debugLoadAssets = () => window.AppNavigation?.loadAllAssets();
-        window.debugReloadAssets = () => window.AppNavigation?.reloadSection('assets');
-        window.debugLikedAssets = () => window.AppNavigation?.likedAssetsData;
-        window.debugShowLikedModels = () => window.AppNavigation?.showLikedModels();
-        
-        console.log('🎯 Mobile app with public assets gallery initialized');
-    </script>
+    // Disable homepage.js navigation updates since we're using mobile navigation
+    window.disableHomepageNav = true;
+
+    // Handle window resize
+    window.addEventListener('resize', function() {
+        if (window.camera && window.renderer) {
+            const container = window.renderer.domElement.parentElement;
+            if (container && container.offsetWidth > 0) {
+                window.camera.aspect = container.offsetWidth / container.offsetHeight;
+                window.camera.updateProjectionMatrix();
+                window.renderer.setSize(container.offsetWidth, container.offsetHeight);
+            }
+        }
+    });
+
+    // Debug functions for development
+    window.debugAppNavigation = () => window.AppNavigation;
+    window.debugAssetsData = () => window.AppNavigation?.assetsData;
+    window.debugLoadAssets = () => window.AppNavigation?.loadAllAssets();
+    window.debugReloadAssets = () => window.AppNavigation?.reloadSection('assets');
+    window.debugLikedAssets = () => window.AppNavigation?.likedAssetsData;
+    window.debugShowLikedModels = () => window.AppNavigation?.showLikedModels();
+    
+    console.log('🎯 Mobile app with public assets gallery initialized');
+</script>
     
 </body>
 </html>

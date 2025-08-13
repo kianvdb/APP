@@ -443,9 +443,9 @@ init(initialSection = null) {
                 </div>
                 <div class="hero-content" style="padding: 0.5rem; padding-top: 0.25rem; position: relative; z-index: 10;">
                     <div class="hero-text">
-                        <h2 class="hero-title" style="margin-bottom: 0.4rem; line-height: 1.05;">From picture to<br>3D with ease!</h2>
+                        <h2 class="hero-title" style="margin-bottom: 0.6rem; margin-top: -1rem; line-height: 1.05;">From picture to<br>3D with ease!</h2>
                         <p class="hero-subtitle" style="margin-bottom: 1rem; line-height: 1.1; font-size: 0.8rem;">Within a few clicks of a button you can generate, rig and animate your own, ready to use 3D model!</p>
-                        <button class="cta-button" id="heroGenerateBtn" style="position: relative; z-index: 20; pointer-events: auto;">GENERATE</button>
+                        <button class="cta-button" id="heroGenerateBtn" style="position: relative; z-index: 20; pointer-events: auto; width: 80%; max-width: 300px; padding: 0.6rem 2rem;">GENERATE</button>
                     </div>
                 </div>
             </section>
@@ -550,14 +550,15 @@ init(initialSection = null) {
                             </div>
 
                             <!-- Polycount Control -->
-                            <div class="settings-item">
-                                <label class="settings-item-label">Polycount: <span id="polycountValue">30000</span></label>
-                                <input type="range" id="polycountSlider" min="100" max="300000" value="30000" step="100" class="polycount-slider"/>
-                                <div class="polycount-labels">
-                                    <span>100</span>
-                                    <span>300K</span>
-                                </div>
-                            </div>
+                        <!-- Polycount Control -->
+<div class="settings-item">
+    <label class="settings-item-label">Polycount: <span id="polycountValue">30,000</span></label>
+    <input type="range" id="polycountSlider" min="100" max="100000" value="30000" step="50" class="polycount-slider"/>
+    <div class="polycount-labels">
+        <span>100</span>
+        <span>100K</span>
+    </div>
+</div>
 
                             <!-- Texture Control -->
                             <div class="settings-item">
@@ -2065,23 +2066,173 @@ showAssetsLoading() {
     }
 
     handleLogout() {
-        if (confirm('Are you sure you want to logout?')) {
-            if (window.authManager && window.authManager.logout) {
-                window.authManager.logout();
-            } else {
-                localStorage.removeItem('user');
-                sessionStorage.removeItem('user');
+    // Create custom logout confirmation modal
+    this.showLogoutConfirmation();
+}
+
+// Add this new method to the AppNavigation class:
+showLogoutConfirmation() {
+    // Remove any existing logout modal
+    const existingModal = document.querySelector('.logout-confirmation-modal');
+    if (existingModal) existingModal.remove();
+    
+    const logoutModal = document.createElement('div');
+    logoutModal.className = 'logout-confirmation-modal';
+    logoutModal.innerHTML = `
+        <div class="logout-modal-overlay"></div>
+        <div class="logout-modal-content">
+            <div class="logout-icon">👋</div>
+            <h3>Sign Out</h3>
+            <p>Are you sure you want to sign out of your account?</p>
+            <div class="logout-actions">
+                <button class="logout-cancel-btn" onclick="this.closest('.logout-confirmation-modal').remove()">
+                    Cancel
+                </button>
+                <button class="logout-confirm-btn" onclick="window.AppNavigation.confirmLogout(); this.closest('.logout-confirmation-modal').remove()">
+                    Sign Out
+                </button>
+            </div>
+        </div>
+        
+        <style>
+            .logout-confirmation-modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 2rem;
+                animation: fadeIn 0.3s ease;
             }
             
-            this.updateAccountNavLabel(null);
-            this.updateTopBarAccountButton();
-            this.navigateToSection('home');
+            .logout-modal-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(10px);
+            }
             
-            setTimeout(() => {
-                window.location.reload();
-            }, 500);
-        }
+            .logout-modal-content {
+                position: relative;
+                background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+                border-radius: 20px;
+                padding: 2rem;
+                max-width: 350px;
+                width: 100%;
+                text-align: center;
+                border: 1px solid rgba(0, 188, 212, 0.3);
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            }
+            
+            .logout-icon {
+                font-size: 3rem;
+                margin-bottom: 1rem;
+                animation: wave 1s ease infinite;
+            }
+            
+            .logout-modal-content h3 {
+                font-family: 'Sora', sans-serif;
+                color: white;
+                margin-bottom: 0.5rem;
+                font-size: 1.5rem;
+            }
+            
+            .logout-modal-content p {
+                color: rgba(255, 255, 255, 0.8);
+                margin-bottom: 2rem;
+                line-height: 1.5;
+            }
+            
+            .logout-actions {
+                display: flex;
+                gap: 1rem;
+                flex-direction: column;
+            }
+            
+            .logout-cancel-btn, .logout-confirm-btn {
+                padding: 1rem 2rem;
+                border-radius: 12px;
+                font-family: 'Sora', sans-serif;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                min-height: 48px;
+                font-size: 1rem;
+            }
+            
+            .logout-cancel-btn {
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: rgba(255, 255, 255, 0.8);
+            }
+            
+            .logout-cancel-btn:hover {
+                background: rgba(255, 255, 255, 0.15);
+            }
+            
+            .logout-confirm-btn {
+                background: linear-gradient(135deg, #dc3545, #c82333);
+                border: none;
+                color: white;
+            }
+            
+            .logout-confirm-btn:hover {
+                background: linear-gradient(135deg, #c82333, #a71e2a);
+                transform: translateY(-1px);
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; transform: scale(0.9); }
+                to { opacity: 1; transform: scale(1); }
+            }
+            
+            @keyframes wave {
+                0%, 100% { transform: rotate(0deg); }
+                25% { transform: rotate(-10deg); }
+                75% { transform: rotate(10deg); }
+            }
+            
+            @media (max-width: 480px) {
+                .logout-confirmation-modal {
+                    padding: 1rem;
+                }
+                
+                .logout-modal-content {
+                    padding: 1.5rem;
+                }
+            }
+        </style>
+    `;
+    
+    document.body.appendChild(logoutModal);
+    
+    // Close on overlay click
+    logoutModal.querySelector('.logout-modal-overlay').addEventListener('click', () => {
+        logoutModal.remove();
+    });
+}
+
+// Add this new method too:
+confirmLogout() {
+    if (window.authManager && window.authManager.logout) {
+        window.authManager.logout();
+    } else {
+        localStorage.removeItem('user');
+        sessionStorage.removeItem('user');
+        
+        // Use in-app navigation instead of reload
+        this.updateAccountNavLabel(null);
+        this.updateTopBarAccountButton();
+        this.navigateToSection('home');
     }
+}
 
     async reloadSection(sectionName) {
         this.loadedSections.delete(sectionName);

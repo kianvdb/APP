@@ -1801,6 +1801,7 @@ html, body {
     background: #0a0a0a;
     position: relative;
     overflow: visible; /* Allow content to be visible */
+     padding-top: 2.3rem;
 }
 
 /* Form State */
@@ -1818,7 +1819,7 @@ html, body {
 /* When settings are expanded, push everything up */
 .generate-form-state:has(.settings-section.expanded),
 #generateFormState:has(.settings-section.expanded) {
-    transform: translateY(-290px); /* Push up more for better visual composition */
+    transform: translateY(-340px); /* Push up more for better visual composition */
 }
 
 .generate-controls-wrapper {
@@ -2237,7 +2238,7 @@ html, body {
 @media (max-height: 700px) {
     .generate-form-state:has(.settings-section.expanded),
     #generateFormState:has(.settings-section.expanded) {
-        transform: translateY(-270px); /* Push up more on smaller screens */
+        transform: translateY(-310px); /* Updated: was -270px, increased by 40px */
     }
     
     .generate-controls-wrapper {
@@ -2248,7 +2249,7 @@ html, body {
 @media (max-height: 600px) {
     .generate-form-state:has(.settings-section.expanded),
     #generateFormState:has(.settings-section.expanded) {
-        transform: translateY(-250px); /* Push up appropriately on very small screens */
+        transform: translateY(-290px); /* Updated: was -250px, increased by 40px */
     }
     
     .settings-item {

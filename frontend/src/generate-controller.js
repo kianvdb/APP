@@ -1,7 +1,3 @@
-// frontend/src/generate-controller.js
-// Premium Generate Controller for DALMA AI Mobile App
-// Handles image upload, generation API, progress tracking, and 3D viewer
-
 class GenerateController {
     constructor(apiBaseUrl) {
         this.apiBaseUrl = apiBaseUrl;
@@ -139,15 +135,25 @@ class GenerateController {
         });
     }
 
-    // Update settings summary function
     this.updateSettingsSummary = () => {
-        if (settingsSummary) {
-            const polycount = (this.generateState.settings.targetPolycount / 1000).toFixed(0) + 'K';
-            const texture = this.generateState.settings.shouldTexture ? 'Textured' : 'No Texture';
-            const pbr = this.generateState.settings.enablePBR ? ' + PBR' : '';
-            settingsSummary.textContent = `${polycount} polys, ${texture}${pbr}`.trim();
+    if (settingsSummary) {
+        const polycount = this.generateState.settings.targetPolycount;
+        let polycountDisplay;
+        
+        // Better formatting for different ranges
+        if (polycount >= 1000) {
+            // Show as "30K" for round thousands, "30.5K" for in-between
+            polycountDisplay = (polycount / 1000).toFixed(polycount % 1000 === 0 ? 0 : 1) + 'K';
+        } else {
+            // Show exact number for values under 1000
+            polycountDisplay = polycount.toString();
         }
-    };
+        
+        const texture = this.generateState.settings.shouldTexture ? 'Textured' : 'No Texture';
+        const pbr = this.generateState.settings.enablePBR ? ' + PBR' : '';
+        settingsSummary.textContent = `${polycountDisplay} polys, ${texture}${pbr}`.trim();
+    }
+};
 
     // Initial summary update
     this.updateSettingsSummary();
@@ -250,46 +256,64 @@ class GenerateController {
 }
 
     handleImageUpload(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            this.generateState.selectedImage = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        this.generateState.selectedImage = file;
+        
+        // Get elements
+        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+        const uploadPreview = document.getElementById('uploadPreview');
+        const previewImage = document.getElementById('previewImage');
+        
+        console.log('🖼️ Image upload elements:', {
+            placeholder: !!uploadPlaceholder,
+            preview: !!uploadPreview,
+            image: !!previewImage
+        });
+        
+        if (uploadPlaceholder && uploadPreview && previewImage) {
+            // Set image source first
+            previewImage.src = e.target.result;
             
-            // Get elements
-            const uploadPlaceholder = document.getElementById('uploadPlaceholder');
-            const uploadPreview = document.getElementById('uploadPreview');
-            const previewImage = document.getElementById('previewImage');
+            // Wait for image to load
+            previewImage.onload = () => {
+                console.log('✅ Image loaded successfully');
+                // Hide placeholder and show preview
+                uploadPlaceholder.style.display = 'none';
+                uploadPreview.style.display = 'block'; // This will make it visible
+                
+                // Also ensure the preview is visible (in case CSS has issues)
+                uploadPreview.style.visibility = 'visible';
+                uploadPreview.style.opacity = '1';
+            };
             
-            console.log('🖼️ Image upload:', {
-                placeholder: uploadPlaceholder,
-                preview: uploadPreview,
-                image: previewImage
+            previewImage.onerror = () => {
+                console.error('❌ Image failed to load');
+                this.showPremiumError('Failed to load image. Please try another.');
+                // Reset to placeholder on error
+                uploadPlaceholder.style.display = 'flex';
+                uploadPreview.style.display = 'none';
+                uploadPreview.style.visibility = 'hidden';
+                uploadPreview.style.opacity = '0';
+            };
+        } else {
+            console.error('❌ Missing upload elements:', {
+                placeholder: !!uploadPlaceholder,
+                preview: !!uploadPreview, 
+                image: !!previewImage
             });
-            
-            if (uploadPlaceholder && uploadPreview && previewImage) {
-                // Set image source first
-                previewImage.src = e.target.result;
-                
-                // Wait for image to load
-                previewImage.onload = () => {
-                    console.log('✅ Image loaded successfully');
-                    uploadPlaceholder.style.display = 'none';
-                    uploadPreview.style.display = 'block';
-                };
-                
-                previewImage.onerror = () => {
-                    console.error('❌ Image failed to load');
-                    this.showPremiumError('Failed to load image. Please try another.');
-                };
-            }
-        };
-        
-        reader.onerror = () => {
-            console.error('❌ Failed to read file');
-            this.showPremiumError('Failed to read file. Please try again.');
-        };
-        
-        reader.readAsDataURL(file);
-    }
+        }
+    };
+    
+    reader.onerror = () => {
+        console.error('❌ Failed to read file');
+        this.showPremiumError('Failed to read file. Please try again.');
+    };
+    
+    reader.readAsDataURL(file);
+}
+
+
 
     async handleGenerate() {
         if (!this.generateState.selectedImage) {
@@ -1141,6 +1165,8 @@ async handleSaveToFavorites() {
     }
 }
 
+// REPLACE the resetToForm function around line 976 (after handleSaveToFavorites) with this:
+
 resetToForm() {
     const viewerState = document.getElementById('generateViewerState');
     const formState = document.getElementById('generateFormState');
@@ -1167,12 +1193,14 @@ resetToForm() {
     const uploadPlaceholder = document.getElementById('uploadPlaceholder');
     const uploadPreview = document.getElementById('uploadPreview');
     const previewImage = document.getElementById('previewImage');
-    
+
     if (uploadPlaceholder && uploadPreview) {
-        uploadPlaceholder.style.display = 'flex';
-        uploadPreview.style.display = 'none';
+        uploadPlaceholder.style.display = 'flex'; // Show placeholder
+        uploadPreview.style.display = 'none'; // Hide preview
+        uploadPreview.style.visibility = 'hidden'; // Added for extra safety
+        uploadPreview.style.opacity = '0'; // Added for extra safety
     }
-    
+
     // Clear preview image source
     if (previewImage) {
         previewImage.src = '';
@@ -1204,6 +1232,66 @@ resetToForm() {
     // Clear the generated model data
     this.generateState.generatedModelData = null;
     this.generateState.taskId = null;
+}
+
+// REPLACE the handleImageUpload function around line 194 with this:
+
+handleImageUpload(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        this.generateState.selectedImage = file;
+        
+        // Get elements
+        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+        const uploadPreview = document.getElementById('uploadPreview');
+        const previewImage = document.getElementById('previewImage');
+        
+        console.log('🖼️ Image upload elements:', {
+            placeholder: !!uploadPlaceholder,
+            preview: !!uploadPreview,
+            image: !!previewImage
+        });
+        
+        if (uploadPlaceholder && uploadPreview && previewImage) {
+            // Set image source first
+            previewImage.src = e.target.result;
+            
+            // Wait for image to load
+            previewImage.onload = () => {
+                console.log('✅ Image loaded successfully');
+                // Hide placeholder and show preview
+                uploadPlaceholder.style.display = 'none';
+                uploadPreview.style.display = 'block'; // This will make it visible
+                
+                // Also ensure the preview is visible (in case CSS has issues)
+                uploadPreview.style.visibility = 'visible';
+                uploadPreview.style.opacity = '1';
+            };
+            
+            previewImage.onerror = () => {
+                console.error('❌ Image failed to load');
+                this.showPremiumError('Failed to load image. Please try another.');
+                // Reset to placeholder on error
+                uploadPlaceholder.style.display = 'flex';
+                uploadPreview.style.display = 'none';
+                uploadPreview.style.visibility = 'hidden';
+                uploadPreview.style.opacity = '0';
+            };
+        } else {
+            console.error('❌ Missing upload elements:', {
+                placeholder: !!uploadPlaceholder,
+                preview: !!uploadPreview, 
+                image: !!previewImage
+            });
+        }
+    };
+    
+    reader.onerror = () => {
+        console.error('❌ Failed to read file');
+        this.showPremiumError('Failed to read file. Please try again.');
+    };
+    
+    reader.readAsDataURL(file);
 }
 
 showPremiumError(message) {
