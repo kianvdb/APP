@@ -32,190 +32,504 @@ class AppNavigation {
             showLikedModels: false
         };
         
+        // REMOVED preserveState - we'll reset everything
         console.log('🚀 AppNavigation initialized with public assets access');
     }
 
-updateAccountNavLabel(username = null) {
-    const accountNavItem = document.querySelector('.nav-item[data-section="account"] .nav-label');
-    if (accountNavItem) {
-        if (username) {
-            // Always show "Account" instead of username
-            accountNavItem.textContent = 'Account';
-        } else {
-            accountNavItem.textContent = 'Login';
+    resetSectionState(sectionName) {
+        console.log(`🔄 Resetting ${sectionName} section state`);
+        
+        switch(sectionName) {
+            case 'generate':
+                // Reset generate form completely
+                if (window.generateController) {
+                    // Reset to form view
+                    window.generateController.resetToForm();
+                    
+                    // Clear file input
+                    const imageInput = document.getElementById('imageInput');
+                    if (imageInput) {
+                        imageInput.value = '';
+                    }
+                    
+                    // Reset upload area
+                    const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+                    const uploadPreview = document.getElementById('uploadPreview');
+                    if (uploadPlaceholder) uploadPlaceholder.style.display = 'flex';
+                    if (uploadPreview) uploadPreview.style.display = 'none';
+                    
+                    // Clear preview image
+                    const previewImage = document.getElementById('previewImage');
+                    if (previewImage) {
+                        previewImage.src = '';
+                    }
+                    
+                    // Reset settings to defaults
+                    if (window.generateController.generateState) {
+                        window.generateController.generateState.settings = {
+                            symmetryMode: 'auto',
+                            topology: 'triangle',
+                            targetPolycount: 30000,
+                            shouldTexture: true,
+                            enablePBR: false
+                        };
+                    }
+                    
+                    // Reset UI toggles to default
+                    this.resetGenerateUIToDefaults();
+                }
+                break;
+                
+         
+                
+            case 'account':
+                // Reset account view to main view (not liked models)
+                const mainView = document.getElementById('accountMainView');
+                const likedView = document.getElementById('likedModelsView');
+                if (mainView) mainView.style.display = 'block';
+                if (likedView) likedView.style.display = 'none';
+                
+                // Scroll to top
+                const accountSection = document.getElementById('accountSection');
+                if (accountSection) {
+                    accountSection.scrollTop = 0;
+                }
+                break;
+                
+         // UPDATE the about and assets cases in your resetSectionState method:
+case 'about':
+    // Scroll to top for about section
+    const aboutSection = document.getElementById('aboutSection');
+    if (aboutSection) {
+        aboutSection.scrollTop = 0;
+        // Also reset any inner scrollable containers
+        const aboutContainer = aboutSection.querySelector('.about-container');
+        if (aboutContainer) aboutContainer.scrollTop = 0;
+        const sectionContent = aboutSection.querySelector('.section-content');
+        if (sectionContent) sectionContent.scrollTop = 0;
+    }
+    break;
+    
+case 'assets':
+    // Reset search and filters for assets
+    const searchInput = document.getElementById('mobileAssetSearchInput');
+    const sortSelect = document.getElementById('mobileSortSelect');
+    if (searchInput) searchInput.value = '';
+    if (sortSelect) sortSelect.value = 'recent';
+    
+    this.assetsData.searchTerm = '';
+    this.assetsData.sortBy = 'recent';
+    this.assetsData.currentPage = 1;
+    
+    // Scroll to top - check multiple possible containers
+    const assetsSection = document.getElementById('assetsSection');
+    if (assetsSection) {
+        assetsSection.scrollTop = 0;
+        // Also reset any inner scrollable containers
+        const assetsContainer = assetsSection.querySelector('.assets-mobile-container');
+        if (assetsContainer) assetsContainer.scrollTop = 0;
+        const sectionContent = assetsSection.querySelector('.section-content');
+        if (sectionContent) sectionContent.scrollTop = 0;
+    }
+    
+    // Re-filter assets to reset to default view
+    if (this.assetsData.allAssets.length > 0) {
+        this.filterAndRenderAssets();
+    }
+    break;
+                
+            case 'home':
+                // Scroll to top
+                const homeSection = document.getElementById('homeSection');
+                if (homeSection) {
+                    homeSection.scrollTop = 0;
+                }
+                break;
         }
     }
-}
-    updateTopBarAccountButton() {
-    const accountBtn = document.querySelector('.header-actions .account-btn');
-    if (accountBtn) {
-        const isAuthenticated = window.authManager?.isAuthenticated();
-        if (isAuthenticated) {
-            const userData = window.authManager?.currentUser || {};
-            const username = userData.email || 'User';
-            const displayName = username.length > 12 ? username.substring(0, 12) + '...' : username;
-            accountBtn.textContent = displayName;
-        } else {
-            accountBtn.textContent = 'Login';
-        }
-    }
-}
-// Update liked models count from backend
-async updateLikedModelsCount() {
-    try {
-        const response = await fetch(`${this.getApiBaseUrl()}/auth/liked-assets`, {
-            method: 'GET',
-            credentials: 'include'
+
+    resetGenerateUIToDefaults() {
+        // Reset all toggle buttons by finding their parent containers
+        const settingsItems = document.querySelectorAll('.settings-item');
+        
+        settingsItems.forEach(item => {
+            const label = item.querySelector('.settings-item-label');
+            if (!label) return;
+            
+            const labelText = label.textContent.toLowerCase();
+            const toggleButtons = item.querySelectorAll('.toggle-btn');
+            
+            if (labelText.includes('symmetry')) {
+                // Reset symmetry to Auto
+                toggleButtons.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.value === 'auto');
+                });
+            } else if (labelText.includes('topology')) {
+                // Reset topology to Triangles
+                toggleButtons.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.value === 'triangle');
+                });
+            } else if (labelText.includes('texture')) {
+                // Reset texture to Yes
+                toggleButtons.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.value === 'true');
+                });
+            }
         });
         
-        if (response.ok) {
-            const data = await response.json();
-            const count = data.assets ? data.assets.length : 0;
-            
-            // Update the count in the account section
-            const countElement = document.getElementById('accountModelsCount');
-            if (countElement) {
-                countElement.textContent = count;
+        // Reset PBR checkbox
+        const pbrCheckbox = document.getElementById('pbrCheckbox');
+        if (pbrCheckbox) {
+            pbrCheckbox.checked = false;
+        }
+        
+        // Reset polycount slider
+        const polycountSlider = document.getElementById('polycountSlider');
+        const polycountValue = document.getElementById('polycountValue');
+        if (polycountSlider) {
+            polycountSlider.value = 30000;
+            if (polycountValue) {
+                polycountValue.textContent = '30,000';
             }
         }
-    } catch (error) {
-        console.error('Error fetching liked models count:', error);
-    }
-}
-
-// Load liked models from backend
-async loadLikedModels() {
-    const likedModelsGrid = document.getElementById('likedModelsGrid');
-    const likedModelsEmpty = document.getElementById('likedModelsEmpty');
-    const likedModelsLoading = document.getElementById('likedModelsLoading');
-    const likedModelsError = document.getElementById('likedModelsError');
-    
-    if (!likedModelsGrid) return;
-    
-    // Show loading
-    if (likedModelsLoading) likedModelsLoading.style.display = 'block';
-    if (likedModelsEmpty) likedModelsEmpty.style.display = 'none';
-    if (likedModelsError) likedModelsError.style.display = 'none';
-    
-    try {
-        // Get liked models from backend
-        const response = await fetch(`${this.getApiBaseUrl()}/auth/liked-assets`, {
-            method: 'GET',
-            credentials: 'include'
-        });
         
-        if (!response.ok) throw new Error('Failed to fetch liked models');
-        
-        const data = await response.json();
-        const likedModels = data.assets || [];
-        
-        // Hide loading
-        if (likedModelsLoading) likedModelsLoading.style.display = 'none';
-        
-        if (likedModels.length === 0) {
-            // Show empty state
-            if (likedModelsEmpty) likedModelsEmpty.style.display = 'block';
-            likedModelsGrid.innerHTML = '';
-            return;
+        // Collapse settings section
+        const settingsSection = document.querySelector('.settings-section');
+        const settingsContent = document.getElementById('settingsContent');
+        if (settingsSection) {
+            settingsSection.classList.remove('expanded');
+        }
+        if (settingsContent) {
+            settingsContent.style.display = 'none';
         }
         
-        // Render liked models
-        likedModelsGrid.innerHTML = likedModels.map(model => {
-            const modelId = model._id || model.id || model.meshyTaskId || model.assetId;
-            const thumbnail = model.thumbnailUrl || model.thumbnail || model.originalImage?.url || '/api/placeholder/180/180';
-            const name = model.name || 'Untitled Model';
-            const views = model.views || 0;
-            const downloads = model.downloads || 0;
-            
-            return `
-                <div class="model-card" onclick="window.MobileAssetViewer.openAsset('${modelId}')" 
-                     style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s ease;">
-                    <div style="aspect-ratio: 1; background: url('${thumbnail}') center/cover; position: relative;">
-                        <button onclick="event.stopPropagation(); window.AppNavigation.removeLikedModel('${modelId}')" 
-                                style="position: absolute; top: 8px; right: 8px; background: rgba(220,53,69,0.9); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div style="padding: 0.8rem;">
-                        <h4 style="color: white; font-size: 0.9rem; margin-bottom: 0.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</h4>
-                        <div style="display: flex; gap: 1rem; color: rgba(255,255,255,0.5); font-size: 0.75rem;">
-                            <span>${views} views</span>
-                            <span>${downloads} downloads</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        // Update settings summary to show defaults
+        const settingsSummary = document.getElementById('settingsSummary');
+        if (settingsSummary) {
+            settingsSummary.textContent = '30K polys, Textured';
+        }
         
-    } catch (error) {
-        console.error('Error loading liked models:', error);
-        if (likedModelsLoading) likedModelsLoading.style.display = 'none';
-        if (likedModelsError) likedModelsError.style.display = 'block';
+        // If generateController exists, update its summary too
+        if (window.generateController && window.generateController.updateSettingsSummary) {
+            window.generateController.updateSettingsSummary();
+        }
     }
-}
 
-// Remove a liked model via backend
-async removeLikedModel(modelId) {
-    try {
-        const response = await fetch(`${this.getApiBaseUrl()}/auth/like-asset`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ assetId: modelId })
+    handleLogoutCleanup() {
+        console.log('🧹 Cleaning up all sections after logout');
+        
+        // Reset all sections
+        ['home', 'generate', 'assets', 'account', 'about'].forEach(section => {
+            this.resetSectionState(section);
         });
         
-        if (response.ok) {
-            // Reload the liked models view
-            this.loadLikedModels();
-            // Update the count
-            this.updateLikedModelsCount();
+        // Clear loaded sections to force reload on next visit
+        this.loadedSections.clear();
+        
+        // Reset to home section
+        this.navigateToSection('home');
+    }
+
+   // REPLACE your existing navigateToSection method with this:
+async navigateToSection(sectionName) {
+    if (sectionName === this.currentSection) return;
+    
+    console.log(`📱 Navigating from ${this.currentSection} to: ${sectionName}`);
+    
+    // Reset the PREVIOUS section state when leaving it
+    if (this.currentSection) {
+        this.resetSectionState(this.currentSection);
+    }
+    
+    // Update navigation state
+    this.updateNavigation(sectionName);
+    
+    // Show section
+    await this.showSection(sectionName);
+    
+    // Force scroll reset for the NEW section after it's shown
+    setTimeout(() => {
+        const sectionElement = document.getElementById(`${sectionName}Section`);
+        if (sectionElement) {
+            sectionElement.scrollTop = 0;
+            console.log(`✅ Forced scroll reset for ${sectionName}`);
         }
-    } catch (error) {
-        console.error('Error removing liked model:', error);
-    }
+    }, 100);
+    
+    this.currentSection = sectionName;
 }
-
-// Updated showLikedModels method
-async showLikedModels() {
-    console.log('💖 Showing liked models view...');
+   // REPLACE your existing showSection method with this:
+async showSection(sectionName, skipAnimation = false) {
+    const sectionElement = document.getElementById(`${sectionName}Section`);
     
-    const mainView = document.getElementById('accountMainView');
-    const likedView = document.getElementById('likedModelsView');
-    
-    if (mainView && likedView) {
-        mainView.style.display = 'none';
-        likedView.style.display = 'block';
-        
-        // Setup liked models functionality
-        this.setupLikedModelsEventListeners();
-        
-        // Load liked models from backend
-        await this.loadLikedModels();
+    if (!sectionElement) {
+        console.error(`❌ Section not found: ${sectionName}`);
+        return;
     }
-}
 
-// Update initializeAccount to call updateLikedModelsCount
-async initializeAccount() {
-    console.log('🎯 Initializing account section...');
-    
-    const isAuthenticated = window.authManager?.isAuthenticated();
-    if (isAuthenticated) {
-        const userData = window.authManager?.currentUser || {};
-        this.updateAccountNavLabel(userData.email);
-        this.updateTopBarAccountButton();
-        
-        // Update liked models count from backend
-        await this.updateLikedModelsCount();
-        
-        // Update credits
-        this.updateAccountStats();
+    // Hide all sections first
+    document.querySelectorAll('.app-section').forEach(section => {
+        section.classList.remove('active');
+        section.style.display = 'none';
+    });
+
+    // Load content if not already loaded
+    if (!this.loadedSections.has(sectionName)) {
+        await this.loadSectionContent(sectionName);
+    }
+
+    // ALWAYS reset scroll position before showing
+    sectionElement.scrollTop = 0;
+
+    // Show new section
+    if (skipAnimation) {
+        sectionElement.style.display = 'block';
+        sectionElement.classList.add('active');
+        // Force scroll reset again after display
+        sectionElement.scrollTop = 0;
+        // Also try scrolling the content wrapper if it exists
+        const contentWrapper = sectionElement.querySelector('.section-content');
+        if (contentWrapper) contentWrapper.scrollTop = 0;
+        console.log(`✅ Section displayed immediately: ${sectionName}`);
     } else {
+        setTimeout(() => {
+            sectionElement.style.display = 'block';
+            sectionElement.classList.add('active');
+            // Force scroll reset after display
+            sectionElement.scrollTop = 0;
+            // Also try scrolling the content wrapper if it exists
+            const contentWrapper = sectionElement.querySelector('.section-content');
+            if (contentWrapper) contentWrapper.scrollTop = 0;
+            
+            console.log(`✅ Section displayed: ${sectionName}`);
+        }, 50);
+    }
+}
+
+    confirmLogout() {
+        // Call the cleanup BEFORE logout
+        this.handleLogoutCleanup();
+        
+        if (window.authManager && window.authManager.logout) {
+            window.authManager.logout();
+        } else {
+            localStorage.removeItem('user');
+            sessionStorage.removeItem('user');
+        }
+        
+        // Update UI
         this.updateAccountNavLabel(null);
         this.updateTopBarAccountButton();
     }
-}
+
+    updateAccountNavLabel(username = null) {
+        const accountNavItem = document.querySelector('.nav-item[data-section="account"] .nav-label');
+        if (accountNavItem) {
+            if (username) {
+                // Always show "Account" instead of username
+                accountNavItem.textContent = 'Account';
+            } else {
+                accountNavItem.textContent = 'Login';
+            }
+        }
+    }
+
+    updateTopBarAccountButton() {
+        const accountBtn = document.querySelector('.header-actions .account-btn');
+        if (accountBtn) {
+            const isAuthenticated = window.authManager?.isAuthenticated();
+            if (isAuthenticated) {
+                const userData = window.authManager?.currentUser || {};
+                const username = userData.email || 'User';
+                const displayName = username.length > 12 ? username.substring(0, 12) + '...' : username;
+                accountBtn.textContent = displayName;
+            } else {
+                accountBtn.textContent = 'Login';
+            }
+        }
+    }
+
+    // Update liked models count from backend
+    async updateLikedModelsCount() {
+        try {
+            const response = await fetch(`${this.getApiBaseUrl()}/auth/liked-assets`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                const count = data.assets ? data.assets.length : 0;
+                
+                // Update the count in the account section
+                const countElement = document.getElementById('accountModelsCount');
+                if (countElement) {
+                    countElement.textContent = count;
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching liked models count:', error);
+        }
+    }
+
+    // Load liked models from backend
+    async loadLikedModels() {
+        const likedModelsGrid = document.getElementById('likedModelsGrid');
+        const likedModelsEmpty = document.getElementById('likedModelsEmpty');
+        const likedModelsLoading = document.getElementById('likedModelsLoading');
+        const likedModelsError = document.getElementById('likedModelsError');
+        
+        if (!likedModelsGrid) return;
+        
+        // Show loading
+        if (likedModelsLoading) likedModelsLoading.style.display = 'block';
+        if (likedModelsEmpty) likedModelsEmpty.style.display = 'none';
+        if (likedModelsError) likedModelsError.style.display = 'none';
+        
+        try {
+            // Get liked models from backend
+            const response = await fetch(`${this.getApiBaseUrl()}/auth/liked-assets`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            
+            if (!response.ok) throw new Error('Failed to fetch liked models');
+            
+            const data = await response.json();
+            const likedModels = data.assets || [];
+            
+            // Hide loading
+            if (likedModelsLoading) likedModelsLoading.style.display = 'none';
+            
+            if (likedModels.length === 0) {
+                // Show empty state
+                if (likedModelsEmpty) likedModelsEmpty.style.display = 'block';
+                likedModelsGrid.innerHTML = '';
+                return;
+            }
+            
+            // Render liked models
+            likedModelsGrid.innerHTML = likedModels.map(model => {
+                const modelId = model._id || model.id || model.meshyTaskId || model.assetId;
+                const thumbnail = model.thumbnailUrl || model.thumbnail || model.originalImage?.url || '/api/placeholder/180/180';
+                const name = model.name || 'Untitled Model';
+                const views = model.views || 0;
+                const downloads = model.downloads || 0;
+                
+                return `
+                    <div class="model-card" onclick="window.MobileAssetViewer.openAsset('${modelId}')" 
+                         style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s ease;">
+                        <div style="aspect-ratio: 1; background: url('${thumbnail}') center/cover; position: relative;">
+                            <button onclick="event.stopPropagation(); window.AppNavigation.removeLikedModel('${modelId}')" 
+                                    style="position: absolute; top: 8px; right: 8px; background: rgba(220,53,69,0.9); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div style="padding: 0.8rem;">
+                            <h4 style="color: white; font-size: 0.9rem; margin-bottom: 0.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</h4>
+                            <div style="display: flex; gap: 1rem; color: rgba(255,255,255,0.5); font-size: 0.75rem;">
+                                <span>${views} views</span>
+                                <span>${downloads} downloads</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+        } catch (error) {
+            console.error('Error loading liked models:', error);
+            if (likedModelsLoading) likedModelsLoading.style.display = 'none';
+            if (likedModelsError) likedModelsError.style.display = 'block';
+        }
+    }
+
+    // Remove a liked model via backend
+    async removeLikedModel(modelId) {
+        try {
+            const response = await fetch(`${this.getApiBaseUrl()}/auth/like-asset`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ assetId: modelId })
+            });
+            
+            if (response.ok) {
+                // Reload the liked models view
+                this.loadLikedModels();
+                // Update the count
+                this.updateLikedModelsCount();
+            }
+        } catch (error) {
+            console.error('Error removing liked model:', error);
+        }
+    }
+
+    // Updated showLikedModels method
+    async showLikedModels() {
+        console.log('💖 Showing liked models view...');
+        
+        const mainView = document.getElementById('accountMainView');
+        const likedView = document.getElementById('likedModelsView');
+        
+        if (mainView && likedView) {
+            mainView.style.display = 'none';
+            likedView.style.display = 'block';
+            
+            // Setup liked models functionality
+            this.setupLikedModelsEventListeners();
+            
+            // Load liked models from backend
+            await this.loadLikedModels();
+        }
+    }
+
+    // Update initializeAccount to call updateLikedModelsCount
+    async initializeAccount() {
+        console.log('🎯 Initializing account section...');
+        
+        const isAuthenticated = window.authManager?.isAuthenticated();
+        if (isAuthenticated) {
+            const userData = window.authManager?.currentUser || {};
+            this.updateAccountNavLabel(userData.email);
+            this.updateTopBarAccountButton();
+            
+            // Update liked models count from backend
+            await this.updateLikedModelsCount();
+            
+            // Update credits
+            this.updateAccountStats();
+        } else {
+            this.updateAccountNavLabel(null);
+            this.updateTopBarAccountButton();
+        }
+    }
+
+    updateNavigation(activeSection) {
+        // Update bottom nav active state
+        document.querySelectorAll('.nav-item').forEach(item => {
+            if (item.dataset.section === activeSection) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+
+    setupBottomNavigation() {
+        const navItems = document.querySelectorAll('.nav-item');
+        
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const section = item.dataset.section;
+                this.navigateToSection(section);
+            });
+        });
+        
+        console.log('✅ Bottom navigation set up');
+    }
 
     // COMPLETE REPLACEMENT of init function
 init(initialSection = null) {
@@ -294,82 +608,7 @@ init(initialSection = null) {
     console.log('✅ App navigation ready with public assets access');
 }
 
-    setupBottomNavigation() {
-        const navItems = document.querySelectorAll('.nav-item');
-        
-        navItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                const section = item.dataset.section;
-                this.navigateToSection(section);
-            });
-        });
-        
-        console.log('✅ Bottom navigation set up');
-    }
-
-    async navigateToSection(sectionName) {
-        if (sectionName === this.currentSection) return;
-        
-        console.log(`📱 Navigating to: ${sectionName}`);
-        
-        // Update navigation state
-        this.updateNavigation(sectionName);
-        
-        // Show section
-        await this.showSection(sectionName);
-        
-        this.currentSection = sectionName;
-    }
-
-    updateNavigation(activeSection) {
-        // Update bottom nav active state
-        document.querySelectorAll('.nav-item').forEach(item => {
-            if (item.dataset.section === activeSection) {
-                item.classList.add('active');
-            } else {
-                item.classList.remove('active');
-            }
-        });
-    }
-
-    async showSection(sectionName, skipAnimation = false) {
-        const sectionElement = document.getElementById(`${sectionName}Section`);
-        
-        if (!sectionElement) {
-            console.error(`❌ Section not found: ${sectionName}`);
-            return;
-        }
-
-        // Hide all sections first
-        document.querySelectorAll('.app-section').forEach(section => {
-            section.classList.remove('active');
-            section.style.display = 'none';
-        });
-
-        // Load content if not already loaded
-        if (!this.loadedSections.has(sectionName)) {
-            await this.loadSectionContent(sectionName);
-        }
-
-        // Show new section
-        if (skipAnimation) {
-            // Immediate display without animation for initial load
-            sectionElement.style.display = 'block';
-            sectionElement.classList.add('active');
-            sectionElement.scrollTop = 0;
-            console.log(`✅ Section displayed immediately: ${sectionName}`);
-        } else {
-            // Normal animated transition
-            setTimeout(() => {
-                sectionElement.style.display = 'block';
-                sectionElement.classList.add('active');
-                sectionElement.scrollTop = 0;
-                
-                console.log(`✅ Section displayed: ${sectionName}`);
-            }, 50);
-        }
-    }
+  
 
     async loadSectionContent(sectionName) {
         const sectionElement = document.getElementById(`${sectionName}Section`);
