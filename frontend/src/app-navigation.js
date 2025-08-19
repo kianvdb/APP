@@ -349,8 +349,12 @@ async showSection(sectionName, skipAnimation = false) {
         }
     }
 
-    // Update liked models count from backend
     async updateLikedModelsCount() {
+    try {
+        // Count BOTH local and backend models
+        const localModels = await window.LocalStorageManager.getAllLocalModels();
+        let backendCount = 0;
+        
         try {
             const response = await fetch(`${this.getApiBaseUrl()}/auth/liked-assets`, {
                 method: 'GET',
@@ -359,91 +363,215 @@ async showSection(sectionName, skipAnimation = false) {
             
             if (response.ok) {
                 const data = await response.json();
-                const count = data.assets ? data.assets.length : 0;
+                backendCount = data.assets ? data.assets.length : 0;
+            }
+        } catch (error) {
+            console.warn('Could not get backend count:', error);
+        }
+        
+        // Use the higher count (to account for any duplicates)
+        const totalCount = Math.max(localModels.length, backendCount);
+        
+        // Update the count in the account section
+        const countElement = document.getElementById('accountModelsCount');
+        if (countElement) {
+            countElement.textContent = totalCount;
+        }
+    } catch (error) {
+        console.error('Error updating liked models count:', error);
+    }
+}
+   // Load liked models from backend
+async loadLikedModels() {
+    const likedModelsGrid = document.getElementById('likedModelsGrid');
+    const likedModelsEmpty = document.getElementById('likedModelsEmpty');
+    const likedModelsLoading = document.getElementById('likedModelsLoading');
+    const likedModelsError = document.getElementById('likedModelsError');
+    
+    if (!likedModelsGrid) return;
+    
+    // Show loading
+    if (likedModelsLoading) likedModelsLoading.style.display = 'block';
+    if (likedModelsEmpty) likedModelsEmpty.style.display = 'none';
+    if (likedModelsError) likedModelsError.style.display = 'none';
+    
+    try {
+        // First, load from local storage (instant!)
+        const localModels = await window.LocalStorageManager.getAllLocalModels();
+        
+        // Hide loading immediately if we have local models
+        if (localModels.length > 0 && likedModelsLoading) {
+            likedModelsLoading.style.display = 'none';
+        }
+        
+        // Render local models immediately
+        if (localModels.length > 0) {
+            likedModelsGrid.innerHTML = localModels.map(model => this.createLocalModelCard(model)).join('');
+        } else {
+            // Show empty state
+            if (likedModelsEmpty) likedModelsEmpty.style.display = 'block';
+        }
+        
+        // Update models count
+        const modelsCount = document.getElementById('accountModelsCount');
+        if (modelsCount) {
+            modelsCount.textContent = localModels.length;
+        }
+        
+        // Then try to get cloud models and ACTUALLY DISPLAY THEM
+        fetch(`${this.getApiBaseUrl()}/auth/liked-assets`, {
+            method: 'GET',
+            credentials: 'include'
+        }).then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+        }).then(data => {
+            if (data && data.assets && data.assets.length > 0) {
+                console.log('☁️ Cloud models synced:', data.assets.length);
                 
-                // Update the count in the account section
-                const countElement = document.getElementById('accountModelsCount');
-                if (countElement) {
-                    countElement.textContent = count;
+                // Combine local and backend models
+                const allModels = [...localModels];
+                const seenTaskIds = new Set(localModels.map(m => m.taskId).filter(Boolean));
+                
+                // Add backend models that aren't duplicates
+                data.assets.forEach(model => {
+                    if (!seenTaskIds.has(model.meshyTaskId)) {
+                        allModels.push(model);
+                    }
+                });
+                
+                // Re-render grid with ALL models
+                if (allModels.length > 0) {
+                    likedModelsGrid.innerHTML = allModels.map(model => {
+                        if (model.localData) {
+                            return this.createLocalModelCard(model);
+                        } else {
+                            return this.createBackendModelCard(model);
+                        }
+                    }).join('');
+                    
+                    // Update count to show TOTAL
+                    if (modelsCount) {
+                        modelsCount.textContent = allModels.length;
+                    }
+                    
+                    console.log(`✅ Total liked models: ${allModels.length} (${localModels.length} local + ${data.assets.length} backend)`);
                 }
             }
-        } catch (error) {
-            console.error('Error fetching liked models count:', error);
-        }
+        }).catch(error => {
+            console.warn('Using local models only:', error);
+        });
+        
+    } catch (error) {
+        console.error('❌ Error loading models:', error);
+        if (likedModelsLoading) likedModelsLoading.style.display = 'none';
+        if (likedModelsError) likedModelsError.style.display = 'block';
     }
+}
 
-    // Load liked models from backend
-    async loadLikedModels() {
-        const likedModelsGrid = document.getElementById('likedModelsGrid');
-        const likedModelsEmpty = document.getElementById('likedModelsEmpty');
-        const likedModelsLoading = document.getElementById('likedModelsLoading');
-        const likedModelsError = document.getElementById('likedModelsError');
-        
-        if (!likedModelsGrid) return;
-        
-        // Show loading
-        if (likedModelsLoading) likedModelsLoading.style.display = 'block';
-        if (likedModelsEmpty) likedModelsEmpty.style.display = 'none';
-        if (likedModelsError) likedModelsError.style.display = 'none';
-        
-        try {
-            // Get liked models from backend
-            const response = await fetch(`${this.getApiBaseUrl()}/auth/liked-assets`, {
-                method: 'GET',
-                credentials: 'include'
-            });
-            
-            if (!response.ok) throw new Error('Failed to fetch liked models');
-            
-            const data = await response.json();
-            const likedModels = data.assets || [];
-            
-            // Hide loading
-            if (likedModelsLoading) likedModelsLoading.style.display = 'none';
-            
-            if (likedModels.length === 0) {
-                // Show empty state
-                if (likedModelsEmpty) likedModelsEmpty.style.display = 'block';
-                likedModelsGrid.innerHTML = '';
-                return;
-            }
-            
-            // Render liked models
-            likedModelsGrid.innerHTML = likedModels.map(model => {
-                const modelId = model._id || model.id || model.meshyTaskId || model.assetId;
-                const thumbnail = model.thumbnailUrl || model.thumbnail || model.originalImage?.url || '/api/placeholder/180/180';
-                const name = model.name || 'Untitled Model';
-                const views = model.views || 0;
-                const downloads = model.downloads || 0;
-                
-                return `
-                    <div class="model-card" onclick="window.MobileAssetViewer.openAsset('${modelId}')" 
-                         style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s ease;">
-                        <div style="aspect-ratio: 1; background: url('${thumbnail}') center/cover; position: relative;">
-                            <button onclick="event.stopPropagation(); window.AppNavigation.removeLikedModel('${modelId}')" 
-                                    style="position: absolute; top: 8px; right: 8px; background: rgba(220,53,69,0.9); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <div style="padding: 0.8rem;">
-                            <h4 style="color: white; font-size: 0.9rem; margin-bottom: 0.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</h4>
-                            <div style="display: flex; gap: 1rem; color: rgba(255,255,255,0.5); font-size: 0.75rem;">
-                                <span>${views} views</span>
-                                <span>${downloads} downloads</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
-        } catch (error) {
-            console.error('Error loading liked models:', error);
-            if (likedModelsLoading) likedModelsLoading.style.display = 'none';
-            if (likedModelsError) likedModelsError.style.display = 'block';
-        }
+// Add this NEW method to create card for local model
+createLocalModelCard(model) {
+    const thumbnailUrl = model.localData?.thumbnail 
+        ? URL.createObjectURL(model.localData.thumbnail)
+        : '/api/placeholder/180/180';
+    
+    const syncIcon = model.syncStatus === 'synced' 
+        ? '☁️' 
+        : model.syncStatus === 'pending' 
+        ? '⏳' 
+        : '📱';
+    
+    const totalSize = model.localData?.metadata?.totalSize || 0;
+    const sizeInMB = (totalSize / 1024 / 1024).toFixed(1);
+    const formats = model.localData?.metadata?.formats || ['glb'];
+    
+    return `
+        <div class="model-card" onclick="window.LocalModelViewer.openLocalModel('${model.id}')" 
+             style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s ease; position: relative;">
+            <div style="aspect-ratio: 1; background: url('${thumbnailUrl}') center/cover; position: relative;">
+                <span style="position: absolute; top: 8px; left: 8px; font-size: 1.2rem;" title="Sync status">${syncIcon}</span>
+                <div style="position: absolute; bottom: 8px; left: 8px; display: flex; gap: 4px;">
+                    ${formats.map(format => `
+                        <span style="background: rgba(0,188,212,0.2); color: #00bcd4; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; border: 1px solid rgba(0,188,212,0.3);">${format}</span>
+                    `).join('')}
+                </div>
+                <button onclick="event.stopPropagation(); window.AppNavigation.removeLocalModel('${model.id}')" 
+                        style="position: absolute; top: 8px; right: 8px; background: rgba(220,53,69,0.9); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    </svg>
+                </button>
+            </div>
+            <div style="padding: 0.8rem;">
+                <h4 style="color: white; font-size: 0.9rem; margin-bottom: 0.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${model.name}</h4>
+                <div style="display: flex; gap: 1rem; color: rgba(255,255,255,0.5); font-size: 0.75rem;">
+                    <span>${sizeInMB} MB</span>
+                    <span>${model.localData?.metadata?.polygons || 0} polys</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+// Add this NEW method to create card for backend models
+createBackendModelCard(model) {
+    const thumbnailUrl = model.previewImage?.url || 
+                        model.originalImage?.url || 
+                        '/api/placeholder/180/180';
+    
+    return `
+        <div class="model-card" onclick="window.MobileAssetViewer.openAsset('${model._id}')" 
+             style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s ease; position: relative;">
+            <div style="aspect-ratio: 1; background: url('${thumbnailUrl}') center/cover; position: relative;">
+                <span style="position: absolute; top: 8px; left: 8px; font-size: 1.2rem;">☁️</span>
+                <button onclick="event.stopPropagation(); window.AppNavigation.toggleLike('${model._id}', '${model.name}')" 
+                        style="position: absolute; top: 8px; right: 8px; background: rgba(220,53,69,0.9); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                </button>
+            </div>
+            <div style="padding: 0.8rem;">
+                <h4 style="color: white; font-size: 0.9rem; margin-bottom: 0.3rem;">${model.name}</h4>
+                <div style="display: flex; gap: 1rem; color: rgba(255,255,255,0.5); font-size: 0.75rem;">
+                    <span>${model.views || 0} views</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Add this NEW method to remove local model
+async removeLocalModel(modelId) {
+    try {
+        await window.LocalStorageManager.deleteLocalModel(modelId);
+        // Reload the liked models view
+        this.loadLikedModels();
+        // Update the count
+        this.updateLikedModelsCount();
+        this.showFeedback('Model removed', 'success');
+    } catch (error) {
+        console.error('Error removing model:', error);
+        this.showFeedback('Failed to remove model', 'error');
     }
+}
+
+// Update the existing updateLikedModelsCount method
+async updateLikedModelsCount() {
+    try {
+        // Get count from local storage first
+        const localModels = await window.LocalStorageManager.getAllLocalModels();
+        const count = localModels.length;
+        
+        // Update the count in the account section
+        const countElement = document.getElementById('accountModelsCount');
+        if (countElement) {
+            countElement.textContent = count;
+        }
+    } catch (error) {
+        console.error('Error updating liked models count:', error);
+    }
+}
 
     // Remove a liked model via backend
     async removeLikedModel(modelId) {
@@ -726,7 +854,13 @@ init(initialSection = null) {
         `;
     }
 
-    async loadGenerateContent() {
+    // REPLACE the existing loadGenerateContent() method in app-navigation.js (around line 1673)
+// This is inside the AppNavigation class
+
+// REPLACE the existing loadGenerateContent() method in app-navigation.js (around line 1673)
+// This is inside the AppNavigation class
+
+async loadGenerateContent() {
     return `
         <div class="generate-container" id="generateContainer">
             <!-- FORM STATE -->
@@ -789,15 +923,14 @@ init(initialSection = null) {
                             </div>
 
                             <!-- Polycount Control -->
-                        <!-- Polycount Control -->
-<div class="settings-item">
-    <label class="settings-item-label">Polycount: <span id="polycountValue">30,000</span></label>
-    <input type="range" id="polycountSlider" min="100" max="100000" value="30000" step="50" class="polycount-slider"/>
-    <div class="polycount-labels">
-        <span>100</span>
-        <span>100K</span>
-    </div>
-</div>
+                            <div class="settings-item">
+                                <label class="settings-item-label">Polycount: <span id="polycountValue">30,000</span></label>
+                                <input type="range" id="polycountSlider" min="100" max="100000" value="30000" step="50" class="polycount-slider"/>
+                                <div class="polycount-labels">
+                                    <span>100</span>
+                                    <span>100K</span>
+                                </div>
+                            </div>
 
                             <!-- Texture Control -->
                             <div class="settings-item">
@@ -874,52 +1007,77 @@ init(initialSection = null) {
                             <span class="ad-text">Speed Boost</span>
                             <span class="ad-boost">2x Faster</span>
                         </button>
-                        <p class="ad-info">⚡ Watch ads for unlimited speed boosts!</p>
+                        <p class="ad-info">Watch ads for unlimited speed boosts!</p>
                     </div>
                 </div>
             </div>
 
-            <!-- VIEWER STATE -->
+            <!-- ENHANCED VIEWER STATE -->
             <div class="generate-viewer-state" id="generateViewerState" style="display: none;">
-                <!-- 3D Viewer -->
-                <div class="model-viewer" id="modelViewer">
-                    <div id="viewer3d"></div>
+                <!-- Maximized 3D Viewer -->
+                <div class="model-viewer-maximized" id="modelViewer">
+                    <div id="viewer3d" class="viewer3d-fullscreen"></div>
                 </div>
 
-                <!-- Model Actions -->
-                <div class="model-actions">
-                    <button class="action-btn download-btn" id="downloadBtn">
+                <!-- Compact Controls Bar -->
+                <div class="viewer-controls-bar">
+                  <button class="new-model-btn-compact" id="newModelBtn">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                            <path d="M12 5v14M5 12h14"/>
                         </svg>
-                        <span>Download</span>
+                        <span>New Model</span>
                     </button>
-                    
-                    <button class="action-btn export-btn" id="exportBtn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 6L9 17l-5-5"/>
-                        </svg>
-                        <span>Export</span>
-                    </button>
-                    
-                    <button class="action-btn rig-btn" id="rigBtn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M12 1v6m0 6v6m4.22-10.22l4.24 4.24m-4.24 4.24l4.24 4.24M20 12h6m-6 0h-6"/>
-                        </svg>
-                        <span>Rig & Animate</span>
-                    </button>
-                    
-                    <button class="action-btn favorite-btn" id="favoriteBtn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-                        </svg>
-                        <span>Save to Favorites</span>
-                    </button>
-                </div>
+                    <!-- Options Dropdown -->
+                    <div class="options-dropdown-container">
+                        <button class="options-dropdown-btn" id="optionsDropdownBtn" onclick="window.generateController && window.generateController.toggleOptionsDropdown && window.generateController.toggleOptionsDropdown()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="1"/>
+                                <circle cx="12" cy="5" r="1"/>
+                                <circle cx="19" cy="12" r="1"/>
+                                <circle cx="5" cy="12" r="1"/>
+                                <circle cx="12" cy="19" r="1"/>
+                            </svg>
+                            <span>Options</span>
+                            <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        
+                        <!-- Dropdown Menu -->
+                        <div class="options-dropdown-menu" id="optionsDropdownMenu">
+                            <button class="option-item" id="downloadBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                                </svg>
+                                <span>Download Model</span>
+                            </button>
+                            
+                            <button class="option-item" id="exportBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 6L9 17l-5-5"/>
+                                </svg>
+                                <span>Export Options</span>
+                            </button>
+                            
+                            <button class="option-item" id="rigBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="3"/>
+                                    <path d="M12 1v6m0 6v6m4.22-10.22l4.24 4.24m-4.24 4.24l4.24 4.24M20 12h6m-6 0h-6"/>
+                                </svg>
+                                <span>Rig & Animate</span>
+                            </button>
+                            
+                            <button class="option-item" id="favoriteBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+                                </svg>
+                                <span>Save to Favorites</span>
+                            </button>
+                        </div>
+                    </div>
 
-                <!-- New Model Button -->
-                <button class="new-model-btn" id="newModelBtn">Create New Model</button>
+                 
+                </div>
             </div>
         </div>
     `;

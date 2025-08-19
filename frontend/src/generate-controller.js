@@ -254,6 +254,225 @@ class GenerateController {
     if (favoriteBtn) favoriteBtn.addEventListener('click', () => this.handleSaveToFavorites());
     if (newModelBtn) newModelBtn.addEventListener('click', () => this.resetToForm());
 }
+// REPLACE the setupViewerEventListeners() method in generate-controller.js (around line 280)
+
+setupViewerEventListeners() {
+    console.log('🎮 Setting up viewer event listeners...');
+    
+    // Options dropdown toggle
+    const optionsDropdownBtn = document.getElementById('optionsDropdownBtn');
+    const optionsDropdownMenu = document.getElementById('optionsDropdownMenu');
+    
+    if (optionsDropdownBtn && optionsDropdownMenu) {
+        console.log('✅ Found dropdown elements:', {
+            button: optionsDropdownBtn,
+            menu: optionsDropdownMenu
+        });
+        
+        // Remove old event listeners if they exist
+        const newBtn = optionsDropdownBtn.cloneNode(true);
+        optionsDropdownBtn.parentNode.replaceChild(newBtn, optionsDropdownBtn);
+        
+        const dropdownBtn = document.getElementById('optionsDropdownBtn');
+        const dropdownMenu = document.getElementById('optionsDropdownMenu');
+        
+        // Remove inline onclick from HTML and use addEventListener instead
+        dropdownBtn.removeAttribute('onclick');
+        
+        // Toggle dropdown on button click
+        dropdownBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔘 Dropdown button clicked');
+            
+            const isOpen = dropdownMenu.classList.contains('show');
+            console.log('📊 Current state - isOpen:', isOpen);
+            
+            if (isOpen) {
+                // Close dropdown
+                console.log('📦 Closing dropdown');
+                dropdownMenu.classList.remove('show');
+                dropdownBtn.classList.remove('active');
+            } else {
+                // Open dropdown
+                console.log('📂 Opening dropdown');
+                dropdownMenu.classList.add('show');
+                dropdownBtn.classList.add('active');
+            }
+            
+            console.log('✅ Classes after toggle:', {
+                menuClasses: dropdownMenu.className,
+                buttonClasses: dropdownBtn.className
+            });
+        });
+        
+        // Close dropdown when clicking outside
+        const closeDropdown = (e) => {
+            console.log('🌍 Document clicked, checking if should close dropdown');
+            if (!e.target.closest('.options-dropdown-container')) {
+                console.log('👆 Clicked outside dropdown, closing');
+                dropdownMenu.classList.remove('show');
+                dropdownBtn.classList.remove('active');
+            }
+        };
+        
+        // Remove old listener if exists and add new one
+        document.removeEventListener('click', closeDropdown);
+        setTimeout(() => {
+            document.addEventListener('click', closeDropdown);
+        }, 100);
+        
+        // Setup option items
+        const optionItems = dropdownMenu.querySelectorAll('.option-item');
+        optionItems.forEach(item => {
+            // Clone to remove old listeners
+            const newItem = item.cloneNode(true);
+            item.parentNode.replaceChild(newItem, item);
+        });
+        
+        // Re-query and add listeners
+        dropdownMenu.querySelectorAll('.option-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                console.log('📋 Option selected:', item.textContent.trim());
+                
+                // Get the button id to determine which action to take
+                const itemId = item.id;
+                console.log('🆔 Item ID:', itemId);
+                
+                // Close dropdown after action
+                setTimeout(() => {
+                    dropdownMenu.classList.remove('show');
+                    dropdownBtn.classList.remove('active');
+                    console.log('✅ Dropdown closed after option selection');
+                }, 100);
+            });
+        });
+        
+        console.log('✅ Dropdown event listeners setup complete');
+    } else {
+        console.error('❌ Dropdown elements not found:', {
+            button: !!optionsDropdownBtn,
+            menu: !!optionsDropdownMenu
+        });
+    }
+    
+    // Viewer state buttons (now in dropdown)
+    const downloadBtn = document.getElementById('downloadBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const rigBtn = document.getElementById('rigBtn');
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    const newModelBtn = document.getElementById('newModelBtn');
+    
+    if (downloadBtn) {
+        console.log('📥 Setting up download button');
+        downloadBtn.addEventListener('click', () => {
+            console.log('📥 Download button clicked');
+            this.handleDownload();
+        });
+    }
+    
+    if (exportBtn) {
+        console.log('📤 Setting up export button');
+        exportBtn.addEventListener('click', () => {
+            console.log('📤 Export button clicked');
+            this.handleExport();
+        });
+    }
+    
+    if (rigBtn) {
+        console.log('🦴 Setting up rig button');
+        rigBtn.addEventListener('click', () => {
+            console.log('🦴 Rig button clicked');
+            this.handleRigAnimate();
+        });
+    }
+    
+    if (favoriteBtn) {
+        console.log('❤️ Setting up favorite button');
+        favoriteBtn.addEventListener('click', () => {
+            console.log('❤️ Favorite button clicked');
+            this.handleSaveToFavorites();
+        });
+    }
+    
+    if (newModelBtn) {
+        console.log('➕ Setting up new model button');
+        newModelBtn.addEventListener('click', () => {
+            console.log('➕ New model button clicked');
+            this.resetToForm();
+        });
+    }
+    
+    console.log('✅ All viewer event listeners setup complete');
+}
+
+// ADD this method if it doesn't exist (for backwards compatibility)
+toggleOptionsDropdown() {
+    console.log('🔄 toggleOptionsDropdown called');
+    const dropdownBtn = document.getElementById('optionsDropdownBtn');
+    const dropdownMenu = document.getElementById('optionsDropdownMenu');
+    
+    if (dropdownBtn && dropdownMenu) {
+        const isOpen = dropdownMenu.classList.contains('show');
+        console.log('📊 Toggle state - isOpen:', isOpen);
+        
+        if (isOpen) {
+            dropdownMenu.classList.remove('show');
+            dropdownBtn.classList.remove('active');
+            console.log('📦 Closed via toggle method');
+        } else {
+            dropdownMenu.classList.add('show');
+            dropdownBtn.classList.add('active');
+            console.log('📂 Opened via toggle method');
+        }
+    } else {
+        console.error('❌ Dropdown elements not found in toggle method');
+    }
+}
+
+// UPDATE the existing switchToViewerState() method (around line 900)
+switchToViewerState() {
+    console.log('🎬 Switching to viewer state');
+    
+    const loadingState = document.getElementById('generateLoadingState');
+    const viewerState = document.getElementById('generateViewerState');
+    
+    if (loadingState) {
+        loadingState.style.display = 'none';
+        console.log('✅ Loading state hidden');
+    }
+    
+    if (viewerState) {
+        viewerState.style.display = 'flex';
+        console.log('✅ Viewer state shown');
+    }
+    
+    this.generateState.currentView = 'viewer';
+    
+    // Setup viewer-specific event listeners with a delay to ensure DOM is ready
+    setTimeout(() => {
+        console.log('⏱️ Setting up viewer event listeners after delay');
+        this.setupViewerEventListeners();
+    }, 100);
+}
+
+// UPDATE the existing switchToViewerState() method (around line 900)
+// Replace the existing method with this updated version:
+switchToViewerState() {
+    const loadingState = document.getElementById('generateLoadingState');
+    const viewerState = document.getElementById('generateViewerState');
+    
+    if (loadingState) loadingState.style.display = 'none';
+    if (viewerState) viewerState.style.display = 'flex';
+    
+    this.generateState.currentView = 'viewer';
+    
+    // Setup viewer-specific event listeners
+    setTimeout(() => {
+        this.setupViewerEventListeners();
+    }, 100);
+}
 
     handleImageUpload(file) {
     const reader = new FileReader();
@@ -491,21 +710,18 @@ handleWatchAd() {
     
     // Disable button during ad
     watchAdBtn.disabled = true;
-    watchAdBtn.innerHTML = `
-        <span class="ad-icon">⏳</span>
-        <span class="ad-text">Loading Ad...</span>
-    `;
     
-    // Here you would integrate with Unity Ads or your ad network
-    if (window.UnityAds && window.UnityAds.isReady('rewardedVideo')) {
-        window.UnityAds.show('rewardedVideo', {
-            onComplete: () => this.onAdWatched(),
-            onSkipped: () => this.onAdSkipped()
-        });
-    } else {
-        // Fallback for testing - simulate 3 second ad
-        setTimeout(() => this.onAdWatched(), 3000);
-    }
+    // Update text without changing styles
+    const adIcon = watchAdBtn.querySelector('.ad-icon');
+    const adText = watchAdBtn.querySelector('.ad-text');
+    const adBoost = watchAdBtn.querySelector('.ad-boost');
+    
+    if (adIcon) adIcon.textContent = '⏳';
+    if (adText) adText.textContent = 'Loading Ad...';
+    if (adBoost) adBoost.style.display = 'none';
+    
+    // Simulate ad
+    setTimeout(() => this.onAdWatched(), 3000);
 }
 
 onAdWatched() {
@@ -521,18 +737,18 @@ onAdWatched() {
     // Add visual boost indicator
     this.addBoostIndicator();
     
-    // Update button for unlimited ads
+    // Update button for unlimited ads - PRESERVE STYLING
     const watchAdBtn = document.getElementById('watchAdBtn');
     if (watchAdBtn) {
         watchAdBtn.disabled = false;
-        watchAdBtn.innerHTML = `
-            <span class="ad-icon">⚡</span>
-            <span class="ad-text">Watch Another Ad</span>
-            <span class="ad-boost">${this.generateState.adsWatched + 1}x Faster</span>
-        `;
+        // Don't replace innerHTML, just update the text content
+        const adText = watchAdBtn.querySelector('.ad-text');
+        const adBoost = watchAdBtn.querySelector('.ad-boost');
+        
+        if (adText) adText.textContent = 'Watch Another Ad';
+        if (adBoost) adBoost.textContent = `${this.generateState.adsWatched + 1}x Faster`;
     }
     
-
     // Optional: Call backend to notify about ad watch (for priority processing)
     this.notifyAdWatched();
 }
@@ -541,11 +757,12 @@ onAdSkipped() {
     const watchAdBtn = document.getElementById('watchAdBtn');
     if (watchAdBtn) {
         watchAdBtn.disabled = false;
-        watchAdBtn.innerHTML = `
-            <span class="ad-icon">⚡</span>
-            <span class="ad-text">Watch Ad for Speed Boost</span>
-            <span class="ad-boost">2x Faster</span>
-        `;
+        // Don't replace innerHTML, preserve the styled elements
+        const adText = watchAdBtn.querySelector('.ad-text');
+        const adBoost = watchAdBtn.querySelector('.ad-boost');
+        
+        if (adText) adText.textContent = 'Speed Boost';
+        if (adBoost) adBoost.textContent = '2x Faster';
     }
 }
 
@@ -692,14 +909,14 @@ async initialize3DViewer() {
     scene.background = new THREE.CanvasTexture(canvasBg);
     scene.fog = new THREE.FogExp2(0x0a0a0a, 0.02);
     
-    // Camera - EXACT same as main.js
+    // Camera - Start further back
     const camera = new THREE.PerspectiveCamera(
         50,
         viewerContainer.offsetWidth / viewerContainer.offsetHeight,
         0.1,
         200
     );
-    camera.position.set(0, 3, 12);
+    camera.position.set(0, 3, 18); // Further initial position
     
     // Enhanced high-quality renderer - EXACT same as main.js
     const renderer = new THREE.WebGLRenderer({ 
@@ -730,14 +947,14 @@ async initialize3DViewer() {
     pmremGenerator.compileEquirectangularShader();
     scene.environment = pmremGenerator.fromScene(scene).texture;
     
-    // Enhanced controls - EXACT same as main.js
+    // Enhanced controls - Start with temporary limits
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 1.5, 0);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.rotateSpeed = 0.5;
-    controls.minDistance = 3;
-    controls.maxDistance = 25;
+    controls.minDistance = 3;   // Temporary - will update after model loads
+    controls.maxDistance = 50;  // Temporary - will update after model loads
     controls.maxPolarAngle = Math.PI / 2 - 0.05;
     controls.minPolarAngle = Math.PI / 6;
     controls.update();
@@ -891,54 +1108,69 @@ async initialize3DViewer() {
                 
                 animateIn();
                 
-                // Frame model after animation (matching main.js frameModel)
-                setTimeout(() => {
-                    const box = new THREE.Box3().setFromObject(model);
-                    const size = box.getSize(new THREE.Vector3());
-                    const center = box.getCenter(new THREE.Vector3());
+                // Frame model after animation - THIS IS THE KEY PART
+               // In the initialize3DViewer() method, update the frame model section:
 
-                    const maxDim = Math.max(size.x, size.y, size.z);
-                    const fov = camera.fov * (Math.PI / 180);
-                    
-                    // Calculate optimal camera distance
-                    let targetDistance = (maxDim / 2) / Math.tan(fov / 2) * 1.5;
-                    targetDistance = Math.max(targetDistance, 3);
+// Frame model after animation - THIS IS THE KEY PART
+setTimeout(() => {
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
 
-                    // Position camera at eye level
-                    const eyeLevel = center.y + size.y * 0.1;
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const fov = camera.fov * (Math.PI / 180);
+    
+    // Calculate optimal camera distance - SLIGHTLY FURTHER
+    let optimalDistance = (maxDim / 2) / Math.tan(fov / 2) * 1.7; // Increased from 1.5 to 1.7
+    optimalDistance = Math.max(optimalDistance, 5); // Increased minimum from 4 to 5
+    
+    // NOW SET THE ZOOM LIMITS
+    // Users can zoom in closer (to 60% of optimal) and zoom out further (to 300% of optimal)
+    controls.minDistance = optimalDistance * 0.6;  // Can zoom in to 60% of the distance
+    controls.maxDistance = optimalDistance * 3.0;  // Can zoom out to 3x the distance
+    controls.update();
+    
+    console.log('📏 Camera distances configured:', {
+        optimal: optimalDistance.toFixed(2),
+        minZoom: controls.minDistance.toFixed(2),
+        maxZoom: controls.maxDistance.toFixed(2)
+    });
 
-                    const newPos = {
-                        x: center.x,
-                        y: eyeLevel,
-                        z: center.z + targetDistance,
-                    };
+    // Position camera at eye level at the OPTIMAL distance
+    const eyeLevel = center.y + size.y * 0.1;
 
-                    // Smooth camera animation
-                    const camStartTime = Date.now();
-                    const camDuration = 2000;
-                    const startPos = { ...camera.position };
-                    
-                    const animateCamera = () => {
-                        const elapsed = Date.now() - camStartTime;
-                        const progress = Math.min(elapsed / camDuration, 1);
-                        
-                        const eased = 1 - Math.pow(1 - progress, 2);
-                        
-                        camera.position.x = startPos.x + (newPos.x - startPos.x) * eased;
-                        camera.position.y = startPos.y + (newPos.y - startPos.y) * eased;
-                        camera.position.z = startPos.z + (newPos.z - startPos.z) * eased;
-                        
-                        camera.lookAt(center);
-                        controls.target.copy(center);
-                        controls.update();
-                        
-                        if (progress < 1) {
-                            requestAnimationFrame(animateCamera);
-                        }
-                    };
-                    
-                    animateCamera();
-                }, 600);
+    const newPos = {
+        x: center.x,
+        y: eyeLevel,
+        z: center.z + optimalDistance, // Start at the optimal position
+    };
+
+    // Smooth camera animation - MATCH MODEL ROTATION TIMING
+    const camStartTime = Date.now();
+    const camDuration = 1400; // Synced with model rotation
+    const startPos = { ...camera.position };
+    
+    const animateCamera = () => {
+        const elapsed = Date.now() - camStartTime;
+        const progress = Math.min(elapsed / camDuration, 1);
+        
+        const eased = 1 - Math.pow(1 - progress, 2);
+        
+        camera.position.x = startPos.x + (newPos.x - startPos.x) * eased;
+        camera.position.y = startPos.y + (newPos.y - startPos.y) * eased;
+        camera.position.z = startPos.z + (newPos.z - startPos.z) * eased;
+        
+        camera.lookAt(center);
+        controls.target.copy(center);
+        controls.update();
+        
+        if (progress < 1) {
+            requestAnimationFrame(animateCamera);
+        }
+    };
+    
+    animateCamera();
+}, 600);
                 
                 this.hide3DLoadingState();
                 
@@ -1118,34 +1350,29 @@ async handleRigAnimate() {
 
 async handleSaveToFavorites() {
     try {
-        // Prepare save data with proper field names for backend
-        const saveData = {
+        // Show immediate feedback
+        this.showFeedback('Saving model...', 'info');
+        
+        // Get all format blobs
+        const modelBlobs = await this.getAllModelFormatBlobs();
+        const thumbnail = await this.captureModelThumbnail();
+        
+        // Prepare model data with ALL formats
+        const modelData = {
+            taskId: this.generateState.taskId,
             name: `Generated Model ${new Date().toISOString().split('T')[0]}`,
-            breed: 'AI Generated',
-            description: 'Generated from uploaded image',
-            isPublic: false,
-            isUserGenerated: true,
-            category: 'user_generated',
-            
-            // Generation parameters with correct field names
-            topology: this.generateState.settings.topology,
-            texture: this.generateState.settings.shouldTexture,
-            symmetry: this.generateState.settings.symmetryMode,
-            pbr: this.generateState.settings.enablePBR,
-            polygons: this.generateState.settings.targetPolycount
+            modelBlobs: modelBlobs, // Now contains all formats
+            thumbnail: thumbnail,
+            settings: this.generateState.settings,
+            polygons: this.generateState.settings.targetPolycount,
+            textured: this.generateState.settings.shouldTexture,
+            formats: this.generateState.downloadFormats // ['glb', 'fbx', 'obj', 'usdz']
         };
         
-        const response = await fetch(`${this.apiBaseUrl}/saveAsset/${this.generateState.taskId}`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(saveData)
-        });
+        // Save locally first (instant!)
+        const savedModel = await window.LocalStorageManager.saveModelLocally(modelData);
         
-        if (!response.ok) {
-            throw new Error('Failed to save to favorites');
-        }
-        
+        // Update UI immediately
         const favoriteBtn = document.getElementById('favoriteBtn');
         if (favoriteBtn) {
             favoriteBtn.innerHTML = `
@@ -1157,11 +1384,59 @@ async handleSaveToFavorites() {
             favoriteBtn.disabled = true;
         }
         
-        this.showFeedback('Added to favorites!', 'success');
+        this.showFeedback('Model saved to favorites! ⚡', 'success');
+        
+        // Update liked models count
+        if (window.AppNavigation) {
+            window.AppNavigation.updateLikedModelsCount();
+        }
         
     } catch (error) {
         console.error('❌ Failed to save to favorites:', error);
-        this.showFeedback('Failed to save to favorites', 'error');
+        this.showFeedback('Failed to save model', 'error');
+    }
+}
+
+// Add this NEW helper method to get ALL format blobs
+async getAllModelFormatBlobs() {
+    const blobs = {};
+    const formats = this.generateState.downloadFormats || ['glb', 'fbx', 'obj', 'usdz'];
+    
+    // Fetch all format blobs in parallel
+    const fetchPromises = formats.map(async (format) => {
+        try {
+            const modelUrl = `${this.apiBaseUrl}/proxyModel/${this.generateState.taskId}?format=${format}`;
+            const response = await fetch(modelUrl);
+            if (response.ok) {
+                const blob = await response.blob();
+                blobs[format] = blob;
+                console.log(`✅ Fetched ${format} format: ${(blob.size / 1024 / 1024).toFixed(2)} MB`);
+            }
+        } catch (error) {
+            console.warn(`Failed to fetch ${format} format:`, error);
+        }
+    });
+    
+    await Promise.all(fetchPromises);
+    return blobs;
+}
+
+// Update the existing captureModelThumbnail method
+async captureModelThumbnail() {
+    try {
+        if (this.viewer3D && this.viewer3D.renderer) {
+            const renderer = this.viewer3D.renderer;
+            const canvas = renderer.domElement;
+            
+            return new Promise((resolve) => {
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, 'image/jpeg', 0.8);
+            });
+        }
+    } catch (error) {
+        console.error('Failed to capture thumbnail:', error);
+        return null;
     }
 }
 

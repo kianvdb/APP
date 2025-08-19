@@ -174,42 +174,362 @@ constructor() {
             }
         }
     }
+    // Add these methods to the MobileAssetViewer class:
 
-    // Open asset viewer
-    async openAsset(assetId) {
-        console.log('🎯 Opening asset:', assetId);
-        
-        // Initialize HTML if not already done
-        if (!this.viewerInitialized) {
-            this.initializeViewerHTML();
-        }
-        
-        this.currentAssetId = assetId;
-        
-        // Show the viewer overlay
-        const overlay = document.getElementById('mobileAssetViewer');
-        if (overlay) {
-            overlay.classList.add('active');
-            document.body.style.overflow = 'hidden'; // Prevent body scroll
-        }
+showViewer() {
+    const overlay = document.getElementById('mobileAssetViewer');
+    if (overlay) {
+        overlay.classList.add('active');
+        overlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // Prevent body scroll
         
         // Setup event listeners
         this.setupEventListeners();
         
-        // Load asset data
-        await this.loadAssetData();
-        
         // Initialize 3D scene
         this.init3DScene();
         
-        // Load 3D model
-        if (this.currentAsset) {
-            await this.load3DModel();
+        // Load asset data
+        this.loadAssetData();
+    } else {
+        console.error('❌ Mobile Asset Viewer overlay not found!');
+    }
+}
+
+showError(message = 'Failed to load model') {
+    const viewer3d = document.getElementById('assetViewer3d');
+    if (viewer3d) {
+        viewer3d.innerHTML = `
+            <div class="viewer-error-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 2rem;">
+                <div class="error-icon" style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                <p class="error-text" style="color: white; font-size: 1.2rem; margin-bottom: 0.5rem;">${message}</p>
+                <p class="error-subtext" style="color: rgba(255,255,255,0.6);">The model may be unavailable</p>
+                <button onclick="window.MobileAssetViewer.closeViewer()" style="margin-top: 1rem; padding: 0.5rem 1.5rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; cursor: pointer;">
+                    Go Back
+                </button>
+            </div>
+        `;
+    }
+}
+
+showLoadingState() {
+    const loading = document.getElementById('viewerLoadingState');
+    const error = document.getElementById('viewerErrorState');
+    
+    if (loading) loading.style.display = 'flex';
+    if (error) error.style.display = 'none';
+}
+
+hideLoadingState() {
+    const loading = document.getElementById('viewerLoadingState');
+    if (loading) loading.style.display = 'none';
+}
+
+showErrorState() {
+    const loading = document.getElementById('viewerLoadingState');
+    const error = document.getElementById('viewerErrorState');
+    
+    if (loading) loading.style.display = 'none';
+    if (error) error.style.display = 'flex';
+}
+
+    // Add these methods to your existing MobileAssetViewer class
+
+async openAsset(assetId) {
+    console.log('📱 Opening asset:', assetId);
+    
+    try {
+        this.currentAssetId = assetId;
+        
+        // Show the viewer overlay
+        this.showViewer();
+        
+        // Check if we have it cached locally first
+        const cachedAsset = await this.loadCachedAsset(assetId);
+        if (cachedAsset) {
+            console.log('⚡ Loading from cache');
+            this.displayAssetFromCache(cachedAsset);
+            
+            // If offline, notify user about limited features
+            if (!navigator.onLine) {
+                this.showOfflineNotification();
+            }
+            return;
         }
         
-        // Check like status
-        await this.checkLikeStatus();
+        // Check if online before fetching
+        if (!navigator.onLine) {
+            this.showOfflineError();
+            return;
+        }
+        
+        // Otherwise fetch from API
+        const response = await fetch(`${this.apiBaseUrl}/assets/${assetId}`);
+        if (!response.ok) throw new Error('Failed to fetch asset');
+        
+        const assetData = await response.json();
+        this.currentAsset = assetData;
+        
+        // Display the asset
+        await this.displayAsset(assetData);
+        
+        // Cache it for next time (in background)
+        this.cacheAssetInBackground(assetData);
+        
+    } catch (error) {
+        console.error('Error opening asset:', error);
+        
+        // Check if it's a network error
+        if (!navigator.onLine) {
+            this.showOfflineError();
+        } else {
+            this.showError('Failed to load model');
+        }
     }
+}
+
+showOfflineNotification() {
+    // Show a subtle notification that some features are limited
+    const notification = document.createElement('div');
+    notification.className = 'offline-notification';
+    notification.innerHTML = `
+        <div style="
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 152, 0, 0.9);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 30px;
+            font-family: 'Sora', sans-serif;
+            font-size: 0.85rem;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.3s ease;
+        ">
+            <span>📵</span>
+            <span>Offline Mode - Only cached GLB format available</span>
+        </div>
+    `;
+    
+    const viewer = document.querySelector('.mobile-asset-viewer-overlay');
+    if (viewer) {
+        viewer.appendChild(notification);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            notification.style.animation = 'slideUp 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+    }
+}
+
+showOfflineError() {
+    const errorContent = `
+        <div class="viewer-error-state" style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 2rem;
+            text-align: center;
+        ">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">📵</div>
+            <h3 style="color: white; font-family: 'Sora', sans-serif; font-size: 1.5rem; margin-bottom: 0.5rem;">
+                You're Offline
+            </h3>
+            <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.5rem; max-width: 300px; line-height: 1.5;">
+                This model isn't cached yet. Connect to the internet to view new models or browse your saved models instead.
+            </p>
+            <div style="display: flex; gap: 1rem; flex-direction: column; width: 100%; max-width: 250px;">
+                <button onclick="window.MobileAssetViewer.closeViewer()" style="
+                    background: rgba(255,255,255,0.1);
+                    border: 1px solid rgba(255,255,255,0.2);
+                    color: white;
+                    padding: 0.8rem 1.5rem;
+                    border-radius: 8px;
+                    font-family: 'Sora', sans-serif;
+                    font-weight: 500;
+                    cursor: pointer;
+                ">
+                    Go Back
+                </button>
+                <button onclick="window.AppNavigation.navigateToSection('account'); window.MobileAssetViewer.closeViewer();" style="
+                    background: #00bcd4;
+                    border: none;
+                    color: white;
+                    padding: 0.8rem 1.5rem;
+                    border-radius: 8px;
+                    font-family: 'Sora', sans-serif;
+                    font-weight: 600;
+                    cursor: pointer;
+                ">
+                    View Saved Models
+                </button>
+            </div>
+        </div>
+    `;
+    
+    const viewer3d = document.getElementById('assetViewer3d');
+    if (viewer3d) {
+        viewer3d.innerHTML = errorContent;
+    }
+}
+
+// Update the download button handler to check online status
+setupDownloadButton() {
+    const downloadBtn = document.getElementById('assetDownloadBtn');
+    if (!downloadBtn) return;
+    
+    downloadBtn.onclick = async () => {
+        // Check if this is a cached asset
+        const cached = await this.loadCachedAsset(this.currentAssetId);
+        
+        if (cached && !navigator.onLine) {
+            // Offline with cached asset - only GLB available
+            this.showOfflineDownloadModal(cached);
+        } else if (!navigator.onLine) {
+            // Offline without cache
+            this.showOfflineDownloadError();
+        } else {
+            // Online - show all formats
+            this.showDownloadModal();
+        }
+    };
+}
+
+showOfflineDownloadModal(cachedAsset) {
+    const modal = document.createElement('div');
+    modal.className = 'download-format-modal active';
+    modal.style.display = 'flex';
+    modal.innerHTML = `
+        <div class="download-modal-overlay" onclick="this.parentElement.remove()"></div>
+        <div class="download-modal-content">
+            <div class="download-modal-header">
+                <h3>Download Model (Offline)</h3>
+                <button class="close-btn" onclick="this.closest('.download-format-modal').remove()">×</button>
+            </div>
+            
+            <div style="
+                background: rgba(255, 152, 0, 0.1);
+                border: 1px solid rgba(255, 152, 0, 0.3);
+                border-radius: 8px;
+                padding: 1rem;
+                margin-bottom: 1.5rem;
+                display: flex;
+                align-items: center;
+                gap: 0.8rem;
+            ">
+                <span style="font-size: 1.5rem;">📵</span>
+                <div style="flex: 1;">
+                    <p style="color: #ff9800; font-weight: 600; margin-bottom: 0.2rem; font-size: 0.9rem;">
+                        Limited Offline Access
+                    </p>
+                    <p style="color: rgba(255,255,255,0.6); font-size: 0.8rem; margin: 0;">
+                        Only cached GLB format is available offline. Connect to internet for all formats.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="download-formats-grid" style="grid-template-columns: 1fr;">
+                <button class="format-option-btn" onclick="window.MobileAssetViewer.downloadCachedGLB()">
+                    <div class="format-icon">📦</div>
+                    <div class="format-name">GLB</div>
+                    <div class="format-desc">Cached Version</div>
+                </button>
+                
+                <!-- Show other formats as disabled -->
+                <div style="opacity: 0.3; pointer-events: none;">
+                    <button class="format-option-btn" disabled>
+                        <div class="format-icon">🎮</div>
+                        <div class="format-name">FBX</div>
+                        <div class="format-desc">Requires Internet</div>
+                    </button>
+                </div>
+                
+                <div style="opacity: 0.3; pointer-events: none;">
+                    <button class="format-option-btn" disabled>
+                        <div class="format-icon">🔷</div>
+                        <div class="format-name">OBJ</div>
+                        <div class="format-desc">Requires Internet</div>
+                    </button>
+                </div>
+                
+                <div style="opacity: 0.3; pointer-events: none;">
+                    <button class="format-option-btn" disabled>
+                        <div class="format-icon">🍎</div>
+                        <div class="format-name">USDZ</div>
+                        <div class="format-desc">Requires Internet</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+showOfflineDownloadError() {
+    this.showFeedback('❌ Download unavailable offline. Please connect to internet.', 'error');
+}
+
+async downloadCachedGLB() {
+    try {
+        const cached = await this.loadCachedAsset(this.currentAssetId);
+        if (!cached || !cached.modelBlob) {
+            this.showFeedback('Cached model not found', 'error');
+            return;
+        }
+        
+        // Create download link
+        const url = URL.createObjectURL(cached.modelBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${cached.metadata?.name || 'model'}.glb`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        // Close modal
+        document.querySelector('.download-format-modal')?.remove();
+        
+        this.showFeedback('Downloading cached GLB', 'success');
+        
+    } catch (error) {
+        console.error('Download error:', error);
+        this.showFeedback('Download failed', 'error');
+    }
+}
+
+// Add network status listener
+setupNetworkListener() {
+    window.addEventListener('online', () => {
+        // Remove any offline notifications
+        document.querySelectorAll('.offline-notification').forEach(el => el.remove());
+        
+        // Show online notification
+        this.showFeedback('✅ Back online! All features available.', 'success');
+    });
+    
+    window.addEventListener('offline', () => {
+        this.showFeedback('📵 You\'re offline. Some features limited.', 'warning');
+    });
+}
+
+// Initialize network listener when viewer is created
+initializeViewerHTML() {
+    // ... existing initialization code ...
+    
+    // Add network listener
+    this.setupNetworkListener();
+}
 
     // Setup event listeners
     setupEventListeners() {
@@ -262,7 +582,79 @@ constructor() {
             };
         });
     }
+async loadCachedAsset(assetId) {
+    try {
+        if (!window.LocalStorageManager) return null;
+        
+        // This method needs to be added to LocalStorageManager
+        const cached = await window.LocalStorageManager.getCachedAsset(assetId);
+        if (cached && cached.modelBlob) {
+            const age = Date.now() - cached.timestamp;
+            const sevenDays = 7 * 24 * 60 * 60 * 1000;
+            
+            if (age < sevenDays) {
+                return cached;
+            } else {
+                await window.LocalStorageManager.deleteCachedAsset(assetId);
+            }
+        }
+        return null;
+    } catch (error) {
+        console.warn('Cache check failed:', error);
+        return null;
+    }
+}
 
+async displayAssetFromCache(cachedAsset) {
+    const blobUrl = URL.createObjectURL(cachedAsset.modelBlob);
+    const viewer3d = document.getElementById('assetViewer3d');
+    if (viewer3d) {
+        await this.load3DModel(blobUrl, true);
+    }
+    if (cachedAsset.metadata) {
+        this.updateAssetInfo(cachedAsset.metadata);
+    }
+}
+
+async cacheAssetInBackground(assetData) {
+    try {
+        if (!window.LocalStorageManager) return;
+        
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (connection && connection.saveData) {
+            console.log('📵 Data saver mode - skipping cache');
+            return;
+        }
+        
+        const modelUrl = assetData.modelUrl || `${this.apiBaseUrl}/proxyModel/${assetData._id}?format=glb`;
+        const response = await fetch(modelUrl);
+        if (!response.ok) return;
+        
+        const blob = await response.blob();
+        
+        if (blob.size > 20 * 1024 * 1024) {
+            console.log('📦 Model too large to cache:', (blob.size / 1024 / 1024).toFixed(2), 'MB');
+            return;
+        }
+        
+        await window.LocalStorageManager.cacheAsset({
+            assetId: assetData._id,
+            modelBlob: blob,
+            metadata: {
+                name: assetData.name,
+                views: assetData.views,
+                downloads: assetData.downloads,
+                thumbnail: assetData.thumbnailUrl
+            },
+            timestamp: Date.now()
+        });
+        
+        console.log('💾 Asset cached for faster viewing next time');
+        
+    } catch (error) {
+        console.warn('Background caching failed:', error);
+    }
+}
     // Load asset data
     async loadAssetData() {
         try {
