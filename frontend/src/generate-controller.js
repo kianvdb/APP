@@ -704,24 +704,19 @@ updateProgressUI(progress, statusMessage) {
     }
 }
 
-handleWatchAd() {
+// Replace the handleWatchAd method with:
+async handleWatchAd() {
     const watchAdBtn = document.getElementById('watchAdBtn');
     if (!watchAdBtn) return;
     
-    // Disable button during ad
     watchAdBtn.disabled = true;
     
-    // Update text without changing styles
-    const adIcon = watchAdBtn.querySelector('.ad-icon');
-    const adText = watchAdBtn.querySelector('.ad-text');
-    const adBoost = watchAdBtn.querySelector('.ad-boost');
-    
-    if (adIcon) adIcon.textContent = '⏳';
-    if (adText) adText.textContent = 'Loading Ad...';
-    if (adBoost) adBoost.style.display = 'none';
-    
-    // Simulate ad
-    setTimeout(() => this.onAdWatched(), 3000);
+    // Use the AdManager
+    window.AdManager.showRewardedAd(
+        () => this.onAdWatched(),     // Success
+        () => this.onAdSkipped(),     // Skipped
+        (err) => this.onAdSkipped()   // Error fallback
+    );
 }
 
 onAdWatched() {

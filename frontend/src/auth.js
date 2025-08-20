@@ -10,8 +10,10 @@ class AuthManager {
         // DISABLE account dropdown functionality - let main.js handle it
         this.accountDropdownDisabled = true;
         
-        // Dynamically match the hostname being used with protocol awareness
-        this.apiBaseUrl = this.getApiBaseUrl();
+     // Force use the updated config API URL
+this.apiBaseUrl = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : config.API_BASE_URL;
+console.log('🔧 Auth API Base URL:', this.apiBaseUrl);
+console.log('🔧 Window APP_CONFIG:', window.APP_CONFIG);
             
         console.log('🔧 Auth API Base URL:', this.apiBaseUrl);
         
@@ -106,61 +108,69 @@ class AuthManager {
     }
 
     // Check if user is authenticated
-    async checkAuthStatus() {
-        try {
-            console.log('🔍 Checking authentication status...');
-            console.log('🍪 Document cookies:', document.cookie);
-            
-            const response = await fetch(`${this.apiBaseUrl}/auth/me`, {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
-            });
-
-            console.log('📡 Auth check response status:', response.status);
-
-            if (response.ok) {
-                const data = await response.json();
-                this.user = data.user;
-                this.currentUser = data.user; // For backward compatibility
-                this.authCheckComplete = true;
-                this.updateUI();
-                console.log('✅ User authenticated:', this.user.username);
-                
-                // Dispatch auth state change event
-                this.dispatchAuthStateChange();
-                return true;
-            } else {
-                // Only log error details if it's not a 401 (which is expected when not logged in)
-                if (response.status !== 401) {
-                    const errorData = await response.json().catch(() => ({}));
-                    console.log('❌ Auth check failed:', errorData);
-                }
-                this.user = null;
-                this.currentUser = null;
-                this.authCheckComplete = true;
-                this.updateUI();
-                console.log('ℹ️ User not authenticated');
-                
-                // Dispatch auth state change event
-                this.dispatchAuthStateChange();
-                return false;
+async checkAuthStatus() {
+    try {
+        console.log('🔍 Checking authentication status...');
+        console.log('🍪 Document cookies:', document.cookie);
+        
+        // ADD THIS DEBUG BLOCK
+        const testUrl = `${this.apiBaseUrl}/auth/me`;
+        console.log('🎯 FULL API URL being called:', testUrl);
+        console.log('📍 Window location:', window.location.hostname);
+        console.log('📱 Is Capacitor?', !!window.Capacitor);
+        console.log('🔧 API Base URL from config:', this.apiBaseUrl);
+        
+        const response = await fetch(`${this.apiBaseUrl}/auth/me`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             }
-        } catch (error) {
-            console.error('❌ Auth check error:', error);
+        });
+
+        console.log('📡 Auth check response status:', response.status);
+
+        if (response.ok) {
+            const data = await response.json();
+            this.user = data.user;
+            this.currentUser = data.user; // For backward compatibility
+            this.authCheckComplete = true;
+            this.updateUI();
+            console.log('✅ User authenticated:', this.user.username);
+            
+            // Dispatch auth state change event
+            this.dispatchAuthStateChange();
+            return true;
+        } else {
+            // Only log error details if it's not a 401 (which is expected when not logged in)
+            if (response.status !== 401) {
+                const errorData = await response.json().catch(() => ({}));
+                console.log('❌ Auth check failed:', errorData);
+            }
             this.user = null;
             this.currentUser = null;
             this.authCheckComplete = true;
             this.updateUI();
+            console.log('ℹ️ User not authenticated');
             
             // Dispatch auth state change event
             this.dispatchAuthStateChange();
             return false;
         }
+    } catch (error) {
+        console.error('❌ Auth check error:', error);
+        console.error('🔍 Error details:', error.message, error.stack);  // ADD THIS
+        this.user = null;
+        this.currentUser = null;
+        this.authCheckComplete = true;
+        this.updateUI();
+        
+        // Dispatch auth state change event
+        this.dispatchAuthStateChange();
+        return false;
     }
+}
 
     // Dispatch auth state change event
     dispatchAuthStateChange() {

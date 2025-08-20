@@ -6,7 +6,8 @@ console.log('📁 __dirname:', __dirname);
 console.log('📁 process.cwd():', process.cwd());
 console.log('📁 NODE_ENV:', process.env.NODE_ENV);
 console.log('📁 Running on Render?', process.env.RENDER === 'true');
-
+const https = require('https');
+const http = require('http');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -16,6 +17,7 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const fs = require('fs');
 const { authMiddleware } = require('./middleware/auth');
+
 
 // Check if directories exist - DEBUGGING
 const frontendPath = path.join(__dirname, '../frontend');
@@ -41,14 +43,21 @@ console.log("🛠️ Loaded API Key:", process.env.MESHY_API_KEY);
 const app = express();
 const port = process.env.PORT || 3000;
 
-// CORS configuration - Updated for better development support AND PRODUCTION
 const corsOptions = {
   origin: [
+    // HTTP origins for backward compatibility
     'http://localhost:5173', 
     'http://localhost:3001', 
     'http://127.0.0.1:5500',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    
+    // HTTPS origins for development
+    'https://localhost:5173',
+    'https://localhost:3001',
+    'https://localhost:3000',
+    'https://127.0.0.1:3000',
+    
     // Add Live Server origins
     'http://127.0.0.1:59063',
     'http://localhost:59063',
@@ -64,11 +73,24 @@ const corsOptions = {
     'http://localhost:63338',
     'http://127.0.0.1:64533',
     'http://localhost:64533',
-    // PRODUCTION URLS - ADD THESE
+    
+    // PRODUCTION URLS
     'https://image-to-3d.onrender.com',
     'https://image-to-3d.onrender.com/',
-    // Allow any localhost/127.0.0.1 with any port for development
-    /^http:\/\/(localhost|127\.0\.0\.1):\d+$/
+    
+    // ADD THESE FOR ANDROID EMULATOR - Both HTTP and HTTPS
+    'http://10.0.2.2:5173',
+    'http://10.0.2.2:3000',
+    'http://10.0.2.2:3001',
+    'https://10.0.2.2:3000',  // HTTPS for Android emulator
+    'https://10.0.2.2',
+    'http://10.0.2.2',
+    'https://localhost',       // Capacitor HTTPS
+    'capacitor://localhost',  // Capacitor protocol
+    'http://localhost',        // Capacitor HTTP (without port)
+    
+    // Allow any localhost/127.0.0.1 with any port for development (both HTTP and HTTPS)
+    /^https?:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2):\d+$/
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
@@ -773,9 +795,57 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-app.listen(port, () => {
-  console.log(`🚀 Server listening at http://localhost:${port}`);
-  console.log(`🏥 Health Check: http://localhost:${port}/api/health`);
-  console.log(`📦 Assets API: http://localhost:${port}/api/assets`);
-  console.log(`🔐 Auth API: http://localhost:${port}/api/auth`);
-});
+// Server startup logic
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+
+if (isProduction) {
+  // Production: Use regular HTTP (Render handles HTTPS via their proxy)
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`✅ Production server running on port ${port}`);
+    console.log(`🌐 Server URL: https://image-to-3d.onrender.com`);
+    console.log(`🥗 Health Check: https://image-to-3d.onrender.com/api/health`);
+    console.log(`📦 Assets API: https://image-to-3d.onrender.com/api/assets`);
+    console.log(`🔐 Auth API: https://image-to-3d.onrender.com/api/auth`);
+  });
+} else {
+  // Development: Try to use HTTPS, fallback to HTTP if certificates don't exist
+  const certsPath = path.join(__dirname, 'certs');
+  const keyPath = path.join(certsPath, 'key.pem');
+  const certPath = path.join(certsPath, 'cert.pem');
+  
+  if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+    // HTTPS Configuration
+    const httpsOptions = {
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certPath)
+    };
+    
+    // Start HTTPS server on port 3000
+    https.createServer(httpsOptions, app).listen(port, () => {
+      console.log(`🔒 HTTPS Server running on https://localhost:${port}`);
+      console.log(`🔒 Android Emulator: https://10.0.2.2:${port}`);
+      console.log(`📱 Mobile access: https://192.168.1.41:${port}`);
+      console.log(`🥗 Health Check: https://localhost:${port}/api/health`);
+      console.log(`📦 Assets API: https://localhost:${port}/api/assets`);
+      console.log(`🔐 Auth API: https://localhost:${port}/api/auth`);
+    });
+    
+    // Also start HTTP server on port 3001 for backward compatibility
+    http.createServer(app).listen(3001, () => {
+      console.log(`🌐 HTTP Server also running on http://localhost:3001 (fallback)`);
+    });
+  } else {
+    // No certificates found, run HTTP only
+    console.log('⚠️  No SSL certificates found in /certs directory');
+    console.log('📝 To enable HTTPS, run: node cert.js');
+    
+    app.listen(port, '0.0.0.0', () => {
+      console.log(`🚀 Server listening at http://0.0.0.0:${port}`);
+      console.log(`⚠️  WARNING: Running without HTTPS - Android app may not work properly`);
+      console.log(`📱 Mobile access: http://192.168.1.41:${port}`);
+      console.log(`🥗 Health Check: http://localhost:${port}/api/health`);
+      console.log(`📦 Assets API: http://localhost:${port}/api/assets`);
+      console.log(`🔐 Auth API: http://localhost:${port}/api/auth`);
+    });
+  }
+}

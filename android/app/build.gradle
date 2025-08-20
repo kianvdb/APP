@@ -40,10 +40,23 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+
+    // AdMob for monetization
+    implementation 'com.google.android.gms:play-services-ads:22.6.0'
+
+    // CHANGE THESE TO OLDER COMPATIBLE VERSIONS:
+    implementation 'androidx.core:core-ktx:1.12.0'  // Changed from 1.17.0 to 1.12.0
+    implementation 'androidx.window:window:1.1.0'   // Changed from 1.2.0 to 1.1.0
 }
 
 apply from: 'capacitor.build.gradle'
-
+configurations.all {
+    resolutionStrategy {
+        force "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"
+        force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22"
+        force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22"
+    }
+}
 try {
     def servicesJSON = file('google-services.json')
     if (servicesJSON.text) {

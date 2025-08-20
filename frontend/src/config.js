@@ -1,4 +1,5 @@
 // config.js - Centralized configuration with enhanced HTTPS handling
+export default APP_CONFIG;
 (function() {
     'use strict';
     
@@ -11,21 +12,34 @@
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
     
-    // Helper function to get proper API URL
-    const getApiBaseUrl = () => {
-        if (isDevelopment) {
-            return `http://${hostname}:3000/api`;
-        } else {
-            // In production on Render
-            if (protocol === 'https:') {
-                // For HTTPS pages, use HTTPS API without port
-                return `https://${hostname}/api`;
-            } else {
-                // For HTTP pages, use HTTP with port
-                return `http://${hostname}:3000/api`;
-            }
+ // src/config.js
+// frontend/src/config.js
+const getAPIBaseURL = () => {
+    // Check if running in Capacitor
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        // Android
+        if (window.Capacitor.getPlatform() === 'android') {
+            console.log('🚨 ANDROID DETECTED - Using 10.0.2.2 with HTTPS');
+            return 'https://10.0.2.2:3000/api';  // HTTPS!
         }
-    };
+        // iOS
+        return 'https://localhost:3000/api';
+    }
+    
+    // Web development
+    return 'https://localhost:3000/api';  // HTTPS!
+};
+
+const APP_CONFIG = {
+    API_BASE_URL: getAPIBaseURL(),
+    // ... rest of your config
+};
+
+// Log the final configuration
+console.log('🔧 Configuration loaded:', APP_CONFIG);
+
+window.APP_CONFIG = APP_CONFIG;
+
     
     // Configuration object
     const config = {
