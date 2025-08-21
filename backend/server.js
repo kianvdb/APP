@@ -1,6 +1,16 @@
 require('dotenv').config();
 
-// Debug information for Render - ADD THIS AT THE VERY TOP
+// Validate required environment variables FIRST
+const requiredEnvVars = ['JWT_SECRET', 'MONGODB_URI', 'MESHY_API_KEY'];
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+    console.error('❌ Missing required environment variables:', missingEnvVars);
+    console.error('Please create a .env file with these variables');
+    process.exit(1);
+}
+
+// Debug information for Render
 console.log('🚀 Server starting...');
 console.log('📁 __dirname:', __dirname);
 console.log('📁 process.cwd():', process.cwd());
@@ -16,8 +26,24 @@ const axios = require('axios');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const fs = require('fs');
-const { authMiddleware } = require('./middleware/auth');
 
+const authMiddleware = require('./middleware/auth');
+
+// Create Express app
+const app = express();
+
+// Set up middleware
+app.use(cors({
+    origin: true, // or specify your frontend URL
+    credentials: true
+}));
+app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Import and use auth routes
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
 
 // Check if directories exist - DEBUGGING
 const frontendPath = path.join(__dirname, '../frontend');
@@ -38,9 +64,9 @@ if (fs.existsSync(frontendPath)) {
     });
 }
 
-console.log("🛠️ Loaded API Key:", process.env.MESHY_API_KEY);
+// Just confirm it exists without showing the value
+console.log("🛠️ Meshy API Key:", process.env.MESHY_API_KEY ? "✅ Loaded" : "❌ Missing");
 
-const app = express();
 const port = process.env.PORT || 3000;
 
 const corsOptions = {
@@ -797,55 +823,21 @@ process.on('SIGINT', async () => {
 
 // Server startup logic
 const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+const PORT = process.env.PORT || 3000;
 
 if (isProduction) {
   // Production: Use regular HTTP (Render handles HTTPS via their proxy)
-  app.listen(port, '0.0.0.0', () => {
-    console.log(`✅ Production server running on port ${port}`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Production server running on port ${PORT}`);
     console.log(`🌐 Server URL: https://image-to-3d.onrender.com`);
-    console.log(`🥗 Health Check: https://image-to-3d.onrender.com/api/health`);
-    console.log(`📦 Assets API: https://image-to-3d.onrender.com/api/assets`);
-    console.log(`🔐 Auth API: https://image-to-3d.onrender.com/api/auth`);
   });
 } else {
-  // Development: Try to use HTTPS, fallback to HTTP if certificates don't exist
-  const certsPath = path.join(__dirname, 'certs');
-  const keyPath = path.join(certsPath, 'key.pem');
-  const certPath = path.join(certsPath, 'cert.pem');
-  
-  if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
-    // HTTPS Configuration
-    const httpsOptions = {
-      key: fs.readFileSync(keyPath),
-      cert: fs.readFileSync(certPath)
-    };
-    
-    // Start HTTPS server on port 3000
-    https.createServer(httpsOptions, app).listen(port, () => {
-      console.log(`🔒 HTTPS Server running on https://localhost:${port}`);
-      console.log(`🔒 Android Emulator: https://10.0.2.2:${port}`);
-      console.log(`📱 Mobile access: https://192.168.1.41:${port}`);
-      console.log(`🥗 Health Check: https://localhost:${port}/api/health`);
-      console.log(`📦 Assets API: https://localhost:${port}/api/assets`);
-      console.log(`🔐 Auth API: https://localhost:${port}/api/auth`);
-    });
-    
-    // Also start HTTP server on port 3001 for backward compatibility
-    http.createServer(app).listen(3001, () => {
-      console.log(`🌐 HTTP Server also running on http://localhost:3001 (fallback)`);
-    });
-  } else {
-    // No certificates found, run HTTP only
-    console.log('⚠️  No SSL certificates found in /certs directory');
-    console.log('📝 To enable HTTPS, run: node cert.js');
-    
-    app.listen(port, '0.0.0.0', () => {
-      console.log(`🚀 Server listening at http://0.0.0.0:${port}`);
-      console.log(`⚠️  WARNING: Running without HTTPS - Android app may not work properly`);
-      console.log(`📱 Mobile access: http://192.168.1.41:${port}`);
-      console.log(`🥗 Health Check: http://localhost:${port}/api/health`);
-      console.log(`📦 Assets API: http://localhost:${port}/api/assets`);
-      console.log(`🔐 Auth API: http://localhost:${port}/api/auth`);
-    });
-  }
+  // Development: Simple HTTP only
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Development server: http://localhost:${PORT}`);
+    console.log(`📱 Android: http://10.0.2.2:${PORT}`);
+    console.log(`🥗 Health Check: http://localhost:${PORT}/api/health`);
+    console.log(`📦 Assets API: http://localhost:${PORT}/api/assets`);
+    console.log(`🔐 Auth API: http://localhost:${PORT}/api/auth`);
+  });
 }

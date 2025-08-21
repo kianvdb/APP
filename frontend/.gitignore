@@ -1,24 +1,126 @@
+# Environment variables - MOST IMPORTANT
+.env
+.env.*
+.env.local
+.env.production
+.env.development
+.env.test
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+.npm
 
-node_modules
-dist
-dist-ssr
+# Dependencies
+node_modules/
+bower_components/
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+out/
+.next/
+.nuxt/
+.cache/
 *.local
 
-# Editor directories and files
+# IDE/Editor directories
 .vscode/*
 !.vscode/extensions.json
-.idea
+!.vscode/launch.json
+!.vscode/tasks.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.iml
+
+# OS files
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Security sensitive files
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+certs/
+certificates/
+ssl/
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+data/
+mongodb_data/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Package files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Test coverage
+coverage/
+.nyc_output/
+lib-cov/
+*.lcov
+.coverage
+.coverage.*
+
+# Python (if you have any Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+
+# Uploaded files (if stored locally)
+uploads/
+public/uploads/
+static/uploads/
+
+# Backup files
+*.backup
+*.bak
+*.old
+backup/
+
+# Lock files you might not want to commit
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

@@ -356,10 +356,10 @@ async showSection(sectionName, skipAnimation = false) {
         let backendCount = 0;
         
         try {
-            const response = await fetch(`${this.getApiBaseUrl()}/auth/liked-assets`, {
-                method: 'GET',
-                credentials: 'include'
-            });
+          const response = await window.makeAuthenticatedRequest(
+    `${this.getApiBaseUrl()}/auth/liked-assets`,
+    { method: 'GET' }
+);
             
             if (response.ok) {
                 const data = await response.json();
@@ -379,6 +379,45 @@ async showSection(sectionName, skipAnimation = false) {
         }
     } catch (error) {
         console.error('Error updating liked models count:', error);
+    }
+}
+// Add this method to AppNavigation class around line 450
+updateLikedCount() {
+    // Update the liked models count in the account section
+    const countElement = document.getElementById('accountModelsCount');
+    if (countElement) {
+        // Check local storage first
+        window.LocalStorageManager.getAllLocalModels().then(localModels => {
+            let count = localModels.length;
+            
+            // Also check backend if authenticated
+            if (window.authManager?.isAuthenticated()) {
+                window.makeAuthenticatedRequest(
+                    `${this.getApiBaseUrl()}/auth/liked-assets`,
+                    { method: 'GET' }
+                ).then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                }).then(data => {
+                    if (data && data.assets) {
+                        // Use the higher count to account for any sync issues
+                        count = Math.max(count, data.assets.length);
+                        countElement.textContent = count;
+                    }
+                }).catch(error => {
+                    console.warn('Could not get backend liked count:', error);
+                    // Still show local count
+                    countElement.textContent = count;
+                });
+            } else {
+                // Just show local count
+                countElement.textContent = count;
+            }
+        }).catch(error => {
+            console.error('Error getting liked count:', error);
+            countElement.textContent = '0';
+        });
     }
 }
    // Load liked models from backend
@@ -419,10 +458,10 @@ async loadLikedModels() {
         }
         
         // Then try to get cloud models and ACTUALLY DISPLAY THEM
-        fetch(`${this.getApiBaseUrl()}/auth/liked-assets`, {
-            method: 'GET',
-            credentials: 'include'
-        }).then(response => {
+     window.makeAuthenticatedRequest(
+    `${this.getApiBaseUrl()}/auth/liked-assets`,
+    { method: 'GET' }
+).then(response => {
             if (response.ok) {
                 return response.json();
             }
@@ -576,12 +615,13 @@ async updateLikedModelsCount() {
     // Remove a liked model via backend
     async removeLikedModel(modelId) {
         try {
-            const response = await fetch(`${this.getApiBaseUrl()}/auth/like-asset`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ assetId: modelId })
-            });
+     const response = await window.makeAuthenticatedRequest(
+    `${this.getApiBaseUrl()}/auth/like-asset`,
+    {
+        method: 'POST',
+        body: JSON.stringify({ assetId: modelId })
+    }
+);
             
             if (response.ok) {
                 // Reload the liked models view
@@ -667,13 +707,14 @@ init(initialSection = null) {
     
     // Initialize Mobile Asset Viewer immediately - ENHANCED CHECK
     if (typeof MobileAssetViewer !== 'undefined' && !window.MobileAssetViewer) {
-        window.MobileAssetViewer = new MobileAssetViewer();
-        console.log('✅ Created new MobileAssetViewer instance');
-    }
-    
-    if (window.MobileAssetViewer && !window.MobileAssetViewer.viewerInitialized) {
-        window.MobileAssetViewer.initializeViewerHTML();
-        console.log('✅ Mobile Asset Viewer HTML initialized');
+    window.MobileAssetViewer = new MobileAssetViewer();
+    console.log('✅ Created new MobileAssetViewer instance');
+}
+
+if (window.MobileAssetViewer && !window.MobileAssetViewer.viewerInitialized) {
+    window.MobileAssetViewer.initializeViewerHTML();
+    console.log('✅ Mobile Asset Viewer HTML initialized');
+
     } else if (window.MobileAssetViewer && window.MobileAssetViewer.viewerInitialized) {
         console.log('✅ Mobile Asset Viewer already initialized');
     } else {
@@ -1707,7 +1748,7 @@ async initializeAssets() {
         
         // Update credits
         this.updateAccountStats();
-        
+        this.updateLikedCount();  
         // Update liked models count from backend with a small delay to ensure auth is ready
         setTimeout(async () => {
             await this.updateLikedModelsCount();
@@ -1773,6 +1814,7 @@ if (particleField) {
             });
         }, 300);
     }
+    
 
     // Liked Models functionality
     async showLikedModels() {
@@ -1843,11 +1885,10 @@ if (particleField) {
         try {
             console.log('💖 Loading liked models...');
             
-            const response = await fetch(`${this.getApiBaseUrl()}/auth/liked-assets`, {
-                method: 'GET',
-                credentials: 'include'
-            });
-            
+           const response = await window.makeAuthenticatedRequest(
+    `${this.getApiBaseUrl()}/auth/liked-assets`,
+    { method: 'GET' }
+);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -2039,12 +2080,14 @@ if (particleField) {
     }
     
     try {
-        const response = await fetch(`${this.getApiBaseUrl()}/auth/like-asset`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ assetId: assetId })
-        });
+        // Use makeAuthenticatedRequest for the like action
+        const response = await window.makeAuthenticatedRequest(
+            `${this.getApiBaseUrl()}/auth/like-asset`,
+            {
+                method: 'POST',
+                body: JSON.stringify({ assetId: assetId })
+            }
+        );
         
         if (!response.ok) throw new Error('Failed to update like status');
         
@@ -2082,10 +2125,10 @@ if (particleField) {
             ? `Added "${assetName}" to your liked models ❤️` 
             : `Removed "${assetName}" from your liked models`;
         this.showFeedback(message, 'success');
-        
+        this.updateLikedCount();  
         // Update account stats - THIS IS THE KEY PART
         await this.updateLikedModelsCount();
-        
+       
     } catch (error) {
         console.error('❌ Like error:', error);
         this.showFeedback('Failed to update like status. Please try again.', 'error');
@@ -2187,57 +2230,59 @@ if (particleField) {
     }
 
     async checkAuthentication() {
-        try {
-            const response = await fetch(`${this.getApiBaseUrl()}/auth/me`, {
-                method: 'GET',
-                credentials: 'include'
-            });
-            return response.ok;
-        } catch (error) {
-            console.error('❌ Auth check error:', error);
-            return false;
-        }
+    try {
+        // Use the global makeAuthenticatedRequest function
+        const response = await window.makeAuthenticatedRequest(
+            `${this.getApiBaseUrl()}/auth/me`, 
+            { method: 'GET' }
+        );
+        return response.ok;
+    } catch (error) {
+        console.error('❌ Auth check error:', error);
+        return false;
     }
+}
 
     async loadUserLikedAssets() {
-        if (this.assetsData.isLoadingLikes) return;
+    if (this.assetsData.isLoadingLikes) return;
+    
+    try {
+        this.assetsData.isLoadingLikes = true;
         
-        try {
-            this.assetsData.isLoadingLikes = true;
-            
-            const isAuthenticated = await this.checkAuthentication();
-            if (!isAuthenticated) {
-                this.assetsData.likedAssets.clear();
-                return;
-            }
-            
-            const response = await fetch(`${this.getApiBaseUrl()}/auth/liked-assets`, {
-                method: 'GET',
-                credentials: 'include'
-            });
-            
-            if (!response.ok) {
-                this.assetsData.likedAssets.clear();
-                return;
-            }
-            
-            const data = await response.json();
-            const likedAssetsList = data.assets || [];
-            
+        const isAuthenticated = await this.checkAuthentication();
+        if (!isAuthenticated) {
             this.assetsData.likedAssets.clear();
-            likedAssetsList.forEach(asset => {
-                this.assetsData.likedAssets.add(asset._id);
-            });
-            
-            console.log('💖 Loaded', this.assetsData.likedAssets.size, 'liked assets');
-            
-        } catch (error) {
-            console.error('❌ Error loading liked assets:', error);
-            this.assetsData.likedAssets.clear();
-        } finally {
-            this.assetsData.isLoadingLikes = false;
+            return;
         }
+        
+        // Use makeAuthenticatedRequest
+        const response = await window.makeAuthenticatedRequest(
+            `${this.getApiBaseUrl()}/auth/liked-assets`,
+            { method: 'GET' }
+        );
+        
+        if (!response.ok) {
+            this.assetsData.likedAssets.clear();
+            return;
+        }
+        
+        const data = await response.json();
+        const likedAssetsList = data.assets || [];
+        
+        this.assetsData.likedAssets.clear();
+        likedAssetsList.forEach(asset => {
+            this.assetsData.likedAssets.add(asset._id);
+        });
+        
+        console.log('💖 Loaded', this.assetsData.likedAssets.size, 'liked assets');
+        
+    } catch (error) {
+        console.error('❌ Error loading liked assets:', error);
+        this.assetsData.likedAssets.clear();
+    } finally {
+        this.assetsData.isLoadingLikes = false;
     }
+}
 
     async loadAllAssets() {
         try {
@@ -2407,16 +2452,18 @@ showAssetsLoading() {
     
 
     // UPDATED CLICK HANDLER - Uses Mobile Viewer
-    assetCard.addEventListener('click', (e) => {
-        if (!e.target.closest('.mobile-like-button')) {
-            // Use mobile viewer
-            if (window.MobileAssetViewer) {
-                window.MobileAssetViewer.openAsset(asset._id);
-            } else {
-                this.viewAsset(asset._id);
-            }
+   assetCard.addEventListener('click', (e) => {
+    if (!e.target.closest('.mobile-like-button')) {
+        // Use mobile viewer
+        if (window.MobileAssetViewer) {
+            console.log('🎯 Opening asset via MobileAssetViewer:', asset._id);
+            window.MobileAssetViewer.openAsset(asset._id);
+        } else {
+            console.error('❌ MobileAssetViewer not found!');
+            this.viewAsset(asset._id);
         }
-    });
+    }
+});
     
     // Add like button handler - REQUIRES AUTHENTICATION
     const likeButton = assetCard.querySelector('.mobile-like-button');

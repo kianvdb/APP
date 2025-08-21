@@ -23,136 +23,173 @@ constructor() {
     console.log('===================================');
 }
 
-    // Initialize viewer HTML (called once from app-navigation.js)
-    initializeViewerHTML() {
-        if (this.viewerInitialized) return;
-        
-        // Create viewer overlay HTML
-        const viewerHTML = `
-            <div class="mobile-asset-viewer-overlay" id="mobileAssetViewer">
-                <div class="asset-viewer-container">
-                    <!-- Header -->
-                    <div class="asset-viewer-header">
-                        <button class="back-btn" id="assetViewerBackBtn">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                            </svg>
-                        </button>
-                        <h2 class="asset-viewer-title" id="assetViewerTitle">Loading...</h2>
-                        <div class="asset-viewer-actions">
-                            <button class="like-btn" id="assetLikeBtn">
-                                <svg class="heart-icon" viewBox="0 0 24 24">
-                                    <path class="heart-outline" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="2"/>
-                                    <path class="heart-filled" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" opacity="0"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 3D Viewer Section -->
-                    <div class="asset-viewer-3d" id="assetViewer3d">
-                        <div class="viewer-loading-state" id="viewerLoadingState">
-                            <div class="loading-spinner"></div>
-                            <p class="loading-text">Loading 3D model...</p>
-                        </div>
-                        <div class="viewer-error-state" id="viewerErrorState" style="display: none;">
-                            <div class="error-icon">⚠️</div>
-                            <p class="error-text">Unable to load 3D model</p>
-                            <p class="error-subtext">The model may be unavailable</p>
-                        </div>
-                        <!-- Canvas will be inserted here -->
-                    </div>
-
-                    <!-- Asset Info Overlay -->
-                    <div class="asset-info-overlay" id="assetInfoOverlay">
-                        <div class="asset-info-content">
-                            <h3 class="asset-title" id="assetTitle">Loading...</h3>
-                            <div class="asset-details">
-                                <p><strong>Views:</strong> <span id="assetViews">0</span></p>
-                                <p><strong>Downloads:</strong> <span id="assetDownloads">0</span></p>
-                                <p><strong>Polygons:</strong> <span id="assetPolygons">0</span></p>
-                            </div>
-                            <div class="asset-tags-display" id="assetTagsDisplay">
-                                <!-- Tags will be populated here -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bottom Actions -->
-                    <div class="asset-viewer-actions-bottom">
-                        <div class="action-buttons-grid">
-                            <button class="action-btn download-btn" id="downloadBtn">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-                                </svg>
-                                <span>Download</span>
-                            </button>
-                            
-                            <button class="action-btn share-btn" id="shareBtn">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="18" cy="5" r="3"/>
-                                    <circle cx="6" cy="12" r="3"/>
-                                    <circle cx="18" cy="19" r="3"/>
-                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-                                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                                </svg>
-                                <span>Share</span>
-                            </button>
-                            
-                            <button class="action-btn disabled-btn" disabled>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="3"/>
-                                    <path d="M12 1v6m0 6v6m4.22-10.22l4.24 4.24m-4.24 4.24l4.24 4.24M20 12h6m-6 0h-6"/>
-                                </svg>
-                                <span>Rig (Soon)</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Download Format Modal -->
-            <div class="download-format-modal" id="downloadFormatModal">
-                <div class="download-modal-overlay" id="downloadModalOverlay"></div>
-                <div class="download-modal-content">
-                    <div class="download-modal-header">
-                        <h3>Select Format</h3>
-                        <button class="close-btn" id="closeDownloadModal">&times;</button>
-                    </div>
-                    <div class="download-formats-grid">
-                        <button class="format-option-btn" data-format="glb">
-                            <div class="format-icon">📦</div>
-                            <div class="format-name">GLB</div>
-                            <div class="format-desc">Universal 3D format</div>
-                        </button>
-                        <button class="format-option-btn" data-format="fbx">
-                            <div class="format-icon">🎮</div>
-                            <div class="format-name">FBX</div>
-                            <div class="format-desc">Game engines</div>
-                        </button>
-                        <button class="format-option-btn" data-format="obj">
-                            <div class="format-icon">🎨</div>
-                            <div class="format-name">OBJ</div>
-                            <div class="format-desc">3D software</div>
-                        </button>
-                        <button class="format-option-btn" data-format="usdz">
-                            <div class="format-icon">🍎</div>
-                            <div class="format-name">USDZ</div>
-                            <div class="format-desc">Apple AR</div>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Add to body
-        const div = document.createElement('div');
-        div.innerHTML = viewerHTML;
-        document.body.appendChild(div.firstElementChild);
-        
-        this.viewerInitialized = true;
-        console.log('✅ Mobile Asset Viewer HTML initialized');
+ initializeViewerHTML() {
+    if (this.viewerInitialized) {
+        console.log('✅ Viewer already initialized');
+        return;
     }
+    
+    console.log('🔧 Creating Mobile Asset Viewer HTML...');
+    
+    // Check if overlay already exists
+    if (document.getElementById('mobileAssetViewer')) {
+        console.log('✅ Overlay already exists');
+        this.viewerInitialized = true;
+        return;
+    }
+    
+    // Create the viewer overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'mobile-asset-viewer-overlay';
+    overlay.id = 'mobileAssetViewer';
+    overlay.style.display = 'none'; // Start hidden
+    
+    overlay.innerHTML = `
+        <div class="asset-viewer-container">
+            <!-- Header -->
+            <div class="asset-viewer-header">
+                <button class="back-btn" id="assetViewerBackBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                </button>
+                <h2 class="asset-viewer-title" id="assetViewerTitle">Loading...</h2>
+                <div class="asset-viewer-actions">
+                    <button class="like-btn" id="assetLikeBtn">
+                        <svg class="heart-icon" viewBox="0 0 24 24">
+                            <path class="heart-outline" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="2"/>
+                            <path class="heart-filled" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" opacity="0"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3D Viewer Section -->
+            <div class="asset-viewer-3d" id="assetViewer3d">
+                <div class="viewer-loading-state" id="viewerLoadingState">
+                    <div class="loading-spinner"></div>
+                    <p class="loading-text">Loading 3D model...</p>
+                </div>
+                <div class="viewer-error-state" id="viewerErrorState" style="display: none;">
+                    <div class="error-icon">⚠️</div>
+                    <p class="error-text">Unable to load 3D model</p>
+                    <p class="error-subtext">The model may be unavailable</p>
+                </div>
+                <!-- Canvas will be inserted here -->
+            </div>
+
+            <!-- Asset Info Overlay (Top Left) -->
+            <div class="asset-info-overlay" id="assetInfoOverlay">
+                <div class="asset-info-content">
+                    <h3 class="asset-title" id="assetTitle">Loading...</h3>
+                    <div class="asset-details">
+                        <p><strong>Views:</strong> <span id="assetViews">0</span></p>
+                        <p><strong>Downloads:</strong> <span id="assetDownloads">0</span></p>
+                        <p><strong>Polygons:</strong> <span id="assetPolygons">0</span></p>
+                    </div>
+                    <div class="asset-tags-display" id="assetTagsDisplay">
+                        <!-- Tags will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Actions -->
+            <div class="asset-viewer-actions-bottom">
+                <div class="action-buttons-grid">
+                    <button class="action-btn download-btn" id="downloadBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                        </svg>
+                        <span>Download</span>
+                    </button>
+                    
+                    <button class="action-btn share-btn" id="shareBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="18" cy="5" r="3"/>
+                            <circle cx="6" cy="12" r="3"/>
+                            <circle cx="18" cy="19" r="3"/>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                        </svg>
+                        <span>Share</span>
+                    </button>
+                    
+                    <button class="action-btn info-btn" id="infoBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="16" x2="12" y2="12"/>
+                            <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                        <span>Info</span>
+                    </button>
+                    
+                    <button class="action-btn disabled-btn" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 1v6m0 6v6m4.22-10.22l4.24 4.24m-4.24 4.24l4.24 4.24M20 12h6m-6 0h-6"/>
+                        </svg>
+                        <span>Rig (Soon)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Append to body
+    document.body.appendChild(overlay);
+    
+    // Create download format modal separately
+    const modalDiv = document.createElement('div');
+    modalDiv.className = 'download-format-modal';
+    modalDiv.id = 'downloadFormatModal';
+    modalDiv.style.display = 'none';
+    modalDiv.innerHTML = `
+        <div class="download-modal-overlay" id="downloadModalOverlay"></div>
+        <div class="download-modal-content">
+            <div class="download-modal-header">
+                <h3>Select Format</h3>
+                <button class="close-btn" id="closeDownloadModal">&times;</button>
+            </div>
+            <div class="download-formats-grid">
+                <button class="format-option-btn" data-format="glb">
+                    <div class="format-icon">📦</div>
+                    <div class="format-name">GLB</div>
+                    <div class="format-desc">Universal 3D format</div>
+                </button>
+                <button class="format-option-btn" data-format="fbx">
+                    <div class="format-icon">🎮</div>
+                    <div class="format-name">FBX</div>
+                    <div class="format-desc">Game engines</div>
+                </button>
+                <button class="format-option-btn" data-format="obj">
+                    <div class="format-icon">🎨</div>
+                    <div class="format-name">OBJ</div>
+                    <div class="format-desc">3D software</div>
+                </button>
+                <button class="format-option-btn" data-format="usdz">
+                    <div class="format-icon">🍎</div>
+                    <div class="format-name">USDZ</div>
+                    <div class="format-desc">Apple AR</div>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modalDiv);
+    
+    this.viewerInitialized = true;
+    
+    // Verify it was added
+    const checkOverlay = document.getElementById('mobileAssetViewer');
+    if (checkOverlay) {
+        console.log('✅ Mobile Asset Viewer HTML successfully created');
+    } else {
+        console.error('❌ Failed to add overlay to DOM');
+    }
+    
+    // Setup network listener
+    this.setupNetworkListener();
+}
 
     // Get API base URL
     getApiBaseUrl() {
@@ -174,25 +211,42 @@ constructor() {
             }
         }
     }
-    // Add these methods to the MobileAssetViewer class:
-
-showViewer() {
+   showViewer() {
     const overlay = document.getElementById('mobileAssetViewer');
     if (overlay) {
+        // Make sure it's visible
         overlay.classList.add('active');
-        overlay.style.display = 'flex';
-        document.body.style.overflow = 'hidden'; // Prevent body scroll
+        overlay.style.display = 'flex';  
+        overlay.style.opacity = '1';     
+        overlay.style.transform = 'translateY(0)';
+        document.body.style.overflow = 'hidden';
+        
+        console.log('✅ Viewer shown');
         
         // Setup event listeners
         this.setupEventListeners();
         
-        // Initialize 3D scene
-        this.init3DScene();
-        
-        // Load asset data
-        this.loadAssetData();
+        // Initialize 3D scene after a small delay
+        setTimeout(() => {
+            this.init3DScene();
+            this.loadAssetData();
+        }, 100);
     } else {
         console.error('❌ Mobile Asset Viewer overlay not found!');
+        
+        // Only try to initialize once to prevent infinite loop
+        if (!this.viewerInitialized) {
+            this.initializeViewerHTML();
+            // Try showing again after initialization
+            setTimeout(() => {
+                const retryOverlay = document.getElementById('mobileAssetViewer');
+                if (retryOverlay) {
+                    this.showViewer();
+                } else {
+                    console.error('❌ Failed to create viewer overlay');
+                }
+            }, 100);
+        }
     }
 }
 
@@ -233,58 +287,52 @@ showErrorState() {
     if (error) error.style.display = 'flex';
 }
 
-    // Add these methods to your existing MobileAssetViewer class
-
-async openAsset(assetId) {
+   async openAsset(assetId) {
     console.log('📱 Opening asset:', assetId);
     
+    // Check if viewer HTML exists, if not initialize it
+    if (!this.viewerInitialized) {
+        console.log('🔧 Initializing viewer HTML first...');
+        this.initializeViewerHTML();
+        
+        // Wait a moment for DOM to be ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
     try {
+        // Store the asset ID first
         this.currentAssetId = assetId;
         
-        // Show the viewer overlay
+        // Show the viewer immediately with loading state
         this.showViewer();
         
-        // Check if we have it cached locally first
-        const cachedAsset = await this.loadCachedAsset(assetId);
-        if (cachedAsset) {
-            console.log('⚡ Loading from cache');
-            this.displayAssetFromCache(cachedAsset);
-            
-            // If offline, notify user about limited features
-            if (!navigator.onLine) {
-                this.showOfflineNotification();
-            }
-            return;
+        // Then load the asset data
+        const apiBase = this.getApiBaseUrl();
+        console.log('🔗 API URL:', `${apiBase}/assets/${assetId}`);
+        
+        const response = await fetch(`${apiBase}/assets/${assetId}`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        // Check if online before fetching
-        if (!navigator.onLine) {
-            this.showOfflineError();
-            return;
-        }
+        const data = await response.json();
+        this.currentAsset = data.asset || data; // Handle both response formats
         
-        // Otherwise fetch from API
-        const response = await fetch(`${this.apiBaseUrl}/assets/${assetId}`);
-        if (!response.ok) throw new Error('Failed to fetch asset');
+        console.log('✅ Asset data loaded:', this.currentAsset);
         
-        const assetData = await response.json();
-        this.currentAsset = assetData;
+        // Update UI with asset info
+        this.updateAssetInfo();
         
-        // Display the asset
-        await this.displayAsset(assetData);
-        
-        // Cache it for next time (in background)
-        this.cacheAssetInBackground(assetData);
+        // Load the 3D model
+        await this.load3DModel();
         
     } catch (error) {
-        console.error('Error opening asset:', error);
-        
-        // Check if it's a network error
-        if (!navigator.onLine) {
-            this.showOfflineError();
-        } else {
-            this.showError('Failed to load model');
-        }
+        console.error('❌ Error opening asset:', error);
+        this.showError(`Failed to load asset: ${error.message}`);
     }
 }
 
@@ -521,14 +569,6 @@ setupNetworkListener() {
     window.addEventListener('offline', () => {
         this.showFeedback('📵 You\'re offline. Some features limited.', 'warning');
     });
-}
-
-// Initialize network listener when viewer is created
-initializeViewerHTML() {
-    // ... existing initialization code ...
-    
-    // Add network listener
-    this.setupNetworkListener();
 }
 
     // Setup event listeners
@@ -1103,8 +1143,7 @@ frameModel() {
         this.isLiked = isLiked;
     }
 
-   // Toggle like
-async toggleLike() {
+   async toggleLike() {
     const isAuthenticated = await this.checkAuthentication();
     if (!isAuthenticated) {
         console.log('❌ User not authenticated');
@@ -1129,7 +1168,7 @@ async toggleLike() {
             
             // Update the liked models count in account section
             if (window.AppNavigation) {
-                window.AppNavigation.updateLikedModelsCount();
+                window.AppNavigation.updateLikedCount();  // Use the new method
             }
         }
     } catch (error) {
@@ -1290,23 +1329,25 @@ async toggleLike() {
         }
     }
 
-    // Close viewer
     closeViewer() {
-        console.log('🔙 Closing asset viewer');
+    console.log('🔙 Closing asset viewer');
+    
+    const overlay = document.getElementById('mobileAssetViewer');
+    if (overlay) {
+        // Add closing animation
+        overlay.classList.add('closing');
+        overlay.classList.remove('active');
         
-        const overlay = document.getElementById('mobileAssetViewer');
-        if (overlay) {
-            overlay.classList.add('closing');
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            overlay.classList.remove('closing');
+            document.body.style.overflow = ''; // Restore body scroll
             
-            setTimeout(() => {
-                overlay.classList.remove('active', 'closing');
-                document.body.style.overflow = ''; // Restore body scroll
-                
-                // Cleanup
-                this.cleanup();
-            }, 400);
-        }
+            // Cleanup
+            this.cleanup();
+        }, 400);
     }
+}
 
     // Cleanup
     cleanup() {

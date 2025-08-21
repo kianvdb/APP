@@ -1,5 +1,8 @@
 {
   "appId": "co.nomiva.app",
   "appName": "3D Model Converter",
-  "webDir": "frontend"
+  "webDir": "frontend",
+   "server": {
+    "androidScheme": "http"
+  }
 }

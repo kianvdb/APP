@@ -5,8 +5,40 @@ const multer = require('multer');
 const router = express.Router();
 const cloudinary = require('cloudinary').v2;
 const axios = require('axios');
-const { authMiddleware, optionalAuthMiddleware, adminMiddleware } = require('../middleware/auth');
+// CORRECT - import the default export
+const authMiddleware = require('../middleware/auth');
 
+// Define the other middleware locally if needed
+const adminMiddleware = (req, res, next) => {
+    if (!req.user || !req.user.isAdmin) {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+    next();
+};
+
+const optionalAuthMiddleware = async (req, res, next) => {
+    // This makes auth optional - continues even if no token
+    try {
+        // Try to authenticate but don't fail if no token
+        let token = req.cookies.token;
+        
+        if (!token && req.headers.authorization) {
+            const authHeader = req.headers.authorization;
+            if (authHeader.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+            }
+        }
+        
+        if (token) {
+            const jwt = require('jsonwebtoken');
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            req.user = decoded;
+        }
+    } catch (error) {
+        // Silent fail for optional auth
+    }
+    next();
+};
 // Import models and config with better error handling
 let Asset, cloudinaryConfig;
 let dbAvailable = false;

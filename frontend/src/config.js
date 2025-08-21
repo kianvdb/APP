@@ -1,131 +1,102 @@
-// config.js - Centralized configuration with enhanced HTTPS handling
-export default APP_CONFIG;
+// config.js - Centralized configuration for the app
 (function() {
     'use strict';
     
-    // Determine if we're in development or production
-    const isDevelopment = window.location.hostname === 'localhost' || 
-                         window.location.hostname === '127.0.0.1' ||
-                         window.location.hostname.includes('localhost');
-    
-    // Determine protocol based on current page
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    
- // src/config.js
-// frontend/src/config.js
-const getAPIBaseURL = () => {
-    // Check if running in Capacitor
+    // Function to determine the correct API base URL
+    const getAPIBaseURL = () => {
+    // Check if running in Capacitor (mobile app)
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-        // Android
+        // Android emulator/device
         if (window.Capacitor.getPlatform() === 'android') {
-            console.log('🚨 ANDROID DETECTED - Using 10.0.2.2 with HTTPS');
-            return 'https://10.0.2.2:3000/api';  // HTTPS!
+            console.log('🚨 ANDROID DETECTED - Using 10.0.2.2 with HTTP');
+            return 'http://10.0.2.2:3000/api';
         }
-        // iOS
-        return 'https://localhost:3000/api';
+        // iOS simulator/device
+        if (window.Capacitor.getPlatform() === 'ios') {
+            console.log('📱 iOS DETECTED - Using localhost with HTTP');
+            return 'http://localhost:3000/api';
+        }
     }
     
-    // Web development
-    return 'https://localhost:3000/api';  // HTTPS!
-};
-
-const APP_CONFIG = {
-    API_BASE_URL: getAPIBaseURL(),
-    // ... rest of your config
-};
-
-// Log the final configuration
-console.log('🔧 Configuration loaded:', APP_CONFIG);
-
-window.APP_CONFIG = APP_CONFIG;
-
+    // Web browser (development or production)
+    const hostname = window.location.hostname;
+    const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
     
-    // Configuration object
+    if (isDevelopment) {
+        console.log('💻 Web Development - Using localhost with HTTP'); // Changed to HTTP
+        return 'http://localhost:3000/api';
+    } else {
+        console.log('🌐 Production - Using current hostname');
+        return `${window.location.protocol}//${hostname}/api`;
+    }
+};
+    // Main configuration object
     const config = {
-        // API Base URL with proper protocol handling
-        API_BASE_URL: getApiBaseUrl(),
-        
-        // Frontend URLs
-        FRONTEND_URL: isDevelopment
-            ? `http://${hostname}:5173`
-            : `${protocol}//${hostname}`,
-        
-        // Static file paths
+        // API Configuration
+        API_BASE_URL: getAPIBaseURL(),
+        // Frontend paths
         STATIC_PATH: '/frontend',
-        
-        // Model paths
         MODEL_PATH: '/frontend/models',
-        
-        // Image paths
         IMAGE_PATH: '/frontend/public',
         
-        // Environment flags
-        isDevelopment: isDevelopment,
-        isProduction: !isDevelopment,
+        // Environment detection
+        isDevelopment: window.location.hostname === 'localhost' || 
+                      window.location.hostname === '127.0.0.1',
         
-        // Debug mode
-        debug: isDevelopment,
-        
-        // CORS allowed origins
-        allowedOrigins: [
-            'http://localhost:5173',
-            'http://localhost:3000',
-            'https://image-to-3d.onrender.com',
-            'http://image-to-3d.onrender.com',
-        ],
-        
-        // Helper function to get full API URL
+        // Helper functions
         getApiUrl: function(endpoint) {
-            return `${this.API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+            const cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+            return this.API_BASE_URL + cleanEndpoint;
         },
         
-        // Helper function to get proxy URL for model generation
-        getProxyUrl: function() {
-            if (isDevelopment) {
-                return `http://${hostname}:3000`;
-            } else {
-                // In production, use the appropriate protocol
-                return protocol === 'https:' 
-                    ? `https://${hostname}`
-                    : `http://${hostname}:3000`;
-            }
-        },
-        
-        // Helper function to get static file URL
-        getStaticUrl: function(path) {
-            return `${this.STATIC_PATH}${path.startsWith('/') ? '' : '/'}${path}`;
-        },
-        
-        // Helper function to get model URL
         getModelUrl: function(filename) {
-            return `${this.MODEL_PATH}${filename.startsWith('/') ? '' : '/'}${filename}`;
+            const cleanFilename = filename.startsWith('/') ? filename : '/' + filename;
+            return this.MODEL_PATH + cleanFilename;
         },
         
-        // Helper function to get image URL
         getImageUrl: function(filename) {
-            return `${this.IMAGE_PATH}${filename.startsWith('/') ? '' : '/'}${filename}`;
+            const cleanFilename = filename.startsWith('/') ? filename : '/' + filename;
+            return this.IMAGE_PATH + cleanFilename;
         }
     };
     
-    // Log configuration in development
-    if (config.debug || protocol === 'https:') {
-        console.log('🔧 Configuration loaded:', {
-            environment: isDevelopment ? 'development' : 'production',
-            protocol: protocol,
-            hostname: hostname,
-            API_BASE_URL: config.API_BASE_URL,
-            PROXY_URL: config.getProxyUrl(),
-            FRONTEND_URL: config.FRONTEND_URL
-        });
-    }
-    
-    // Make config globally available
+    // Make config globally available (multiple ways for compatibility)
+    window.config = config;
     window.APP_CONFIG = config;
-    
-    // Also expose as DALMA_CONFIG for compatibility
     window.DALMA_CONFIG = {
         API_BASE_URL: config.API_BASE_URL
     };
+   window.makeAuthenticatedRequest = async (url, options = {}) => {
+    const authToken = localStorage.getItem('authToken');
     
+    const defaultOptions = {
+        method: options.method || 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...options.headers
+        }
+    };
+    
+    // ALWAYS add auth token if available (for both Capacitor and web)
+    if (authToken) {
+        defaultOptions.headers['Authorization'] = `Bearer ${authToken}`;
+        console.log('🔑 Including Bearer token in request');
+    }
+    
+    // Handle body properly
+    if (options.body) {
+        defaultOptions.body = options.body;
+    }
+    
+    return fetch(url, { ...defaultOptions, ...options });
+};
+    
+    // Log final configuration
+    console.log('✅ Configuration loaded:', {
+        API_BASE_URL: config.API_BASE_URL,
+        Platform: window.Capacitor ? window.Capacitor.getPlatform() : 'Web',
+        Environment: config.isDevelopment ? 'Development' : 'Production'
+    });
 })();

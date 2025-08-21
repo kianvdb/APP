@@ -1,7 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -19,34 +18,75 @@ const validatePassword = (password) => {
     return password && password.length >= 6;
 };
 
-// Generate JWT token
-const generateToken = (userId) => {
-    return jwt.sign({ userId }, process.env.JWT_SECRET || 'dalma-ai-secret-key', {
-        expiresIn: '7d'
-    });
+
+const generateToken = (userId, username, isAdmin) => {
+    return jwt.sign(
+        { 
+            userId, 
+            username,
+            isAdmin 
+        },
+        process.env.JWT_SECRET,  
+        { expiresIn: '7d' }      
+    );
 };
 
-// Set JWT cookie - Fixed for development
-const setTokenCookie = (res, token) => {
-    // Different settings for development vs production
-    const isProduction = process.env.NODE_ENV === 'production';
-    
-    const cookieOptions = {
-        httpOnly: true,
-        secure: isProduction, // Only secure in production
-        sameSite: isProduction ? 'strict' : 'lax', // More lenient in development
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        path: '/' // Ensure cookie is available for all paths
-    };
-    
-    // Don't set domain in development - let browser handle it
-    if (isProduction && process.env.COOKIE_DOMAIN) {
-        cookieOptions.domain = process.env.COOKIE_DOMAIN;
+// Auth middleware that accepts both cookie and header token
+const authMiddleware = async (req, res, next) => {
+    try {
+        // Try to get token from cookie first
+      let token = req.cookies.token;
+        
+        // If no cookie, try Authorization header
+        if (!token && req.headers.authorization) {
+            const authHeader = req.headers.authorization;
+            if (authHeader.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+            }
+        }
+        
+        console.log('🔐 Auth middleware - Token found:', !!token);
+        console.log('🔐 Auth middleware - From cookie:', !!req.cookies.dalma_auth_token);
+        console.log('🔐 Auth middleware - From header:', !!req.headers.authorization);
+
+        if (!token) {
+            console.log('❌ No auth token found in cookies or headers');
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        // Get user from database
+        const user = await User.findById(decoded.userId);
+        
+        if (!user) {
+            console.log('❌ User not found for token');
+            return res.status(401).json({ error: 'User not found' });
+        }
+
+        // Attach user info to request
+        req.user = {
+            userId: user._id,
+            username: user.username,
+            isAdmin: user.isAdmin
+        };
+        
+        console.log('✅ User authenticated via token:', user.username);
+        
+        next();
+    } catch (error) {
+        console.error('❌ Auth middleware error:', error.message);
+        
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ error: 'Invalid token' });
+        }
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ error: 'Token expired' });
+        }
+        
+        res.status(500).json({ error: 'Authentication error' });
     }
-    
-    res.cookie('dalma_auth_token', token, cookieOptions);
-    
-    console.log('🍪 Cookie set with options:', cookieOptions);
 };
 
 // POST /api/auth/register
@@ -93,26 +133,42 @@ router.post('/register', async (req, res) => {
             username,
             email,
             password,
-            // Make first user admin (or check for specific admin username)
-            isAdmin: username.toLowerCase() === 'admin' || (await User.countDocuments()) === 0
+            credits: 2, // Give initial credits
+     isAdmin: (await User.countDocuments()) === 0 
         });
 
         await user.save();
 
-        // Generate token and set cookie
-        const token = generateToken(user._id);
-        setTokenCookie(res, token);
+        // Generate token
+        const token = generateToken(user._id, user.username, user.isAdmin);
+
+        // Set cookie for web compatibility
+        const isProduction = process.env.NODE_ENV === 'production';
+        const cookieOptions = {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'strict' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: '/'
+        };
+        
+        res.cookie('token', token, cookieOptions);
+        console.log('🍪 Cookie set with token');
 
         console.log('✅ User registered successfully:', user.username);
 
+        // Return token in response body for mobile
         res.status(201).json({
+            success: true,
             message: 'User registered successfully',
             user: {
                 id: user._id,
                 username: user.username,
                 email: user.email,
-                isAdmin: user.isAdmin
-            }
+                isAdmin: user.isAdmin,
+                credits: user.credits || 2
+            },
+            token: token // Include token in response
         });
 
     } catch (error) {
@@ -148,20 +204,36 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid username or password' });
         }
 
-        // Generate token and set cookie
-        const token = generateToken(user._id);
-        setTokenCookie(res, token);
+        // Generate token
+        const token = generateToken(user._id, user.username, user.isAdmin);
+
+        // Set cookie for web compatibility
+        const isProduction = process.env.NODE_ENV === 'production';
+        const cookieOptions = {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'strict' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: '/'
+        };
+        
+        res.cookie('token', token, cookieOptions);
+        console.log('🍪 Cookie set with token');
 
         console.log('✅ User logged in successfully:', user.username);
 
+        // Return token in response body for mobile
         res.json({
+            success: true,
             message: 'Login successful',
             user: {
                 id: user._id,
                 username: user.username,
                 email: user.email,
-                isAdmin: user.isAdmin
-            }
+                isAdmin: user.isAdmin,
+                credits: user.credits || 2
+            },
+            token: token // Include token in response
         });
 
     } catch (error) {
@@ -172,7 +244,7 @@ router.post('/login', async (req, res) => {
 
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {
-    // Clear the cookie with the same options used to set it
+    // Clear the cookie for web
     const isProduction = process.env.NODE_ENV === 'production';
     
     const cookieOptions = {
@@ -182,12 +254,18 @@ router.post('/logout', (req, res) => {
         path: '/'
     };
     
-    res.clearCookie('dalma_auth_token', cookieOptions);
+    res.clearCookie('token', cookieOptions);
     
-    res.json({ message: 'Logged out successfully' });
+    // For mobile, client should remove token from storage
+    res.json({ 
+        success: true,
+        message: 'Logged out successfully' 
+    });
+    
+    console.log('✅ User logged out');
 });
 
-// GET /api/auth/me - Get current user - FIXED VERSION
+// GET /api/auth/me - Get current user
 router.get('/me', authMiddleware, async (req, res) => {
     try {
         console.log('👤 /auth/me called for userId:', req.user?.userId);
@@ -222,6 +300,7 @@ router.get('/me', authMiddleware, async (req, res) => {
                 username: populatedUser.username,
                 email: populatedUser.email,
                 isAdmin: populatedUser.isAdmin,
+                credits: populatedUser.credits || 0,
                 likedAssets: populatedUser.likedAssets || [],
                 generatedModels: populatedUser.generatedModels || []
             }
@@ -282,7 +361,7 @@ router.post('/like-asset', authMiddleware, async (req, res) => {
     }
 });
 
-// GET /api/auth/liked-assets - Get user's liked assets - FIXED VERSION
+// GET /api/auth/liked-assets - Get user's liked assets
 router.get('/liked-assets', authMiddleware, async (req, res) => {
     try {
         // First get the user
@@ -362,4 +441,6 @@ router.post('/save-generated-model', authMiddleware, async (req, res) => {
     }
 });
 
+// Export both router and middleware
 module.exports = router;
+module.exports.authMiddleware = authMiddleware;

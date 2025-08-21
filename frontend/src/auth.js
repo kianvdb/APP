@@ -9,6 +9,8 @@ class AuthManager {
         
         // DISABLE account dropdown functionality - let main.js handle it
         this.accountDropdownDisabled = true;
+         this.isCapacitor = window.Capacitor !== undefined;
+    console.log('📱 Is Capacitor environment:', this.isCapacitor);
         
      // Force use the updated config API URL
 this.apiBaseUrl = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : config.API_BASE_URL;
@@ -106,71 +108,80 @@ console.log('🔧 Window APP_CONFIG:', window.APP_CONFIG);
             throw error;
         }
     }
-
-    // Check if user is authenticated
-async checkAuthStatus() {
-    try {
-        console.log('🔍 Checking authentication status...');
-        console.log('🍪 Document cookies:', document.cookie);
+// Helper method to make authenticated requests
+    async makeAuthenticatedRequest(url, options = {}) {
+        const authToken = localStorage.getItem('authToken');
         
-        // ADD THIS DEBUG BLOCK
-        const testUrl = `${this.apiBaseUrl}/auth/me`;
-        console.log('🎯 FULL API URL being called:', testUrl);
-        console.log('📍 Window location:', window.location.hostname);
-        console.log('📱 Is Capacitor?', !!window.Capacitor);
-        console.log('🔧 API Base URL from config:', this.apiBaseUrl);
-        
-        const response = await fetch(`${this.apiBaseUrl}/auth/me`, {
-            method: 'GET',
+        const defaultOptions = {
             credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                ...options.headers
             }
-        });
-
-        console.log('📡 Auth check response status:', response.status);
-
-        if (response.ok) {
-            const data = await response.json();
-            this.user = data.user;
-            this.currentUser = data.user; // For backward compatibility
-            this.authCheckComplete = true;
-            this.updateUI();
-            console.log('✅ User authenticated:', this.user.username);
+        };
+        
+        // Add auth token for Capacitor or if available
+        if ((this.isCapacitor || authToken) && authToken) {
+            defaultOptions.headers['Authorization'] = `Bearer ${authToken}`;
+            console.log('🔑 Including Bearer token in request');
+        }
+        
+        return fetch(url, { ...defaultOptions, ...options });
+    }
+  async checkAuthStatus() {
+        try {
+            console.log('🔍 Checking authentication status...');
+            console.log('🍪 Document cookies:', document.cookie);
             
-            // Dispatch auth state change event
-            this.dispatchAuthStateChange();
-            return true;
-        } else {
-            // Only log error details if it's not a 401 (which is expected when not logged in)
-            if (response.status !== 401) {
-                const errorData = await response.json().catch(() => ({}));
-                console.log('❌ Auth check failed:', errorData);
+            const testUrl = `${this.apiBaseUrl}/auth/me`;
+            console.log('🎯 FULL API URL being called:', testUrl);
+            console.log('📍 Window location:', window.location.hostname);
+            console.log('📱 Is Capacitor?', this.isCapacitor);
+            console.log('🔧 API Base URL from config:', this.apiBaseUrl);
+            
+            const response = await this.makeAuthenticatedRequest(`${this.apiBaseUrl}/auth/me`, {
+                method: 'GET'
+            });
+
+            console.log('📡 Auth check response status:', response.status);
+
+            if (response.ok) {
+                const data = await response.json();
+                this.user = data.user;
+                this.currentUser = data.user;
+                this.authCheckComplete = true;
+                this.updateUI();
+                console.log('✅ User authenticated:', this.user.username);
+                
+                this.dispatchAuthStateChange();
+                return true;
+            } else {
+                if (response.status !== 401) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.log('❌ Auth check failed:', errorData);
+                }
+                this.user = null;
+                this.currentUser = null;
+                this.authCheckComplete = true;
+                this.updateUI();
+                console.log('ℹ️ User not authenticated');
+                
+                this.dispatchAuthStateChange();
+                return false;
             }
+        } catch (error) {
+            console.error('❌ Auth check error:', error);
+            console.error('🔍 Error details:', error.message, error.stack);
             this.user = null;
             this.currentUser = null;
             this.authCheckComplete = true;
             this.updateUI();
-            console.log('ℹ️ User not authenticated');
             
-            // Dispatch auth state change event
             this.dispatchAuthStateChange();
             return false;
         }
-    } catch (error) {
-        console.error('❌ Auth check error:', error);
-        console.error('🔍 Error details:', error.message, error.stack);  // ADD THIS
-        this.user = null;
-        this.currentUser = null;
-        this.authCheckComplete = true;
-        this.updateUI();
-        
-        // Dispatch auth state change event
-        this.dispatchAuthStateChange();
-        return false;
     }
-}
 
     // Dispatch auth state change event
     dispatchAuthStateChange() {
@@ -768,18 +779,22 @@ async handleModalLogin(e) {
     this.clearModalMessages();
 
     try {
-        const response = await fetch(`${this.apiBaseUrl}/auth/login`, {
+        const response = await this.makeAuthenticatedRequest(`${this.apiBaseUrl}/auth/login`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({ username, password })
         });
 
         const data = await response.json();
 
         if (response.ok) {
+            // Store token for Capacitor/mobile
+            if (data.token) {
+                localStorage.setItem('authToken', data.token);
+                console.log('🔑 Auth token stored for mobile/Capacitor');
+            }
+            
             this.user = data.user;
-            this.currentUser = data.user; // For backward compatibility
+            this.currentUser = data.user;
             this.updateUI();
             
             // Check if we have a redirect to show appropriate message
@@ -855,19 +870,24 @@ async handleModalRegister(e) {
     this.setModalLoading('premium-register-form', true);
     this.clearModalMessages();
 
-    try {
-        const response = await fetch(`${this.apiBaseUrl}/auth/register`, {
+   try {
+        const response = await this.makeAuthenticatedRequest(`${this.apiBaseUrl}/auth/register`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({ username, email, password })
         });
 
         const data = await response.json();
 
         if (response.ok) {
+            // Store token for Capacitor/mobile
+            if (data.token) {
+                localStorage.setItem('authToken', data.token);
+                console.log('🔑 Auth token stored for mobile/Capacitor');
+            }
+            
             this.user = data.user;
-            this.currentUser = data.user; // For backward compatibility
+            this.currentUser = data.user;
+            // ... rest of the success handling (keep as is)
             this.updateUI();
             this.showModalMessage('premiumRegisterMessage', 'Account created! Welcome to Dalma AI!', 'success');
             
@@ -913,39 +933,44 @@ async handleModalRegister(e) {
     }
 }
 
-   // Logout
 async logout() {
-    try {
-        await fetch(`${this.apiBaseUrl}/auth/logout`, {
-            method: 'POST',
-            credentials: 'include'
-        });
+        try {
+            await this.makeAuthenticatedRequest(`${this.apiBaseUrl}/auth/logout`, {
+                method: 'POST'
+            });
 
-        this.user = null;
-        this.currentUser = null;
-        this.updateUI();
-        console.log('✅ User logged out');
-        
-        // Dispatch auth state change event
-        this.dispatchAuthStateChange();
-        
-        // Clear any stored auth data
-        localStorage.removeItem('dalma_user');
-        localStorage.removeItem('dalma_redirectAfterLogin');
-        sessionStorage.removeItem('redirectAfterLogin');
-        
-        // Navigate to home section instead of page reload
-        if (window.AppNavigation) {
-            window.AppNavigation.navigateToSection('home');
+            // Clear stored token
+            localStorage.removeItem('authToken');
+            
+            this.user = null;
+            this.currentUser = null;
+            this.updateUI();
+            console.log('✅ User logged out');
+            
+            this.dispatchAuthStateChange();
+            
+            // Clear any stored auth data
+            localStorage.removeItem('dalma_user');
+            localStorage.removeItem('dalma_redirectAfterLogin');
+            sessionStorage.removeItem('redirectAfterLogin');
+            
+            // Navigate to home section instead of page reload
+            if (window.AppNavigation) {
+                window.AppNavigation.navigateToSection('home');
+            }
+            
+            console.log('🏠 Navigated to home section after logout');
+            
+        } catch (error) {
+            console.error('❌ Logout error:', error);
+            // Even if server logout fails, clear local session
+            localStorage.removeItem('authToken');
+            this.user = null;
+            this.currentUser = null;
+            this.updateUI();
+            this.dispatchAuthStateChange();
         }
-        
-        console.log('🏠 Navigated to home section after logout');
-        
-    } catch (error) {
-        console.error('❌ Logout error:', error);
     }
-}
-
     // Update UI based on auth state
     updateUI() {
         this.updateAccountDropdown();
