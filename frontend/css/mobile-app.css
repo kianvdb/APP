@@ -4456,3 +4456,45 @@ html, body {
     box-shadow: none;
     background: rgba(100, 100, 100, 0.1);
 }
+/* ========================================
+   FIX: Remove global "Feature coming soon" from asset viewer buttons
+   ======================================== */
+
+/* Remove "Feature coming soon" from all action buttons */
+.mobile-asset-viewer-overlay .action-btn::before,
+.mobile-asset-viewer-overlay .action-btn::after,
+#mobileAssetViewer .action-btn::before,
+#mobileAssetViewer .action-btn::after,
+#infoBtn::before,
+#infoBtn::after,
+#shareBtn::before,
+#shareBtn::after,
+#downloadBtn::before,
+#downloadBtn::after {
+    content: none !important;
+    display: none !important;
+}
+
+/* Style for disabled Rig button only */
+#rigBtn {
+    position: relative;
+    opacity: 0.5;
+    cursor: not-allowed !important;
+}
+
+/* Add "SOON" badge to Rig button */
+#rigBtn::after {
+    content: "SOON" !important;
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+    color: white;
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: block !important;
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.4);
+}

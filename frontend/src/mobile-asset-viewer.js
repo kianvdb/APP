@@ -123,13 +123,13 @@ constructor() {
                         <span>Info</span>
                     </button>
                     
-                    <button class="action-btn disabled-btn" disabled>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M12 1v6m0 6v6m4.22-10.22l4.24 4.24m-4.24 4.24l4.24 4.24M20 12h6m-6 0h-6"/>
-                        </svg>
-                        <span>Rig (Soon)</span>
-                    </button>
+                   <button class="action-btn disabled-btn" id="rigBtn" disabled>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 1v6m0 6v6m4.22-10.22l4.24 4.24m-4.24 4.24l4.24 4.24M20 12h6m-6 0h-6"/>
+    </svg>
+    <span>Rig (Soon)</span>
+</button>
                 </div>
             </div>
         </div>
@@ -571,57 +571,72 @@ setupNetworkListener() {
     });
 }
 
-    // Setup event listeners
-    setupEventListeners() {
-        // Back button
-        const backBtn = document.getElementById('assetViewerBackBtn');
-        if (backBtn) {
-            backBtn.onclick = () => this.closeViewer();
-        }
-        
-        // Like button
-        const likeBtn = document.getElementById('assetLikeBtn');
-        if (likeBtn) {
-            likeBtn.onclick = () => this.toggleLike();
-        }
-        
-        // Download button
-        const downloadBtn = document.getElementById('downloadBtn');
-        if (downloadBtn) {
-            downloadBtn.onclick = () => this.handleDownload();
-        }
-        
-        // Share button
-        const shareBtn = document.getElementById('shareBtn');
-        if (shareBtn) {
-            shareBtn.onclick = () => this.handleShare();
-        }
-        
-        // Info button
-        const infoBtn = document.getElementById('infoBtn');
-        if (infoBtn) {
-            infoBtn.onclick = () => this.toggleInfo();
-        }
-        
-        // Download modal
-        const closeModal = document.getElementById('closeDownloadModal');
-        if (closeModal) {
-            closeModal.onclick = () => this.closeDownloadModal();
-        }
-        
-        const modalOverlay = document.getElementById('downloadModalOverlay');
-        if (modalOverlay) {
-            modalOverlay.onclick = () => this.closeDownloadModal();
-        }
-        
-        // Format buttons
-        document.querySelectorAll('.format-option-btn').forEach(btn => {
-            btn.onclick = (e) => {
-                const format = e.currentTarget.dataset.format;
-                this.downloadAsset(format);
-            };
-        });
+  // Setup event listeners
+setupEventListeners() {
+    // Back button
+    const backBtn = document.getElementById('assetViewerBackBtn');
+    if (backBtn) {
+        backBtn.onclick = () => this.closeViewer();
     }
+    
+    // Like button
+    const likeBtn = document.getElementById('assetLikeBtn');
+    if (likeBtn) {
+        likeBtn.onclick = () => this.toggleLike();
+    }
+    
+    // Download button
+    const downloadBtn = document.getElementById('downloadBtn');
+    if (downloadBtn) {
+        downloadBtn.onclick = () => this.handleDownload();
+    }
+    
+    // Share button
+    const shareBtn = document.getElementById('shareBtn');
+    if (shareBtn) {
+        shareBtn.onclick = () => this.handleShare();
+    }
+    
+    // Info button
+    const infoBtn = document.getElementById('infoBtn');
+    if (infoBtn) {
+        infoBtn.onclick = () => this.toggleInfo();
+    }
+    
+    // Download modal
+    const closeModal = document.getElementById('closeDownloadModal');
+    if (closeModal) {
+        closeModal.onclick = () => this.closeDownloadModal();
+    }
+    
+    const modalOverlay = document.getElementById('downloadModalOverlay');
+    if (modalOverlay) {
+        modalOverlay.onclick = () => this.closeDownloadModal();
+    }
+    
+    // Format buttons
+    document.querySelectorAll('.format-option-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            const format = e.currentTarget.dataset.format;
+            this.downloadAsset(format);
+        };
+    });
+    
+    // ADD THIS NEW CODE HERE - Rig button handler
+    const rigBtn = document.getElementById('rigBtn');
+    if (rigBtn) {
+        // Make it clickable even though it's disabled
+        rigBtn.style.pointerEvents = 'auto';
+        
+        rigBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Show coming soon message
+            this.showFeedback('Rig feature coming soon! We\'re working on it.', 'info', 3000);
+            return false;
+        };
+    }
+}
 async loadCachedAsset(assetId) {
     try {
         if (!window.LocalStorageManager) return null;
@@ -1154,12 +1169,30 @@ frameModel() {
     }
     
     try {
-        const response = await fetch(`${this.getApiBaseUrl()}/auth/like-asset`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ assetId: this.currentAssetId })
-        });
+        let response;
+        const body = JSON.stringify({ assetId: this.currentAssetId });
+        
+        if (window.makeAuthenticatedRequest) {
+            response = await window.makeAuthenticatedRequest(
+                `${this.getApiBaseUrl()}/auth/like-asset`,
+                {
+                    method: 'POST',
+                    body: body
+                }
+            );
+        } else {
+            // Fallback
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            response = await fetch(`${this.getApiBaseUrl()}/auth/like-asset`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : ''
+                },
+                credentials: 'include',
+                body: body
+            });
+        }
         
         if (response.ok) {
             const data = await response.json();
@@ -1168,7 +1201,7 @@ frameModel() {
             
             // Update the liked models count in account section
             if (window.AppNavigation) {
-                window.AppNavigation.updateLikedCount();  // Use the new method
+                window.AppNavigation.updateLikedCount();
             }
         }
     } catch (error) {
@@ -1176,68 +1209,81 @@ frameModel() {
         this.showFeedback('Failed to update like status', 'error');
     }
 }
-
-    // Handle download
-    async handleDownload() {
-        const isAuthenticated = await this.checkAuthentication();
-        if (!isAuthenticated) {
-            console.log('❌ User not authenticated for download');
-            if (window.authManager) {
-                window.authManager.showLoginModal();
-            }
-            return;
-        }
+async handleDownload() {
+    console.log('📥 Opening download modal...');
+    
+    // Show format modal directly (you can add auth check back if needed)
+    const modal = document.getElementById('downloadFormatModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.style.opacity = '1';  // Add this
+        modal.style.visibility = 'visible';  // Add this
+        modal.classList.add('active');
         
-        // Show format modal
-        const modal = document.getElementById('downloadFormatModal');
-        if (modal) {
-            modal.style.display = 'flex';
+        // Ensure content is visible too
+        const modalContent = modal.querySelector('.download-modal-content');
+        if (modalContent) {
+            modalContent.style.opacity = '1';
+            modalContent.style.visibility = 'visible';
         }
     }
+}
 
-    // Download asset
     async downloadAsset(format) {
-        console.log('📥 Downloading format:', format);
+    console.log('📥 Downloading format:', format);
+    
+    this.closeDownloadModal();
+    
+    try {
+        let downloadUrl;
         
-        this.closeDownloadModal();
-        
-        try {
-            let downloadUrl;
-            
-            if (this.currentAsset.meshyTaskId) {
-                downloadUrl = `${this.getApiBaseUrl()}/assets/meshy/${this.currentAsset.meshyTaskId}/download?format=${format}`;
-            } else {
-                downloadUrl = `${this.getApiBaseUrl()}/assets/${this.currentAssetId}/download?format=${format}`;
-            }
-            
-            const response = await fetch(downloadUrl, {
-                method: 'GET',
-                credentials: 'include'
-            });
-            
-            if (!response.ok) {
-                throw new Error('Download failed');
-            }
-            
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${this.currentAsset.name || 'asset'}.${format}`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            window.URL.revokeObjectURL(url);
-            
-            this.showFeedback(`${format.toUpperCase()} downloaded!`, 'success');
-            
-        } catch (error) {
-            console.error('❌ Download error:', error);
-            this.showFeedback('Download failed', 'error');
+        if (this.currentAsset.meshyTaskId) {
+            downloadUrl = `${this.getApiBaseUrl()}/assets/meshy/${this.currentAsset.meshyTaskId}/download?format=${format}`;
+        } else {
+            downloadUrl = `${this.getApiBaseUrl()}/assets/${this.currentAssetId}/download?format=${format}`;
         }
+        
+        // Use the global makeAuthenticatedRequest if available
+        let response;
+        if (window.makeAuthenticatedRequest) {
+            response = await window.makeAuthenticatedRequest(downloadUrl, {
+                method: 'GET'
+            });
+        } else {
+            // Fallback with auth headers
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            response = await fetch(downloadUrl, {
+                method: 'GET',
+                credentials: 'include',
+                headers: token ? {
+                    'Authorization': `Bearer ${token}`
+                } : {}
+            });
+        }
+        
+        if (!response.ok) {
+            throw new Error(`Download failed: ${response.status}`);
+        }
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${this.currentAsset.name || 'asset'}.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        window.URL.revokeObjectURL(url);
+        
+        this.showFeedback(`${format.toUpperCase()} downloaded!`, 'success');
+        
+    } catch (error) {
+        console.error('❌ Download error:', error);
+        this.showFeedback('Download failed. Please try again.', 'error');
     }
+}
 
     // Handle share
     async handleShare() {
@@ -1259,21 +1305,44 @@ frameModel() {
         }
     }
 
-
-    // Check authentication
-    async checkAuthentication() {
-        try {
-            const response = await fetch(`${this.getApiBaseUrl()}/auth/me`, {
-                method: 'GET',
-                credentials: 'include'
-            });
-            return response.ok;
-        } catch (error) {
-            console.error('❌ Auth check error:', error);
-            return false;
+toggleInfo() {
+    const infoOverlay = document.getElementById('assetInfoOverlay');
+    if (infoOverlay) {
+        // Toggle visibility
+        if (infoOverlay.style.display === 'none' || !infoOverlay.style.display) {
+            infoOverlay.style.display = 'block';
+            infoOverlay.style.opacity = '1';
+        } else {
+            infoOverlay.style.display = 'none';
+            infoOverlay.style.opacity = '0';
         }
     }
-
+}
+ async checkAuthentication() {
+    try {
+        // Use the global makeAuthenticatedRequest if available
+        if (window.makeAuthenticatedRequest) {
+            const response = await window.makeAuthenticatedRequest(
+                `${this.getApiBaseUrl()}/auth/me`,
+                { method: 'GET' }
+            );
+            return response.ok;
+        } else {
+            // Fallback to regular fetch
+            const response = await fetch(`${this.getApiBaseUrl()}/auth/me`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token') || ''}`
+                }
+            });
+            return response.ok;
+        }
+    } catch (error) {
+        console.error('❌ Auth check error:', error);
+        return false;
+    }
+}
     // Show feedback
     showFeedback(message, type = 'success', duration = 3000) {
         // Remove existing feedback
@@ -1321,13 +1390,17 @@ frameModel() {
         if (error) error.style.display = 'flex';
     }
 
-    // Close download modal
-    closeDownloadModal() {
-        const modal = document.getElementById('downloadFormatModal');
-        if (modal) {
+   closeDownloadModal() {
+    const modal = document.getElementById('downloadFormatModal');
+    if (modal) {
+        modal.style.opacity = '0';
+        modal.style.visibility = 'hidden';
+        setTimeout(() => {
             modal.style.display = 'none';
-        }
+            modal.classList.remove('active');
+        }, 300);
     }
+}
 
     closeViewer() {
     console.log('🔙 Closing asset viewer');
