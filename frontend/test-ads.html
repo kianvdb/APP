@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdMob Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .test-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        
+        .test-button {
+            width: 100%;
+            padding: 15px 30px;
+            margin: 10px 0;
+            background: linear-gradient(135deg, #00bcd4, #00acc1);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 188, 212, 0.4);
+        }
+        
+        .test-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .success {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4CAF50;
+        }
+        
+        .error {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid #f44336;
+        }
+        
+        .info {
+            background: rgba(33, 150, 243, 0.3);
+            border: 1px solid #2196F3;
+        }
+        
+        .log-area {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎯 AdMob Test Page</h1>
+        
+        <div id="status" class="status info">
+            Ready to test AdMob integration
+        </div>
+        
+        <button id="checkAdBtn" class="test-button" onclick="checkAdAvailability()">
+            📱 Check Ad Availability
+        </button>
+        
+        <button id="testAdBtn" class="test-button" onclick="showTestAd()">
+            🎬 Show Test Rewarded Ad
+        </button>
+        
+        <button id="testInterstitialBtn" class="test-button" onclick="showInterstitialAd()">
+            📺 Show Interstitial Ad
+        </button>
+        
+        <button id="testFallbackBtn" class="test-button" onclick="showFallbackAd()">
+            ⏱️ Test Fallback Ad (Web)
+        </button>
+        
+        <div id="logArea" class="log-area">
+            <div>Console logs will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        // Log function to show messages on screen
+        function log(message, type = 'info') {
+            const logArea = document.getElementById('logArea');
+            const time = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `[${time}] ${message}`;
+            logArea.appendChild(logEntry);
+            logArea.scrollTop = logArea.scrollHeight;
+            
+            // Also log to console
+            console.log(message);
+        }
+        
+        // Update status display
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            log(message, type);
+        }
+        
+        // Check if AdMob is available
+        function checkAdAvailability() {
+            log('Checking AdMob availability...');
+            
+            // Check for Android WebView
+            if (window.AndroidAds) {
+                log('✅ AndroidAds interface found!');
+                
+                // Check if ad is ready
+                if (window.AndroidAds.isReady && window.AndroidAds.isReady()) {
+                    updateStatus('✅ Ad is loaded and ready to show!', 'success');
+                } else {
+                    updateStatus('⏳ Ad is not ready yet. Loading...', 'info');
+                    
+                    // Try to trigger ad loading
+                    if (window.AndroidAds.loadAd) {
+                        window.AndroidAds.loadAd();
+                        log('Requested ad loading...');
+                    }
+                }
+            } else {
+                log('❌ AndroidAds interface not found');
+                updateStatus('❌ Not running in Android WebView', 'error');
+                
+                // Check if we're in a browser
+                if (window.location.protocol.startsWith('http')) {
+                    log('Running in browser - native ads not available');
+                }
+            }
+        }
+        
+        // Show test rewarded ad
+        function showTestAd() {
+            updateStatus('Attempting to show rewarded ad...', 'info');
+            
+            if (window.AndroidAds && window.AndroidAds.showRewardedAd) {
+                log('Calling AndroidAds.showRewardedAd()...');
+                
+                // Set up callbacks
+                window.AdManagerAndroidCallbacks = {
+                    onAdCompleted: function() {
+                        updateStatus('🎉 Ad completed! Reward earned!', 'success');
+                        log('Reward callback received');
+                    },
+                    onAdFailed: function(error) {
+                        updateStatus(`❌ Ad failed: ${error}`, 'error');
+                        log(`Ad error: ${error}`);
+                    },
+                    onAdLoaded: function() {
+                        log('Ad loaded successfully');
+                    }
+                };
+                
+                // Show the ad
+                window.AndroidAds.showRewardedAd();
+            } else {
+                updateStatus('❌ AdMob not available in this environment', 'error');
+                log('AndroidAds interface not available');
+                
+                // Show fallback for testing
+                showFallbackAd();
+            }
+        }
+        
+        // Show interstitial ad
+        function showInterstitialAd() {
+            updateStatus('Attempting to show interstitial ad...', 'info');
+            
+            if (window.AndroidAds && window.AndroidAds.showInterstitialAd) {
+                log('Calling AndroidAds.showInterstitialAd()...');
+                window.AndroidAds.showInterstitialAd();
+            } else {
+                updateStatus('❌ Interstitial not available', 'error');
+            }
+        }
+        
+        // Fallback web ad (always works)
+        function showFallbackAd() {
+            updateStatus('Showing fallback timer ad...', 'info');
+            
+            let timeLeft = 5;
+            const btn = document.getElementById('testFallbackBtn');
+            btn.disabled = true;
+            
+            const timer = setInterval(() => {
+                if (timeLeft > 0) {
+                    btn.textContent = `⏱️ Wait ${timeLeft}s...`;
+                    timeLeft--;
+                } else {
+                    clearInterval(timer);
+                    btn.textContent = '✅ Ad Complete!';
+                    btn.disabled = false;
+                    updateStatus('✅ Fallback ad completed!', 'success');
+                    
+                    setTimeout(() => {
+                        btn.textContent = '⏱️ Test Fallback Ad (Web)';
+                    }, 2000);
+                }
+            }, 1000);
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', () => {
+            log('Page loaded');
+            log(`User Agent: ${navigator.userAgent}`);
+            log(`Platform: ${navigator.platform}`);
+            
+            // Auto-check availability
+            setTimeout(checkAdAvailability, 1000);
+        });
+        
+        // Listen for Android callbacks
+        window.addEventListener('message', (event) => {
+            log(`Received message: ${event.data}`);
+        });
+    </script>
+</body>
+</html>
