@@ -160,6 +160,9 @@ app.use((req, res, next) => {
     }
     next();
 });
+// In your main server file
+const paymentRoutes = require('./routes/payment');
+app.use('/api/payment', paymentRoutes);
 
 // Serve your homepage at the root URL
 app.get('/', (req, res) => {
