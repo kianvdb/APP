@@ -118,11 +118,22 @@
         <button id="testFallbackBtn" class="test-button" onclick="showFallbackAd()">
             ⏱️ Test Fallback Ad (Web)
         </button>
+        <!-- Add this button after the AdMob test button -->
+<button id="testUnityBtn" class="test-button" onclick="showUnityAd()">
+    🎮 Test Unity Rewarded Ad
+</button>
+
+<button id="testAdMobOnlyBtn" class="test-button" onclick="showAdMobOnly()">
+    💰 Test AdMob Only
+</button>
+
+
         
         <div id="logArea" class="log-area">
             <div>Console logs will appear here...</div>
         </div>
     </div>
+    
 
     <script>
         // Log function to show messages on screen
@@ -177,6 +188,7 @@
             }
         }
         
+        
         // Show test rewarded ad
         function showTestAd() {
             updateStatus('Attempting to show rewarded ad...', 'info');
@@ -221,6 +233,29 @@
                 updateStatus('❌ Interstitial not available', 'error');
             }
         }
+        function showUnityAd() {
+    updateStatus('Attempting to show Unity ad...', 'info');
+    
+    if (window.AndroidAds && window.AndroidAds.isUnityReady()) {
+        log('Unity Ad is ready, showing...');
+        window.AndroidAds.showUnityAdOnly();
+    } else {
+        updateStatus('❌ Unity Ad not available', 'error');
+        log('Unity Ad not ready');
+    }
+}
+
+function showAdMobOnly() {
+    updateStatus('Attempting to show AdMob ad only...', 'info');
+    
+    if (window.AndroidAds && window.AndroidAds.isAdMobReady()) {
+        log('AdMob Ad is ready, showing...');
+        window.AndroidAds.showAdMobAdOnly();
+    } else {
+        updateStatus('❌ AdMob Ad not available', 'error');
+        log('AdMob Ad not ready');
+    }
+}
         
         // Fallback web ad (always works)
         function showFallbackAd() {
