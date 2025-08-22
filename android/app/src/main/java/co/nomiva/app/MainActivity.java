@@ -9,7 +9,6 @@ import android.webkit.JavascriptInterface;
 
 import androidx.annotation.NonNull;
 import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.getcapacitor.BridgeActivity;
 import com.google.android.gms.ads.AdRequest;
@@ -34,45 +33,56 @@ public class MainActivity extends BridgeActivity {
         setupStatusBar();
 
         // Initialize AdMob
-        initializeAds();
+        MobileAds.initialize(this, initializationStatus -> {
+            loadRewardedAd();
+        });
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        // Inject JavaScript interface when WebView is definitely ready
+        getBridge().getWebView().addJavascriptInterface(new AdMobInterface(), "AndroidAds");
+
+        // Test injection
+        getBridge().getWebView().evaluateJavascript(
+                "(function() {" +
+                        "  setTimeout(function() {" +
+                        "    if (window.AndroidAds) {" +
+                        "      console.log('✅ AndroidAds is available!');" +
+                        "      // Auto-hide status bar if logged in" +
+                        "      if (window.authManager && window.authManager.isAuthenticated()) {" +
+                        "        window.AndroidAds.hideStatusBar();" +
+                        "        document.body.classList.add('status-bar-hidden');" +
+                        "      }" +
+                        "    } else {" +
+                        "      console.log('❌ AndroidAds not found');" +
+                        "    }" +
+                        "  }, 500);" +
+                        "})();",
+                null
+        );
+    }
     private void setupStatusBar() {
         // Enable edge-to-edge display
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            // Translucent dark status bar
-            getWindow().setStatusBarColor(Color.parseColor("#66000000"));
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        // Hide status bar completely for ALL users (both logged in and out)
+        getWindow().setFlags(
+                WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
+        );
+
+        // For newer Android versions
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            getWindow().getInsetsController().hide(
+                    android.view.WindowInsets.Type.statusBars()
+            );
         }
 
         // Keep screen on
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-    }
-
-    private void initializeAds() {
-        // Initialize AdMob
-        MobileAds.initialize(this, initializationStatus -> {
-            // AdMob initialized, load first ad
-            loadRewardedAd();
-
-            // Setup JavaScript interface after WebView is ready
-            getBridge().getWebView().postDelayed(this::setupJavaScriptInterface, 1000);
-        });
-    }
-
-    private void setupJavaScriptInterface() {
-        // Add JavaScript interface for AdMob
-        getBridge().getWebView().addJavascriptInterface(new AdMobInterface(), "AndroidAds");
-
-        // Notify JavaScript that interface is ready
-        getBridge().getWebView().evaluateJavascript(
-                "console.log('✅ Android AdMob interface ready'); " +
-                        "if(window.AdManager) { window.AdManager.platform = 'android-webview'; }",
-                null
-        );
     }
 
     private void loadRewardedAd() {
@@ -99,6 +109,7 @@ public class MainActivity extends BridgeActivity {
         });
     }
 
+    // JavaScript Interface for AdMob
     // JavaScript Interface for AdMob
     public class AdMobInterface {
         @JavascriptInterface
@@ -129,6 +140,35 @@ public class MainActivity extends BridgeActivity {
         @JavascriptInterface
         public boolean isReady() {
             return rewardedAd != null;
+        }
+
+        @JavascriptInterface
+        public void hideStatusBar() {
+            runOnUiThread(() -> {
+                // Hide status bar completely
+                getWindow().setFlags(
+                        WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                        WindowManager.LayoutParams.FLAG_FULLSCREEN
+                );
+
+                // For newer Android versions
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    getWindow().getInsetsController().hide(
+                            android.view.WindowInsets.Type.statusBars()
+                    );
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void showStatusBar() {
+            runOnUiThread(() -> {
+                // Show status bar again
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+                // Re-apply translucent status bar
+                setupStatusBar();
+            });
         }
     }
 }

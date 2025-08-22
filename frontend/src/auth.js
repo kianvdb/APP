@@ -804,7 +804,10 @@ async handleModalLogin(e) {
             
             // Dispatch auth state change event
             this.dispatchAuthStateChange();
-            
+            // Hide status bar for logged-in user
+if (window.AppNavigation && window.AppNavigation.updateStatusBarVisibility) {
+    window.AppNavigation.updateStatusBarVisibility(true);
+}
             // Wait a moment to ensure auth state is updated
             await new Promise(resolve => setTimeout(resolve, 500));
             
@@ -893,7 +896,11 @@ async handleModalRegister(e) {
             
             // Dispatch auth state change event
             this.dispatchAuthStateChange();
-            
+            // Hide status bar for newly registered user
+if (window.AppNavigation && window.AppNavigation.updateStatusBarVisibility) {
+    window.AppNavigation.updateStatusBarVisibility(true);
+}
+
             // Wait a moment to ensure auth state is updated  
             await new Promise(resolve => setTimeout(resolve, 500));
             
@@ -934,43 +941,80 @@ async handleModalRegister(e) {
 }
 
 async logout() {
-        try {
-            await this.makeAuthenticatedRequest(`${this.apiBaseUrl}/auth/logout`, {
-                method: 'POST'
-            });
-
-            // Clear stored token
-            localStorage.removeItem('authToken');
-            
-            this.user = null;
-            this.currentUser = null;
-            this.updateUI();
-            console.log('✅ User logged out');
-            
-            this.dispatchAuthStateChange();
-            
-            // Clear any stored auth data
-            localStorage.removeItem('dalma_user');
-            localStorage.removeItem('dalma_redirectAfterLogin');
-            sessionStorage.removeItem('redirectAfterLogin');
-            
-            // Navigate to home section instead of page reload
-            if (window.AppNavigation) {
-                window.AppNavigation.navigateToSection('home');
+    try {
+        // Call logout endpoint
+        const response = await fetch(`${this.apiBaseUrl}/auth/logout`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
             }
-            
-            console.log('🏠 Navigated to home section after logout');
-            
-        } catch (error) {
-            console.error('❌ Logout error:', error);
-            // Even if server logout fails, clear local session
-            localStorage.removeItem('authToken');
-            this.user = null;
-            this.currentUser = null;
-            this.updateUI();
-            this.dispatchAuthStateChange();
+        });
+
+        // Clear stored auth data
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('dalma_user');
+        sessionStorage.removeItem('authToken');
+        
+        // Clear user data
+        this.user = null;
+        this.currentUser = null;
+        
+        // Show status bar for logged-out user
+        if (window.AppNavigation && window.AppNavigation.updateStatusBarVisibility) {
+            window.AppNavigation.updateStatusBarVisibility(false);
         }
+        
+        // Update UI
+        this.updateUI();
+        
+        // Dispatch auth state change
+        this.dispatchAuthStateChange();
+        
+        // Navigate to assets section
+        if (window.AppNavigation) {
+            // Update navigation labels instead of updateUIForAuthState
+            window.AppNavigation.updateAccountNavLabel(null);
+            window.AppNavigation.updateTopBarAccountButton();
+            window.AppNavigation.navigateToSection('assets');
+        }
+        
+        console.log('✅ User logged out successfully');
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Logout error:', error);
+        
+        // Even if server logout fails, clear local data
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('dalma_user');
+        sessionStorage.removeItem('authToken');
+        
+        this.user = null;
+        this.currentUser = null;
+        
+        // Show status bar
+        if (window.AppNavigation && window.AppNavigation.updateStatusBarVisibility) {
+            window.AppNavigation.updateStatusBarVisibility(false);
+        }
+        
+        // Update UI
+        this.updateUI();
+        
+        // Update navigation labels
+        if (window.AppNavigation) {
+            window.AppNavigation.updateAccountNavLabel(null);
+            window.AppNavigation.updateTopBarAccountButton();
+        }
+        
+        // Dispatch auth state change
+        this.dispatchAuthStateChange();
+        
+        return { success: false, error: error.message };
     }
+}
     // Update UI based on auth state
     updateUI() {
         this.updateAccountDropdown();

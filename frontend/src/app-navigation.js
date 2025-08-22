@@ -35,6 +35,25 @@ class AppNavigation {
         // REMOVED preserveState - we'll reset everything
         console.log('🚀 AppNavigation initialized with public assets access');
     }
+    // Status bar control based on login state
+updateStatusBarVisibility(isLoggedIn) {
+    // Only works in Android WebView
+    if (window.AndroidAds) {
+        if (isLoggedIn) {
+            // Hide status bar for logged-in users
+            if (window.AndroidAds.hideStatusBar) {
+                window.AndroidAds.hideStatusBar();
+            }
+            document.body.classList.add('status-bar-hidden');
+        } else {
+            // Show status bar for logged-out users
+            if (window.AndroidAds.showStatusBar) {
+                window.AndroidAds.showStatusBar();
+            }
+            document.body.classList.remove('status-bar-hidden');
+        }
+    }
+}
 
     resetSectionState(sectionName) {
         console.log(`🔄 Resetting ${sectionName} section state`);
@@ -750,16 +769,23 @@ if (window.MobileAssetViewer && !window.MobileAssetViewer.viewerInitialized) {
         this.showSection(sectionToLoad, true); // Skip animation for initial load
     });
     
-    // Check authentication and update navigation labels
-    const isAuthenticated = window.authManager?.isAuthenticated();
-    if (isAuthenticated) {
-        const userData = window.authManager?.currentUser || {};
-        this.updateAccountNavLabel(userData.email);
-        this.updateTopBarAccountButton();
-    } else {
-        this.updateAccountNavLabel(null);
-        this.updateTopBarAccountButton();
-    }
+   // Check authentication and update navigation labels
+const isAuthenticated = window.authManager?.isAuthenticated();
+
+// Update status bar based on auth state
+this.updateStatusBarVisibility(isAuthenticated);
+
+if (isAuthenticated) {
+    const userData = window.authManager?.currentUser || {};
+    this.updateAccountNavLabel(userData.email);
+    this.updateTopBarAccountButton();
+    
+    // Fetch and display liked models count
+    this.updateLikedCount();
+} else {
+    this.updateAccountNavLabel(null);
+    this.updateTopBarAccountButton();
+}
     
     // Set up account button click handler
     const accountBtn = document.querySelector('.header-actions .account-btn');
