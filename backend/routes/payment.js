@@ -7,6 +7,7 @@ const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { authenticateToken } = require('../middleware/auth');
 
 // OPTIMIZED PRICING STRATEGY
 // Based on €0.18 cost per generation
@@ -234,30 +235,145 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), async 
     res.json({ received: true });
 });
 
-// Confirm payment and return success (for frontend confirmation)
 router.post('/confirm-payment', authenticateUser, async (req, res) => {
     try {
-        const { paymentIntentId } = req.body;
-        
-        // Retrieve payment intent from Stripe to verify
+        const { paymentIntentId, tokens: requestedTokens } = req.body;
+        const userId = req.user._id;
+
+        console.log('📦 Confirm payment request:', {
+            paymentIntentId,
+            tokens: requestedTokens,
+            userId
+        });
+
+        // Retrieve the payment intent from Stripe
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-        
+        console.log('✅ Payment intent retrieved:', paymentIntent.status);
+
         if (paymentIntent.status !== 'succeeded') {
-            return res.status(400).json({ error: 'Payment not completed' });
+            return res.status(400).json({ 
+                error: 'Payment not completed',
+                status: paymentIntent.status 
+            });
         }
-        
-        // Get updated user data
-        const user = await User.findById(req.user._id);
-        
+
+        // Get tier info from metadata
+        const tierId = paymentIntent.metadata.tierId;
+        const metadataTokens = parseInt(paymentIntent.metadata.tokens);
+        const finalTokens = requestedTokens || metadataTokens;
+
+        console.log('💰 Processing tokens:', {
+            metadataTokens,
+            requestedTokens,
+            finalTokens
+        });
+
+        // Find user - try with the new model first
+        let user;
+        try {
+            user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+        } catch (modelError) {
+            console.error('Model error, using direct MongoDB:', modelError.message);
+            // Fall back to direct MongoDB if model fails
+            const mongoose = require('mongoose');
+            const db = mongoose.connection.db;
+            const collection = db.collection('users');
+            
+            user = await collection.findOne({ _id: new mongoose.Types.ObjectId(userId) });
+            if (!user) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+        }
+
+        // Calculate profit (82% after Stripe's ~3% + $0.30 fee)
+        const amount = paymentIntent.amount / 100; // Convert from cents
+        const stripeFee = (amount * 0.029) + 0.30;
+        const netAmount = amount - stripeFee;
+        const profit = Math.round(netAmount * 0.82 * 100) / 100;
+
+        // Create transaction object
+        const transaction = {
+            id: `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            date: new Date(),
+            type: 'purchase',
+            tierId: tierId,
+            tokens: finalTokens,
+            amount: amount,
+            profit: profit,
+            status: 'completed',
+            stripePaymentIntentId: paymentIntentId,
+            paymentMethod: paymentIntent.payment_method_types[0] || 'card'
+        };
+
+        // Try to save with Mongoose first
+        let updateSuccess = false;
+        try {
+            if (user.save) { // It's a Mongoose document
+                user.transactions = user.transactions || [];
+                user.transactions.push(transaction);
+                user.tokens = (user.tokens || 0) + finalTokens;
+                user.totalSpent = (user.totalSpent || 0) + amount;
+                user.lastTokenPurchase = new Date();
+                await user.save();
+                updateSuccess = true;
+                console.log('✅ Saved with Mongoose model');
+            }
+        } catch (saveError) {
+            console.error('Mongoose save failed:', saveError.message);
+        }
+
+        // If Mongoose failed, use direct MongoDB update
+        if (!updateSuccess) {
+            const mongoose = require('mongoose');
+            const db = mongoose.connection.db;
+            const collection = db.collection('users');
+            
+            const updateResult = await collection.updateOne(
+                { _id: new mongoose.Types.ObjectId(userId) },
+                {
+                    $push: { transactions: transaction },
+                    $inc: { 
+                        tokens: finalTokens,
+                        totalSpent: amount 
+                    },
+                    $set: { lastTokenPurchase: new Date() }
+                }
+            );
+
+            if (updateResult.modifiedCount === 0) {
+                throw new Error('Failed to update user in database');
+            }
+            
+            console.log('✅ Updated with direct MongoDB');
+            
+            // Fetch updated user
+            user = await collection.findOne(
+                { _id: new mongoose.Types.ObjectId(userId) },
+                { projection: { password: 0 } }
+            );
+        }
+
+        console.log('✅ Payment confirmed successfully');
+        console.log('💰 User tokens updated:', user.tokens);
+
         res.json({
             success: true,
-            newBalance: user.tokens,
-            message: 'Tokens added successfully!'
+            tokens: user.tokens,
+            transaction: transaction,
+            message: `Successfully added ${finalTokens} tokens`
         });
-        
+
     } catch (error) {
-        console.error('Error confirming payment:', error);
-        res.status(500).json({ error: 'Failed to confirm payment' });
+        console.error('❌ Error confirming payment:', error);
+        console.error('Stack trace:', error.stack);
+        
+        res.status(500).json({ 
+            error: 'Failed to confirm payment',
+            details: error.message
+        });
     }
 });
 

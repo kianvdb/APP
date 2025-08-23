@@ -130,58 +130,72 @@ console.log('🔧 Window APP_CONFIG:', window.APP_CONFIG);
         return fetch(url, { ...defaultOptions, ...options });
     }
   async checkAuthStatus() {
-        try {
-            console.log('🔍 Checking authentication status...');
-            console.log('🍪 Document cookies:', document.cookie);
-            
-            const testUrl = `${this.apiBaseUrl}/auth/me`;
-            console.log('🎯 FULL API URL being called:', testUrl);
-            console.log('📍 Window location:', window.location.hostname);
-            console.log('📱 Is Capacitor?', this.isCapacitor);
-            console.log('🔧 API Base URL from config:', this.apiBaseUrl);
-            
-            const response = await this.makeAuthenticatedRequest(`${this.apiBaseUrl}/auth/me`, {
-                method: 'GET'
-            });
+    try {
+        console.log('🔍 Checking authentication status...');
+        
+        const response = await this.makeAuthenticatedRequest(`${this.apiBaseUrl}/auth/me`, {
+            method: 'GET'
+        });
 
-            console.log('📡 Auth check response status:', response.status);
+        console.log('📡 Auth check response status:', response.status);
 
-            if (response.ok) {
-                const data = await response.json();
-                this.user = data.user;
-                this.currentUser = data.user;
-                this.authCheckComplete = true;
-                this.updateUI();
-                console.log('✅ User authenticated:', this.user.username);
-                
-                this.dispatchAuthStateChange();
-                return true;
-            } else {
-                if (response.status !== 401) {
-                    const errorData = await response.json().catch(() => ({}));
-                    console.log('❌ Auth check failed:', errorData);
-                }
-                this.user = null;
-                this.currentUser = null;
-                this.authCheckComplete = true;
-                this.updateUI();
-                console.log('ℹ️ User not authenticated');
-                
-                this.dispatchAuthStateChange();
-                return false;
+        if (response.ok) {
+            const data = await response.json();
+            
+            // IMPORTANT: Ensure tokens field exists
+            this.user = {
+                ...data.user,
+                tokens: data.user.tokens !== undefined ? data.user.tokens : 1
+            };
+            this.currentUser = this.user;
+            this.authCheckComplete = true;
+            
+            console.log('✅ User authenticated:', this.user.username, 'Tokens:', this.user.tokens);
+            
+            // CRITICAL: Sync with monetization system on auth check
+            if (window.enhancedMonetization || window.EnhancedMonetization?.instance) {
+                const monetization = window.enhancedMonetization || window.EnhancedMonetization.instance;
+                monetization.userTokens = this.user.tokens;
+                monetization.userId = this.user.id;
+                monetization.isAdmin = this.user.isAdmin;
+                monetization.updateTokensDisplay();
+                console.log('💰 Auth check: Synced tokens to monetization:', this.user.tokens);
             }
-        } catch (error) {
-            console.error('❌ Auth check error:', error);
-            console.error('🔍 Error details:', error.message, error.stack);
+            
+            // Update AppNavigation
+            if (window.AppNavigation && window.AppNavigation.updateAccountStats) {
+                window.AppNavigation.updateAccountStats(this.user);
+            }
+            
+            this.updateUI();
+            this.dispatchAuthStateChange();
+            return true;
+        } else {
             this.user = null;
             this.currentUser = null;
             this.authCheckComplete = true;
-            this.updateUI();
             
+            // Reset monetization for logged out user
+            if (window.enhancedMonetization || window.EnhancedMonetization?.instance) {
+                const monetization = window.enhancedMonetization || window.EnhancedMonetization.instance;
+                monetization.loadLocalTokens(); // Load from localStorage for non-auth users
+                monetization.updateTokensDisplay();
+            }
+            
+            this.updateUI();
             this.dispatchAuthStateChange();
             return false;
         }
+    } catch (error) {
+        console.error('❌ Auth check error:', error);
+        this.user = null;
+        this.currentUser = null;
+        this.authCheckComplete = true;
+        this.updateUI();
+        this.dispatchAuthStateChange();
+        return false;
     }
+}
 
     // Dispatch auth state change event
     dispatchAuthStateChange() {
@@ -763,8 +777,7 @@ console.log('🔧 Window APP_CONFIG:', window.APP_CONFIG);
         }
     }
 
-    // Handle modal login
-async handleModalLogin(e) {
+    async handleModalLogin(e) {
     e.preventDefault();
     
     const username = document.getElementById('premiumLoginUsername').value.trim();
@@ -793,37 +806,54 @@ async handleModalLogin(e) {
                 console.log('🔑 Auth token stored for mobile/Capacitor');
             }
             
-            this.user = data.user;
-            this.currentUser = data.user;
+            // IMPORTANT FIX: Ensure tokens field exists and sync with monetization
+            this.user = {
+                ...data.user,
+                tokens: data.user.tokens !== undefined ? data.user.tokens : 1
+            };
+            this.currentUser = this.user;
+            
+            console.log('👤 User logged in with tokens:', this.user.tokens);
+            
+            // CRITICAL: Sync tokens with monetization system
+            if (window.enhancedMonetization || window.EnhancedMonetization?.instance) {
+                const monetization = window.enhancedMonetization || window.EnhancedMonetization.instance;
+                monetization.userTokens = this.user.tokens;
+                monetization.userId = this.user.id;
+                monetization.isAdmin = this.user.isAdmin;
+                monetization.updateTokensDisplay();
+                console.log('💰 Synced tokens to monetization system:', this.user.tokens);
+            }
+            
+            // Update AppNavigation if it exists
+            if (window.AppNavigation && window.AppNavigation.updateAccountStats) {
+                window.AppNavigation.updateAccountStats(this.user);
+            }
+            
             this.updateUI();
             
-            // Check if we have a redirect to show appropriate message
+            // Rest of your existing code...
             const redirectUrl = localStorage.getItem('dalma_redirectAfterLogin');
             const redirectMessage = redirectUrl ? 'Welcome back! Loading...' : 'Welcome back!';
             this.showModalMessage('premiumLoginMessage', redirectMessage, 'success');
             
-            // Dispatch auth state change event
             this.dispatchAuthStateChange();
-            // Hide status bar for logged-in user
-if (window.AppNavigation && window.AppNavigation.updateStatusBarVisibility) {
-    window.AppNavigation.updateStatusBarVisibility(true);
-}
-            // Wait a moment to ensure auth state is updated
+            
+            if (window.AppNavigation && window.AppNavigation.updateStatusBarVisibility) {
+                window.AppNavigation.updateStatusBarVisibility(true);
+            }
+            
             await new Promise(resolve => setTimeout(resolve, 500));
             
             this.hideLoginModal();
             document.getElementById('premium-login-form').reset();
             
-            // Handle redirect WITHOUT page reload
+            // Handle redirect
             const loginRedirectUrl = localStorage.getItem('dalma_redirectAfterLogin');
-            console.log('🔄 Checking redirect URL:', loginRedirectUrl);
-            
             if (loginRedirectUrl) {
                 localStorage.removeItem('dalma_redirectAfterLogin');
                 
                 if (['generate', 'assets', 'account', 'about'].includes(loginRedirectUrl)) {
-                    console.log('🚀 In-app redirect to section:', loginRedirectUrl);
-                    // Use in-app navigation instead of page reload
                     setTimeout(() => {
                         if (window.AppNavigation) {
                             window.AppNavigation.navigateToSection(loginRedirectUrl);
@@ -833,8 +863,7 @@ if (window.AppNavigation && window.AppNavigation.updateStatusBarVisibility) {
                 }
             }
             
-            // No redirect needed - just update UI
-            console.log('✅ Login complete, staying on current section');
+            console.log('✅ Login complete, tokens synced');
             
         } else {
             this.showModalMessage('premiumLoginMessage', data.error || 'Login failed', 'error');
@@ -847,7 +876,7 @@ if (window.AppNavigation && window.AppNavigation.updateStatusBarVisibility) {
     }
 }
 
-   // Handle modal register
+// FIX 2: Update handleModalRegister to sync tokens properly
 async handleModalRegister(e) {
     e.preventDefault();
     
@@ -873,7 +902,7 @@ async handleModalRegister(e) {
     this.setModalLoading('premium-register-form', true);
     this.clearModalMessages();
 
-   try {
+    try {
         const response = await this.makeAuthenticatedRequest(`${this.apiBaseUrl}/auth/register`, {
             method: 'POST',
             body: JSON.stringify({ username, email, password })
@@ -888,35 +917,50 @@ async handleModalRegister(e) {
                 console.log('🔑 Auth token stored for mobile/Capacitor');
             }
             
-            this.user = data.user;
-            this.currentUser = data.user;
-            // ... rest of the success handling (keep as is)
+            // IMPORTANT FIX: Ensure tokens field exists (new users get 1 token)
+            this.user = {
+                ...data.user,
+                tokens: data.user.tokens !== undefined ? data.user.tokens : 1
+            };
+            this.currentUser = this.user;
+            
+            console.log('👤 New user registered with tokens:', this.user.tokens);
+            
+            // CRITICAL: Sync tokens with monetization system
+            if (window.enhancedMonetization || window.EnhancedMonetization?.instance) {
+                const monetization = window.enhancedMonetization || window.EnhancedMonetization.instance;
+                monetization.userTokens = this.user.tokens;
+                monetization.userId = this.user.id;
+                monetization.isAdmin = this.user.isAdmin || false;
+                monetization.updateTokensDisplay();
+                console.log('💰 Synced tokens to monetization system:', this.user.tokens);
+            }
+            
+            // Update AppNavigation if it exists
+            if (window.AppNavigation && window.AppNavigation.updateAccountStats) {
+                window.AppNavigation.updateAccountStats(this.user);
+            }
+            
             this.updateUI();
             this.showModalMessage('premiumRegisterMessage', 'Account created! Welcome to Dalma AI!', 'success');
             
-            // Dispatch auth state change event
             this.dispatchAuthStateChange();
-            // Hide status bar for newly registered user
-if (window.AppNavigation && window.AppNavigation.updateStatusBarVisibility) {
-    window.AppNavigation.updateStatusBarVisibility(true);
-}
+            
+            if (window.AppNavigation && window.AppNavigation.updateStatusBarVisibility) {
+                window.AppNavigation.updateStatusBarVisibility(true);
+            }
 
-            // Wait a moment to ensure auth state is updated  
             await new Promise(resolve => setTimeout(resolve, 500));
             
             this.hideLoginModal();
             document.getElementById('premium-register-form').reset();
             
-            // Handle redirect WITHOUT page reload
+            // Handle redirect
             const registerRedirectUrl = localStorage.getItem('dalma_redirectAfterLogin');
-            console.log('🔄 Checking redirect URL after register:', registerRedirectUrl);
-            
             if (registerRedirectUrl) {
                 localStorage.removeItem('dalma_redirectAfterLogin');
                 
                 if (['generate', 'assets', 'account', 'about'].includes(registerRedirectUrl)) {
-                    console.log('🚀 In-app redirect to section:', registerRedirectUrl);
-                    // Use in-app navigation instead of page reload
                     setTimeout(() => {
                         if (window.AppNavigation) {
                             window.AppNavigation.navigateToSection(registerRedirectUrl);
@@ -926,8 +970,7 @@ if (window.AppNavigation && window.AppNavigation.updateStatusBarVisibility) {
                 }
             }
             
-            // No redirect needed - just update UI
-            console.log('✅ Registration complete, staying on current section');
+            console.log('✅ Registration complete, tokens synced');
             
         } else {
             this.showModalMessage('premiumRegisterMessage', data.error || 'Registration failed', 'error');

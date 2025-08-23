@@ -128,48 +128,55 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Email already exists' });
         }
 
-        // Create user
-        const user = new User({
-            username,
-            email,
-            password,
-            credits: 2, // Give initial credits
-     isAdmin: (await User.countDocuments()) === 0 
-        });
+       const user = new User({
+    username,
+    email,
+    password,
+    tokens: 1, // Use 'tokens' not 'credits', and give 1 free token as per model default
+    isAdmin: (await User.countDocuments()) === 0 
+});
 
-        await user.save();
+await user.save();
 
-        // Generate token
-        const token = generateToken(user._id, user.username, user.isAdmin);
+// Generate token
+const token = generateToken(user._id, user.username, user.isAdmin);
 
-        // Set cookie for web compatibility
-        const isProduction = process.env.NODE_ENV === 'production';
-        const cookieOptions = {
-            httpOnly: true,
-            secure: isProduction,
-            sameSite: isProduction ? 'strict' : 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-            path: '/'
-        };
-        
-        res.cookie('token', token, cookieOptions);
-        console.log('🍪 Cookie set with token');
+// IMPORTANT: Clear any existing cookies first to prevent session conflicts
+res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    path: '/'
+});
 
-        console.log('✅ User registered successfully:', user.username);
+// Set new cookie
+const isProduction = process.env.NODE_ENV === 'production';
+const cookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'strict' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: '/'
+};
 
-        // Return token in response body for mobile
-        res.status(201).json({
-            success: true,
-            message: 'User registered successfully',
-            user: {
-                id: user._id,
-                username: user.username,
-                email: user.email,
-                isAdmin: user.isAdmin,
-                credits: user.credits || 2
-            },
-            token: token // Include token in response
-        });
+res.cookie('token', token, cookieOptions);
+console.log('🍪 Cookie set with token');
+
+console.log('✅ User registered successfully:', user.username);
+
+// Return response with CONSISTENT field names
+res.status(201).json({
+    success: true,
+    message: 'User registered successfully',
+    user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        tokens: user.tokens || 1  // Use 'tokens' consistently
+    },
+    token: token
+});
 
     } catch (error) {
         console.error('❌ Registration error:', error);
@@ -181,7 +188,7 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// POST /api/auth/login
+// POST /api/auth/login - CORRECTED VERSION
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -204,10 +211,18 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid username or password' });
         }
 
+        // NOW clear any existing cookies (after validating user)
+        res.clearCookie('token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+            path: '/'
+        });
+
         // Generate token
         const token = generateToken(user._id, user.username, user.isAdmin);
 
-        // Set cookie for web compatibility
+        // Set new cookie
         const isProduction = process.env.NODE_ENV === 'production';
         const cookieOptions = {
             httpOnly: true,
@@ -222,7 +237,7 @@ router.post('/login', async (req, res) => {
 
         console.log('✅ User logged in successfully:', user.username);
 
-        // Return token in response body for mobile
+        // Return token in response body for mobile - USE TOKENS not credits!
         res.json({
             success: true,
             message: 'Login successful',
@@ -231,7 +246,7 @@ router.post('/login', async (req, res) => {
                 username: user.username,
                 email: user.email,
                 isAdmin: user.isAdmin,
-                credits: user.credits || 2
+                tokens: user.tokens || 1  // FIXED: Use 'tokens' consistently, not 'credits'
             },
             token: token // Include token in response
         });
@@ -242,9 +257,8 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// POST /api/auth/logout
 router.post('/logout', (req, res) => {
-    // Clear the cookie for web
+    // Clear ALL possible cookie variations to ensure clean logout
     const isProduction = process.env.NODE_ENV === 'production';
     
     const cookieOptions = {
@@ -254,61 +268,46 @@ router.post('/logout', (req, res) => {
         path: '/'
     };
     
+    // Clear both possible cookie names
     res.clearCookie('token', cookieOptions);
+    res.clearCookie('dalma_auth_token', cookieOptions); // Legacy cookie name
     
-    // For mobile, client should remove token from storage
+    // Clear session if exists
+    if (req.session) {
+        req.session.destroy();
+    }
+    
     res.json({ 
         success: true,
         message: 'Logged out successfully' 
     });
     
-    console.log('✅ User logged out');
+    console.log('✅ User logged out and all cookies cleared');
 });
 
 // GET /api/auth/me - Get current user
 router.get('/me', authMiddleware, async (req, res) => {
     try {
-        console.log('👤 /auth/me called for userId:', req.user?.userId);
-        
-        // Find user without populate first to avoid reference errors
         const user = await User.findById(req.user.userId);
         
         if (!user) {
-            console.log('❌ User not found for ID:', req.user.userId);
             return res.status(404).json({ error: 'User not found' });
-        }
-
-        // Try to populate likedAssets if they exist, but don't fail if there's an error
-        let populatedUser = user;
-        try {
-            // Only populate if likedAssets field exists and has items
-            if (user.likedAssets && user.likedAssets.length > 0) {
-                populatedUser = await User.findById(req.user.userId).populate({
-                    path: 'likedAssets',
-                    match: { isActive: true },
-                    options: { sort: { createdAt: -1 } }
-                });
-            }
-        } catch (populateError) {
-            console.warn('⚠️ Could not populate likedAssets:', populateError.message);
-            // Continue with unpopulated user
         }
 
         res.json({
             user: {
-                id: populatedUser._id,
-                username: populatedUser.username,
-                email: populatedUser.email,
-                isAdmin: populatedUser.isAdmin,
-                credits: populatedUser.credits || 0,
-                likedAssets: populatedUser.likedAssets || [],
-                generatedModels: populatedUser.generatedModels || []
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                isAdmin: user.isAdmin,
+                tokens: user.tokens || 1,  // ALWAYS return tokens, default to 1
+                likedAssets: user.likedAssets || [],
+                generatedModels: user.generatedModels || []
             }
         });
         
     } catch (error) {
         console.error('❌ Get user error:', error);
-        console.error('📍 Stack trace:', error.stack);
         res.status(500).json({ error: 'Failed to get user data' });
     }
 });

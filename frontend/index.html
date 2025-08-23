@@ -171,7 +171,7 @@
    <!-- Scripts -->
 <script src="src/auth.js"></script>
 <script src="src/local-storage-manager.js"></script>
-<script src="src/monetization.js"></script>
+<script src="src/enhanced-monitization.js"></script>
 <script src="src/mobile-3d-viewer.js"></script>
 <script src="src/mobile-asset-viewer.js"></script>
 <script src="src/generate-controller.js"></script>
@@ -181,6 +181,106 @@
 
 <!-- Initialize the app -->
 <script>
+    // Add this to your index.html or a separate initialization file
+// This ensures tokens are properly synced on app start
+
+async function initializeTokenSystem() {
+    console.log('🚀 Initializing token sync system...');
+    
+    // Wait for auth manager to be ready
+    await new Promise((resolve) => {
+        if (window.authManager?.isInitialized) {
+            resolve();
+        } else {
+            const checkInterval = setInterval(() => {
+                if (window.authManager?.isInitialized) {
+                    clearInterval(checkInterval);
+                    resolve();
+                }
+            }, 100);
+            
+            // Timeout after 5 seconds
+            setTimeout(() => {
+                clearInterval(checkInterval);
+                resolve();
+            }, 5000);
+        }
+    });
+    
+    // Initialize monetization system
+    if (window.EnhancedMonetization) {
+        const monetization = window.EnhancedMonetization.init();
+        window.enhancedMonetization = monetization;
+        
+        // If authenticated, sync tokens from backend
+        if (window.authManager?.isAuthenticated()) {
+            console.log('🔄 User authenticated, syncing tokens...');
+            
+            // Get fresh token data from backend
+            try {
+                const response = await window.makeAuthenticatedRequest(
+                    `${monetization.getApiBaseUrl()}/payment/user-tokens`,
+                    { method: 'GET' }
+                );
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Update all systems with the backend token count
+                    const tokens = data.tokens || 1;
+                    
+                    // Update monetization system
+                    monetization.userTokens = tokens;
+                    monetization.userId = data.id;
+                    monetization.isAdmin = data.isAdmin || false;
+                    
+                    // Update auth manager
+                    if (window.authManager.user) {
+                        window.authManager.user.tokens = tokens;
+                    }
+                    if (window.authManager.currentUser) {
+                        window.authManager.currentUser.tokens = tokens;
+                    }
+                    
+                    // Force update all displays
+                    monetization.forceUpdateAllTokenDisplays();
+                    
+                    console.log('✅ Token sync complete. Current balance:', tokens);
+                }
+            } catch (error) {
+                console.error('Error syncing tokens:', error);
+            }
+        }
+        
+        // Start periodic sync
+        monetization.startPeriodicSync();
+    }
+    
+    // Setup global token update listener
+    window.addEventListener('authStateChange', async (event) => {
+        if (event.detail.authenticated && window.enhancedMonetization) {
+            // Wait a moment for auth to stabilize
+            setTimeout(() => {
+                window.enhancedMonetization.syncTokensFromBackend();
+            }, 500);
+        }
+    });
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeTokenSystem);
+} else {
+    initializeTokenSystem();
+}
+
+// Also reinitialize on page visibility change (when app comes back to foreground)
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && window.authManager?.isAuthenticated() && window.enhancedMonetization) {
+        console.log('📱 App became visible, syncing tokens...');
+        window.enhancedMonetization.syncTokensFromBackend();
+    }
+});
     // Add CSS fix for hero content and 3D interaction
     const styleSheet = document.createElement('style');
     styleSheet.textContent = `
@@ -565,6 +665,87 @@
     window.debugShowLikedModels = () => window.AppNavigation?.showLikedModels();
     
     console.log('🎯 Mobile app with public assets gallery initialized');
+    window.TokenSyncManager = {
+    syncTokens: async function() {
+        console.log('🔄 Starting token sync...');
+        
+        if (!window.authManager?.isAuthenticated()) {
+            console.log('❌ User not authenticated, skipping sync');
+            return;
+        }
+        
+        try {
+            // Get fresh data from backend
+            const response = await window.makeAuthenticatedRequest(
+                `${window.enhancedMonetization?.getApiBaseUrl() || '/api'}/payment/user-tokens`,
+                { method: 'GET' }
+            );
+            
+            if (response.ok) {
+                const data = await response.json();
+                const tokens = data.tokens || 1;
+                
+                console.log('✅ Backend tokens:', tokens);
+                
+                // Update ALL systems
+                if (window.enhancedMonetization) {
+                    window.enhancedMonetization.userTokens = tokens;
+                    window.enhancedMonetization.forceUpdateAllTokenDisplays();
+                }
+                
+                if (window.authManager) {
+                    if (window.authManager.user) window.authManager.user.tokens = tokens;
+                    if (window.authManager.currentUser) window.authManager.currentUser.tokens = tokens;
+                }
+                
+                // Update header
+                const headerCredits = document.getElementById('creditsCount');
+                if (headerCredits) headerCredits.textContent = tokens;
+                
+                // Update account section
+                const accountCredits = document.getElementById('accountCreditsCount');
+                if (accountCredits) accountCredits.textContent = tokens;
+                
+                console.log('✅ All displays updated to:', tokens);
+            }
+        } catch (error) {
+            console.error('Token sync error:', error);
+        }
+    }
+};
+
+// Sync on page load
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        window.TokenSyncManager.syncTokens();
+    }, 1500);
+});
+
+// Sync when auth state changes
+window.addEventListener('authStateChange', (event) => {
+    if (event.detail.authenticated) {
+        setTimeout(() => {
+            window.TokenSyncManager.syncTokens();
+        }, 500);
+    }
+});
+
+// Sync when app becomes visible (mobile)
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && window.authManager?.isAuthenticated()) {
+        window.TokenSyncManager.syncTokens();
+    }
+});
+
+// Debug helper
+window.debugTokens = () => {
+    console.log('💰 Token Debug Info:');
+    console.log('- Enhanced Monetization:', window.enhancedMonetization?.userTokens);
+    console.log('- Auth Manager user:', window.authManager?.user?.tokens);
+    console.log('- Auth Manager current:', window.authManager?.currentUser?.tokens);
+    console.log('- Header display:', document.getElementById('creditsCount')?.textContent);
+    console.log('- Account display:', document.getElementById('accountCreditsCount')?.textContent);
+};
 </script>
     
 </body>

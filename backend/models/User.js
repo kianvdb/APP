@@ -2,6 +2,22 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+// Define the transaction subdocument schema
+const transactionSchema = new mongoose.Schema({
+    id: String,
+    date: Date,
+    type: String,
+    tierId: String,
+    tokens: Number,
+    amount: Number,
+    status: String,
+    stripePaymentIntentId: String,
+    paymentMethod: String,
+    profit: Number,
+    reason: String,
+    grantedBy: String
+}, { _id: false });
+
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
@@ -41,12 +57,10 @@ const userSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
-    }, // <-- Added comma here
-    
-    // NEW TOKEN SYSTEM FIELDS
+    },
     tokens: {
         type: Number,
-        default: 1, // New users get 1 free token
+        default: 1,
         min: 0
     },
     role: {
@@ -54,20 +68,7 @@ const userSchema = new mongoose.Schema({
         enum: ['user', 'premium', 'admin'],
         default: 'user'
     },
-    transactions: [{
-        id: String,
-        date: Date,
-        type: String, // 'purchase', 'admin_grant', 'refund', 'bonus'
-        tierId: String,
-        tokens: Number,
-        amount: Number,
-        status: String,
-        stripePaymentIntentId: String,
-        paymentMethod: String,
-        profit: Number,
-        reason: String, // For admin grants
-        grantedBy: String // Admin email who granted tokens
-    }],
+    transactions: [transactionSchema], // Using the subdocument schema
     totalSpent: {
         type: Number,
         default: 0
@@ -90,12 +91,12 @@ const userSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// Hash password before saving
+// Hash password before saving (ONLY ONCE)
 userSchema.pre('save', async function(next) {
     if (!this.isModified('password')) return next();
     
     try {
-        const salt = await bcrypt.genSalt(10);
+        const salt = await bcrypt.genSalt(12);
         this.password = await bcrypt.hash(this.password, salt);
         
         // Check if user should be admin based on email
@@ -112,7 +113,7 @@ userSchema.pre('save', async function(next) {
     }
 });
 
-// Method to compare passwords
+// INSTANCE METHODS
 userSchema.methods.comparePassword = async function(candidatePassword) {
     try {
         return await bcrypt.compare(candidatePassword, this.password);
@@ -121,15 +122,13 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
     }
 };
 
-// Method to check if user has enough tokens
 userSchema.methods.hasEnoughTokens = function(required = 1) {
     return this.role === 'admin' || this.tokens >= required;
 };
 
-// Method to consume tokens
 userSchema.methods.consumeTokens = async function(amount = 1) {
     if (this.role === 'admin') {
-        return true; // Admins have unlimited tokens
+        return true;
     }
     
     if (this.tokens < amount) {
@@ -147,7 +146,6 @@ userSchema.methods.consumeTokens = async function(amount = 1) {
     return true;
 };
 
-// Method to add tokens (from purchase)
 userSchema.methods.addTokens = async function(amount, transactionDetails) {
     this.tokens += amount;
     
@@ -163,36 +161,14 @@ userSchema.methods.addTokens = async function(amount, transactionDetails) {
     return this.tokens;
 };
 
-const User = mongoose.model('User', userSchema);
-
-module.exports = User;
-
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-    if (!this.isModified('password')) return next();
-    
-    try {
-        const salt = await bcrypt.genSalt(12);
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Instance methods
-userSchema.methods.comparePassword = async function(candidatePassword) {
-    return await bcrypt.compare(candidatePassword, this.password);
-};
-
 userSchema.methods.toggleLikedAsset = function(assetId) {
     const index = this.likedAssets.indexOf(assetId);
     if (index > -1) {
         this.likedAssets.splice(index, 1);
-        return false; // Asset was unliked
+        return false;
     } else {
         this.likedAssets.push(assetId);
-        return true; // Asset was liked
+        return true;
     }
 };
 
@@ -204,13 +180,35 @@ userSchema.methods.addGeneratedModel = function(taskId, name) {
     return this.save();
 };
 
-// Static methods
-userSchema.statics.findByUsername = function(username) {
-    return this.findOne({ username: new RegExp(`^${username}$`, 'i'), isActive: true });
+// STATIC METHODS
+userSchema.statics.findByUsername = async function(username) {
+    const isEmail = username.includes('@');
+    
+    if (isEmail) {
+        return await this.findOne({ 
+            email: username.toLowerCase(), 
+            isActive: true 
+        });
+    } else {
+        return await this.findOne({
+            $or: [
+                { username: new RegExp(`^${username}$`, 'i') },
+                { email: username.toLowerCase() }
+            ],
+            isActive: true
+        });
+    }
 };
 
 userSchema.statics.findByEmail = function(email) {
-    return this.findOne({ email: email.toLowerCase(), isActive: true });
+    return this.findOne({ 
+        email: email.toLowerCase(), 
+        isActive: true 
+    });
 };
 
-module.exports = mongoose.model('User', userSchema);
+// Create the model
+const User = mongoose.model('User', userSchema);
+
+// Export the model
+module.exports = User;

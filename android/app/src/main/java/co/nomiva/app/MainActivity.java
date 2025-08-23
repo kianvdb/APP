@@ -35,7 +35,7 @@ public class MainActivity extends BridgeActivity implements IUnityAdsInitializat
     private InterstitialAd interstitialAd;
 
     // TEST MODE CONFIGURATION
-    private final boolean TEST_MODE = true; // Set to false to load normal app
+    private final boolean TEST_MODE = false; // Set to false to load normal app
 
     // UNITY ADS IDs
     private final String UNITY_GAME_ID = "5928380"; // Your Unity Game ID (get from Unity Dashboard)

@@ -799,6 +799,7 @@ if (isAuthenticated) {
             }
         });
     }
+    this.setupTokenUpdateListener();
     
     console.log('✅ App navigation ready with public assets access');
 }
@@ -2504,6 +2505,9 @@ showAssetsLoading() {
 }
         
 
+ // This is the CORRECTED structure for the end of your AppNavigation class
+// Replace from showAssetsError() to the end of the class
+
     showAssetsError() {
         const grid = document.getElementById('mobileAssetsGrid');
         if (grid) {
@@ -2520,189 +2524,273 @@ showAssetsLoading() {
         }
     }
 
-    updateAccountStats() {
-        const creditsCount = document.getElementById('accountCreditsCount');
-        const modelsCount = document.getElementById('accountModelsCount');
+    // FIX: Update the updateAccountStats method to properly handle tokens
+    updateAccountStats(userData = null) {
+        console.log('📊 Updating account stats with userData:', userData);
         
-        if (creditsCount && window.MobileMonetization) {
-            creditsCount.textContent = window.MobileMonetization.getUserCredits();
-        } else if (creditsCount) {
-            creditsCount.textContent = '10';
+        const accountSection = document.getElementById('accountSection');
+        if (!accountSection) return;
+
+        // Get user data from various sources
+        let user = userData;
+        
+        // If no userData provided, try to get from auth manager
+        if (!user && window.authManager) {
+            user = window.authManager.getUser();
         }
         
-        if (modelsCount) {
-            modelsCount.textContent = this.assetsData.likedAssets.size.toString();
+        // If still no user, try monetization system
+        if (!user && window.enhancedMonetization) {
+            user = {
+                tokens: window.enhancedMonetization.userTokens,
+                isAdmin: window.enhancedMonetization.isAdmin,
+                email: window.authManager?.currentUser?.email || 'User'
+            };
         }
+        
+        if (user) {
+            // Update username
+            const usernameEl = document.getElementById('accountUsername');
+            if (usernameEl) {
+                usernameEl.textContent = user.username || user.email || 'User';
+            }
+
+            // Update email
+            const emailEl = document.getElementById('accountEmail');
+            if (emailEl) {
+                emailEl.textContent = user.email || '';
+            }
+
+            // CRITICAL FIX: Update tokens display
+            const creditsEl = document.getElementById('accountCreditsCount');
+            if (creditsEl) {
+                let tokenCount = user.tokens;
+                
+                // Try multiple sources for token count
+                if (tokenCount === undefined || tokenCount === null) {
+                    // Try enhanced monetization
+                    if (window.enhancedMonetization) {
+                        tokenCount = window.enhancedMonetization.userTokens;
+                    }
+                    // Try EnhancedMonetization instance
+                    else if (window.EnhancedMonetization?.instance) {
+                        tokenCount = window.EnhancedMonetization.instance.userTokens;
+                    }
+                }
+                
+                // Default to 1 if still undefined
+                if (tokenCount === undefined || tokenCount === null) {
+                    tokenCount = 1;
+                }
+                
+                creditsEl.textContent = user.isAdmin ? '∞' : tokenCount;
+                console.log('✅ Account section credits updated to:', tokenCount);
+            }
+
+            // Update member status
+            const memberEl = document.getElementById('accountMemberStatus');
+            if (memberEl) {
+                if (user.isAdmin) {
+                    memberEl.textContent = 'Admin';
+                    memberEl.style.color = '#00bcd4';
+                } else {
+                    memberEl.textContent = user.role === 'premium' ? 'Premium' : 'Free';
+                }
+            }
+        }
+    }
+
+    // THIS IS NOW A CLASS METHOD (notice no 'function' keyword)
+    setupTokenUpdateListener() {
+        window.addEventListener('tokensUpdated', (event) => {
+            console.log('📡 Received tokensUpdated event:', event.detail);
+            
+            // Update account stats with new token count
+            if (window.AppNavigation && window.AppNavigation.updateAccountStats) {
+                const userData = {
+                    tokens: event.detail.tokens,
+                    email: window.authManager?.currentUser?.email || 'User',
+                    isAdmin: window.authManager?.currentUser?.isAdmin || false
+                };
+                window.AppNavigation.updateAccountStats(userData);
+            }
+            
+            // Also directly update the account credits display
+            const accountCredits = document.getElementById('accountCreditsCount');
+            if (accountCredits) {
+                const isAdmin = window.enhancedMonetization?.isAdmin || false;
+                accountCredits.textContent = isAdmin ? '∞' : event.detail.tokens;
+                console.log('✅ Direct update of account credits to:', event.detail.tokens);
+            }
+        });
     }
 
     handleLogout() {
-    // Create custom logout confirmation modal
-    this.showLogoutConfirmation();
-}
+        // Create custom logout confirmation modal
+        this.showLogoutConfirmation();
+    }
 
-// Add this new method to the AppNavigation class:
-showLogoutConfirmation() {
-    // Remove any existing logout modal
-    const existingModal = document.querySelector('.logout-confirmation-modal');
-    if (existingModal) existingModal.remove();
-    
-    const logoutModal = document.createElement('div');
-    logoutModal.className = 'logout-confirmation-modal';
-    logoutModal.innerHTML = `
-        <div class="logout-modal-overlay"></div>
-        <div class="logout-modal-content">
-            <div class="logout-icon">👋</div>
-            <h3>Sign Out</h3>
-            <p>Are you sure you want to sign out of your account?</p>
-            <div class="logout-actions">
-                <button class="logout-cancel-btn" onclick="this.closest('.logout-confirmation-modal').remove()">
-                    Cancel
-                </button>
-                <button class="logout-confirm-btn" onclick="window.AppNavigation.confirmLogout(); this.closest('.logout-confirmation-modal').remove()">
-                    Sign Out
-                </button>
-            </div>
-        </div>
+    showLogoutConfirmation() {
+        // Remove any existing logout modal
+        const existingModal = document.querySelector('.logout-confirmation-modal');
+        if (existingModal) existingModal.remove();
         
-        <style>
-            .logout-confirmation-modal {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                z-index: 10000;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 2rem;
-                animation: fadeIn 0.3s ease;
-            }
+        const logoutModal = document.createElement('div');
+        logoutModal.className = 'logout-confirmation-modal';
+        logoutModal.innerHTML = `
+            <div class="logout-modal-overlay"></div>
+            <div class="logout-modal-content">
+                <div class="logout-icon">👋</div>
+                <h3>Sign Out</h3>
+                <p>Are you sure you want to sign out of your account?</p>
+                <div class="logout-actions">
+                    <button class="logout-cancel-btn" onclick="this.closest('.logout-confirmation-modal').remove()">
+                        Cancel
+                    </button>
+                    <button class="logout-confirm-btn" onclick="window.AppNavigation.confirmLogout(); this.closest('.logout-confirmation-modal').remove()">
+                        Sign Out
+                    </button>
+                </div>
+            </div>
             
-            .logout-modal-overlay {
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.8);
-                backdrop-filter: blur(10px);
-            }
-            
-            .logout-modal-content {
-                position: relative;
-                background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-                border-radius: 20px;
-                padding: 2rem;
-                max-width: 350px;
-                width: 100%;
-                text-align: center;
-                border: 1px solid rgba(0, 188, 212, 0.3);
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            }
-            
-            .logout-icon {
-                font-size: 3rem;
-                margin-bottom: 1rem;
-                animation: wave 1s ease infinite;
-            }
-            
-            .logout-modal-content h3 {
-                font-family: 'Sora', sans-serif;
-                color: white;
-                margin-bottom: 0.5rem;
-                font-size: 1.5rem;
-            }
-            
-            .logout-modal-content p {
-                color: rgba(255, 255, 255, 0.8);
-                margin-bottom: 2rem;
-                line-height: 1.5;
-            }
-            
-            .logout-actions {
-                display: flex;
-                gap: 1rem;
-                flex-direction: column;
-            }
-            
-            .logout-cancel-btn, .logout-confirm-btn {
-                padding: 1rem 2rem;
-                border-radius: 12px;
-                font-family: 'Sora', sans-serif;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                min-height: 48px;
-                font-size: 1rem;
-            }
-            
-            .logout-cancel-btn {
-                background: rgba(255, 255, 255, 0.1);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                color: rgba(255, 255, 255, 0.8);
-            }
-            
-            .logout-cancel-btn:hover {
-                background: rgba(255, 255, 255, 0.15);
-            }
-            
-            .logout-confirm-btn {
-                background: linear-gradient(135deg, #dc3545, #c82333);
-                border: none;
-                color: white;
-            }
-            
-            .logout-confirm-btn:hover {
-                background: linear-gradient(135deg, #c82333, #a71e2a);
-                transform: translateY(-1px);
-            }
-            
-            @keyframes fadeIn {
-                from { opacity: 0; transform: scale(0.9); }
-                to { opacity: 1; transform: scale(1); }
-            }
-            
-            @keyframes wave {
-                0%, 100% { transform: rotate(0deg); }
-                25% { transform: rotate(-10deg); }
-                75% { transform: rotate(10deg); }
-            }
-            
-            @media (max-width: 480px) {
+            <style>
                 .logout-confirmation-modal {
-                    padding: 1rem;
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    z-index: 10000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 2rem;
+                    animation: fadeIn 0.3s ease;
+                }
+                
+                .logout-modal-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.8);
+                    backdrop-filter: blur(10px);
                 }
                 
                 .logout-modal-content {
-                    padding: 1.5rem;
+                    position: relative;
+                    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+                    border-radius: 20px;
+                    padding: 2rem;
+                    max-width: 350px;
+                    width: 100%;
+                    text-align: center;
+                    border: 1px solid rgba(0, 188, 212, 0.3);
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
                 }
-            }
-        </style>
-    `;
-    
-    document.body.appendChild(logoutModal);
-    
-    // Close on overlay click
-    logoutModal.querySelector('.logout-modal-overlay').addEventListener('click', () => {
-        logoutModal.remove();
-    });
-}
-
-// Add this new method too:
-confirmLogout() {
-    if (window.authManager && window.authManager.logout) {
-        window.authManager.logout();
-    } else {
-        localStorage.removeItem('user');
-        sessionStorage.removeItem('user');
+                
+                .logout-icon {
+                    font-size: 3rem;
+                    margin-bottom: 1rem;
+                    animation: wave 1s ease infinite;
+                }
+                
+                .logout-modal-content h3 {
+                    font-family: 'Sora', sans-serif;
+                    color: white;
+                    margin-bottom: 0.5rem;
+                    font-size: 1.5rem;
+                }
+                
+                .logout-modal-content p {
+                    color: rgba(255, 255, 255, 0.8);
+                    margin-bottom: 2rem;
+                    line-height: 1.5;
+                }
+                
+                .logout-actions {
+                    display: flex;
+                    gap: 1rem;
+                    flex-direction: column;
+                }
+                
+                .logout-cancel-btn, .logout-confirm-btn {
+                    padding: 1rem 2rem;
+                    border-radius: 12px;
+                    font-family: 'Sora', sans-serif;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    min-height: 48px;
+                    font-size: 1rem;
+                }
+                
+                .logout-cancel-btn {
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    color: rgba(255, 255, 255, 0.8);
+                }
+                
+                .logout-cancel-btn:hover {
+                    background: rgba(255, 255, 255, 0.15);
+                }
+                
+                .logout-confirm-btn {
+                    background: linear-gradient(135deg, #dc3545, #c82333);
+                    border: none;
+                    color: white;
+                }
+                
+                .logout-confirm-btn:hover {
+                    background: linear-gradient(135deg, #c82333, #a71e2a);
+                    transform: translateY(-1px);
+                }
+                
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: scale(0.9); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                
+                @keyframes wave {
+                    0%, 100% { transform: rotate(0deg); }
+                    25% { transform: rotate(-10deg); }
+                    75% { transform: rotate(10deg); }
+                }
+                
+                @media (max-width: 480px) {
+                    .logout-confirmation-modal {
+                        padding: 1rem;
+                    }
+                    
+                    .logout-modal-content {
+                        padding: 1.5rem;
+                    }
+                }
+            </style>
+        `;
         
-        // Use in-app navigation instead of reload
-        this.updateAccountNavLabel(null);
-        this.updateTopBarAccountButton();
-        this.navigateToSection('home');
+        document.body.appendChild(logoutModal);
+        
+        // Close on overlay click
+        logoutModal.querySelector('.logout-modal-overlay').addEventListener('click', () => {
+            logoutModal.remove();
+        });
     }
-}
+
+    confirmLogout() {
+        if (window.authManager && window.authManager.logout) {
+            window.authManager.logout();
+        } else {
+            localStorage.removeItem('user');
+            sessionStorage.removeItem('user');
+            
+            // Use in-app navigation instead of reload
+            this.updateAccountNavLabel(null);
+            this.updateTopBarAccountButton();
+            this.navigateToSection('home');
+        }
+    }
 
     async reloadSection(sectionName) {
         this.loadedSections.delete(sectionName);
@@ -2728,21 +2816,53 @@ confirmLogout() {
             timeout = setTimeout(later, wait);
         };
     }
-}
 
-// Initialize app navigation
+} // END OF APPNAVIGATION CLASS - THIS CLOSING BRACE IS CRITICAL
+
+// EVERYTHING BELOW IS OUTSIDE THE CLASS
+
+// Initialize app navigation ONCE
 window.AppNavigation = new AppNavigation();
 
-// Make sure to update account button when everything is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        if (window.AppNavigation && window.AppNavigation.updateTopBarAccountButton) {
-            window.AppNavigation.updateTopBarAccountButton();
+// Then add the token sync initialization
+async function initializeTokenSync() {
+    // Wait for auth manager to be ready
+    if (window.authManager) {
+        await window.authManager.waitForAuthCheck?.();
+    }
+    
+    // Initialize or reinitialize monetization with current user data
+    if (window.EnhancedMonetization) {
+        const monetizationInstance = window.EnhancedMonetization.init();
+        window.enhancedMonetization = monetizationInstance;
+        
+        // If user is already authenticated, sync tokens
+        if (window.authManager?.isAuthenticated()) {
+            const user = window.authManager.getUser();
+            if (user && user.tokens !== undefined) {
+                monetizationInstance.userTokens = user.tokens;
+                monetizationInstance.userId = user.id;
+                monetizationInstance.isAdmin = user.isAdmin;
+                monetizationInstance.updateTokensDisplay();
+                console.log('🚀 Initial sync: Tokens set to', user.tokens);
+            }
         }
-    }, 1000);
-});
+    }
+    
+    // Update account button after token sync
+    if (window.AppNavigation && window.AppNavigation.updateTopBarAccountButton) {
+        window.AppNavigation.updateTopBarAccountButton();
+    }
+}
 
-// Also update on window load
+// Call token sync when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeTokenSync);
+} else {
+    initializeTokenSync();
+}
+
+// Additional update on window load for safety
 window.addEventListener('load', () => {
     if (window.AppNavigation && window.AppNavigation.updateTopBarAccountButton) {
         window.AppNavigation.updateTopBarAccountButton();
