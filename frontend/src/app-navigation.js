@@ -35,6 +35,8 @@ class AppNavigation {
         // REMOVED preserveState - we'll reset everything
         console.log('🚀 AppNavigation initialized with public assets access');
     }
+
+    
     // Status bar control based on login state
 updateStatusBarVisibility(isLoggedIn) {
     // Only works in Android WebView
@@ -2283,26 +2285,31 @@ async initializeAssets() {
     }
 }
 
-    // Assets functionality methods (existing methods remain the same)
     getApiBaseUrl() {
-        if (window.DALMA_CONFIG && window.DALMA_CONFIG.API_BASE_URL) {
-            return window.DALMA_CONFIG.API_BASE_URL;
-        } else if (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) {
-            return window.APP_CONFIG.API_BASE_URL;
+    // For Capacitor/Android, use your actual server URL
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        // Replace with your actual server URL
+        return 'https://image-to-3d.onrender.com/api';
+    }
+    
+    if (window.DALMA_CONFIG && window.DALMA_CONFIG.API_BASE_URL) {
+        return window.DALMA_CONFIG.API_BASE_URL;
+    } else if (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) {
+        return window.APP_CONFIG.API_BASE_URL;
+    } else {
+        const protocol = window.location.protocol;
+        const hostname = window.location.hostname;
+        const isDev = hostname === 'localhost' || hostname === '127.0.0.1';
+        
+        if (isDev) {
+            return `http://${hostname}:3000/api`;
         } else {
-            const protocol = window.location.protocol;
-            const hostname = window.location.hostname;
-            const isDev = hostname === 'localhost' || hostname === '127.0.0.1';
-            
-            if (isDev) {
-                return `http://${hostname}:3000/api`;
-            } else {
-                return protocol === 'https:' 
-                    ? `https://${hostname}/api`
-                    : `http://${hostname}:3000/api`;
-            }
+            return protocol === 'https:' 
+                ? `https://${hostname}/api`
+                : `http://${hostname}:3000/api`;
         }
     }
+}
 
     async checkAuthentication() {
     try {
@@ -2359,38 +2366,86 @@ async initializeAssets() {
     }
 }
 
-    async loadAllAssets() {
-        try {
-            console.log('🔄 Loading public assets from API...');
-            
-            // Show loading state
-            this.showAssetsLoading();
-            
-            const response = await fetch(`${this.getApiBaseUrl()}/assets?limit=20&sortBy=popularity&sortOrder=desc`);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+   async loadAllAssets() {
+    try {
+        console.log('🔄 Loading public assets from API...');
+        
+        // Show loading state
+        this.showAssetsLoading();
+        
+        const apiUrl = this.getApiBaseUrl();
+        const fullUrl = `${apiUrl}/assets?limit=20&sortBy=popularity&sortOrder=desc`;
+        console.log('📡 Fetching from:', fullUrl);
+        
+        // Add timeout for mobile
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const response = await fetch(fullUrl, {
+            signal: controller.signal,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
             }
-            
-            const data = await response.json();
-            console.log('✅ Assets loaded:', data.assets?.length || 0);
-            this.assetsData.allAssets = data.assets || [];
-            this.assetsData.filteredAssets = [...this.assetsData.allAssets];
-            
-            this.filterAndRenderAssets();
-            
-        } catch (error) {
-            console.error('❌ Error loading assets:', error);
-            this.showAssetsError();
+        });
+        
+        clearTimeout(timeoutId);
+        
+        console.log('📡 Response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
+        const data = await response.json();
+        console.log('✅ Assets loaded:', data.assets?.length || 0);
+        
+        this.assetsData.allAssets = data.assets || [];
+        this.assetsData.filteredAssets = [...this.assetsData.allAssets];
+        
+        if (this.assetsData.allAssets.length === 0) {
+            this.showNoAssetsMessage();
+        } else {
+            this.filterAndRenderAssets();
+        }
+        
+    } catch (error) {
+        console.error('❌ Error loading assets:', error);
+        
+        // Show specific error message
+        let errorMsg = 'Failed to load assets';
+        if (error.name === 'AbortError') {
+            errorMsg = 'Request timed out. Check your connection.';
+        } else if (error.message.includes('Failed to fetch')) {
+            errorMsg = 'Cannot connect to server. Check your internet.';
+        }
+        
+        this.showAssetsError(errorMsg);
     }
+}
+
 showAssetsLoading() {
     const grid = document.getElementById('mobileAssetsGrid');
     if (grid) {
-    
-        grid.innerHTML = '';
-        
-       
+        grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem;">
+                <div style="width: 50px; height: 50px; border: 3px solid rgba(0, 188, 212, 0.2); border-top: 3px solid #00bcd4; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+                <p style="color: #00bcd4; font-family: 'Sora', sans-serif;">Loading assets...</p>
+            </div>
+        `;
+    }
+}
+
+showNoAssetsMessage() {
+    const grid = document.getElementById('mobileAssetsGrid');
+    if (grid) {
+        grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; color: rgba(255, 255, 255, 0.6);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
+                <h3 style="color: white; margin-bottom: 0.5rem; font-family: 'Sora', sans-serif;">No Assets Available</h3>
+                <p>Check back later for new 3D models!</p>
+            </div>
+        `;
     }
 }
 
@@ -2890,13 +2945,42 @@ startSectionAnimations(sectionName) {
     if (['home', 'about'].includes(sectionName)) {
         document.body.classList.remove('reduce-animations');
     }
+
+
+    
 }
 
-} // END OF APPNAVIGATION CLASS - THIS CLOSING BRACE IS CRITICAL
+control3DRendering(sectionName) {
+    if (window.optimized3DRendering) {
+        if (sectionName === 'home') {
+            window.optimized3DRendering.start();
+        } else {
+            window.optimized3DRendering.stop();
+        }
+    }
+    
+    // Also pause Three.js renderer if it exists
+    if (window.renderer && sectionName !== 'home') {
+        if (window.animationId) {
+            cancelAnimationFrame(window.animationId);
+            window.animationId = null;
+        }
+    }
+}
 
-// EVERYTHING BELOW IS OUTSIDE THE CLASS
+// Update your showSection method to include this:
+async showSection(sectionName, skipAnimation = false) {
+    const sectionElement = document.getElementById(`${sectionName}Section`);
+    
+    if (!sectionElement) {
+        console.error(`❌ Section not found: ${sectionName}`);
+        return;
+    }
 
-// Initialize app navigation ONCE
+    // CONTROL 3D RENDERING
+    this.control3DRendering(sectionName);}
+} 
+
 window.AppNavigation = new AppNavigation();
 
 // Then add the token sync initialization

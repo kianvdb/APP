@@ -2,27 +2,12 @@
 (function() {
     'use strict';
     
-   const getAPIBaseURL = () => {
+  const getAPIBaseURL = () => {
     // Check if running in Capacitor (mobile app)
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-        // Android device (NOT emulator)
-        if (window.Capacitor.getPlatform() === 'android') {
-            // Check if it's emulator or real device
-            const isEmulator = window.location.hostname === 'localhost';
-            
-            if (isEmulator) {
-                console.log('🚨 ANDROID EMULATOR - Using 10.0.2.2');
-                return 'http://10.0.2.2:3000/api';
-            } else {
-                console.log('📱 ANDROID PHONE - Using network IP');
-                return 'http://192.168.1.41:3000/api'; // YOUR COMPUTER'S IP!
-            }
-        }
-        // iOS simulator/device
-        if (window.Capacitor.getPlatform() === 'ios') {
-            console.log('📱 iOS DETECTED - Using localhost with HTTP');
-            return 'http://localhost:3000/api';
-        }
+        // ALWAYS use your production URL for Capacitor
+        console.log('📱 CAPACITOR DETECTED - Using production URL');
+        return 'https://image-to-3d.onrender.com/api';
     }
     
     // Web browser (development or production)
@@ -30,7 +15,7 @@
     const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
     
     if (isDevelopment) {
-        console.log('💻 Web Development - Using localhost with HTTP');
+        console.log('💻 Web Development - Using localhost');
         return 'http://localhost:3000/api';
     } else {
         console.log('🌐 Production - Using current hostname');

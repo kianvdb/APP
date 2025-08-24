@@ -1,6 +1,7 @@
-// Complete Enhanced Authentication System for DALMA AI
-// Clean, minimal, premium design
-
+if (window.Capacitor) {
+    console.log('✅ Capacitor environment detected');
+    // The HTTP plugin is included in @capacitor/core
+}
 class AuthManager {
     constructor() {
         this.user = null;
@@ -33,6 +34,7 @@ console.log('🔧 Window APP_CONFIG:', window.APP_CONFIG);
         // Initialize immediately but don't await
         this.init().catch(error => {
             console.error('❌ Auth manager initialization failed:', error);
+            
         });
     }
     
@@ -108,27 +110,44 @@ console.log('🔧 Window APP_CONFIG:', window.APP_CONFIG);
             throw error;
         }
     }
-// Helper method to make authenticated requests
-    async makeAuthenticatedRequest(url, options = {}) {
-        const authToken = localStorage.getItem('authToken');
-        
-        const defaultOptions = {
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                ...options.headers
-            }
-        };
-        
-        // Add auth token for Capacitor or if available
-        if ((this.isCapacitor || authToken) && authToken) {
-            defaultOptions.headers['Authorization'] = `Bearer ${authToken}`;
-            console.log('🔑 Including Bearer token in request');
+async makeAuthenticatedRequest(url, options = {}) {
+    // For Capacitor, just use regular fetch with full URL
+    // The Capacitor WebView should handle it
+    
+    const authToken = localStorage.getItem('authToken');
+    
+    const defaultOptions = {
+        method: options.method || 'GET',
+        // Remove credentials for Capacitor
+        credentials: window.Capacitor ? undefined : 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...options.headers
         }
-        
-        return fetch(url, { ...defaultOptions, ...options });
+    };
+    
+    if (authToken) {
+        defaultOptions.headers['Authorization'] = `Bearer ${authToken}`;
+        console.log('🔑 Including Bearer token in request');
     }
+    
+    if (options.body) {
+        defaultOptions.body = options.body;
+    }
+    
+    console.log('📡 Making request to:', url);
+    console.log('📡 With options:', defaultOptions);
+    
+    try {
+        const response = await fetch(url, defaultOptions);
+        console.log('📡 Response status:', response.status);
+        return response;
+    } catch (error) {
+        console.error('❌ Fetch error:', error);
+        throw error;
+    }
+}
   async checkAuthStatus() {
     try {
         console.log('🔍 Checking authentication status...');
@@ -777,8 +796,10 @@ console.log('🔧 Window APP_CONFIG:', window.APP_CONFIG);
         }
     }
 
-    async handleModalLogin(e) {
+   async handleModalLogin(e) {
     e.preventDefault();
+    
+    console.log('🔐 Starting login process...');
     
     const username = document.getElementById('premiumLoginUsername').value.trim();
     const password = document.getElementById('premiumLoginPassword').value;
@@ -792,85 +813,32 @@ console.log('🔧 Window APP_CONFIG:', window.APP_CONFIG);
     this.clearModalMessages();
 
     try {
-        const response = await this.makeAuthenticatedRequest(`${this.apiBaseUrl}/auth/login`, {
+        const loginUrl = `${this.apiBaseUrl}/auth/login`;
+        console.log('📡 Login URL:', loginUrl);
+        
+        const response = await this.makeAuthenticatedRequest(loginUrl, {
             method: 'POST',
             body: JSON.stringify({ username, password })
         });
 
+        console.log('📡 Login response status:', response.status);
+        
         const data = await response.json();
+        console.log('📡 Login response data:', data);
 
         if (response.ok) {
-            // Store token for Capacitor/mobile
-            if (data.token) {
-                localStorage.setItem('authToken', data.token);
-                console.log('🔑 Auth token stored for mobile/Capacitor');
-            }
+            // Your existing success code...
+            console.log('✅ Login successful!');
             
-            // IMPORTANT FIX: Ensure tokens field exists and sync with monetization
-            this.user = {
-                ...data.user,
-                tokens: data.user.tokens !== undefined ? data.user.tokens : 1
-            };
-            this.currentUser = this.user;
-            
-            console.log('👤 User logged in with tokens:', this.user.tokens);
-            
-            // CRITICAL: Sync tokens with monetization system
-            if (window.enhancedMonetization || window.EnhancedMonetization?.instance) {
-                const monetization = window.enhancedMonetization || window.EnhancedMonetization.instance;
-                monetization.userTokens = this.user.tokens;
-                monetization.userId = this.user.id;
-                monetization.isAdmin = this.user.isAdmin;
-                monetization.updateTokensDisplay();
-                console.log('💰 Synced tokens to monetization system:', this.user.tokens);
-            }
-            
-            // Update AppNavigation if it exists
-            if (window.AppNavigation && window.AppNavigation.updateAccountStats) {
-                window.AppNavigation.updateAccountStats(this.user);
-            }
-            
-            this.updateUI();
-            
-            // Rest of your existing code...
-            const redirectUrl = localStorage.getItem('dalma_redirectAfterLogin');
-            const redirectMessage = redirectUrl ? 'Welcome back! Loading...' : 'Welcome back!';
-            this.showModalMessage('premiumLoginMessage', redirectMessage, 'success');
-            
-            this.dispatchAuthStateChange();
-            
-            if (window.AppNavigation && window.AppNavigation.updateStatusBarVisibility) {
-                window.AppNavigation.updateStatusBarVisibility(true);
-            }
-            
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            this.hideLoginModal();
-            document.getElementById('premium-login-form').reset();
-            
-            // Handle redirect
-            const loginRedirectUrl = localStorage.getItem('dalma_redirectAfterLogin');
-            if (loginRedirectUrl) {
-                localStorage.removeItem('dalma_redirectAfterLogin');
-                
-                if (['generate', 'assets', 'account', 'about'].includes(loginRedirectUrl)) {
-                    setTimeout(() => {
-                        if (window.AppNavigation) {
-                            window.AppNavigation.navigateToSection(loginRedirectUrl);
-                        }
-                    }, 200);
-                    return;
-                }
-            }
-            
-            console.log('✅ Login complete, tokens synced');
-            
+            // Rest of your code...
         } else {
+            console.error('❌ Login failed:', data);
             this.showModalMessage('premiumLoginMessage', data.error || 'Login failed', 'error');
         }
     } catch (error) {
-        console.error('Modal login error:', error);
-        this.showModalMessage('premiumLoginMessage', 'Network error. Please try again.', 'error');
+        console.error('❌ Modal login error:', error);
+        console.error('Full error:', error.message, error.stack);
+        this.showModalMessage('premiumLoginMessage', 'Cannot connect to server. Please check your internet connection.', 'error');
     } finally {
         this.setModalLoading('premium-login-form', false);
     }

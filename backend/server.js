@@ -16,6 +16,7 @@ console.log('📁 __dirname:', __dirname);
 console.log('📁 process.cwd():', process.cwd());
 console.log('📁 NODE_ENV:', process.env.NODE_ENV);
 console.log('📁 Running on Render?', process.env.RENDER === 'true');
+
 const https = require('https');
 const http = require('http');
 const express = require('express');
@@ -32,18 +33,136 @@ const authMiddleware = require('./middleware/auth');
 // Create Express app
 const app = express();
 
-// Set up middleware
-app.use(cors({
-    origin: true, // or specify your frontend URL
-    credentials: true
-}));
+// CRITICAL FIX: Handle Capacitor/Mobile CORS BEFORE other middleware
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    
+    // List of Capacitor/mobile origins
+    const capacitorOrigins = [
+        'http://localhost',
+        'https://localhost', 
+        'capacitor://localhost',
+        'ionic://localhost'
+    ];
+    
+    // Check if request is from Capacitor
+    if (capacitorOrigins.includes(origin) || origin === 'http://localhost') {
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
+        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, Cache-Control, Pragma, X-Cache-Control, If-Modified-Since, If-None-Match');
+        res.header('Access-Control-Expose-Headers', 'Content-Disposition, Content-Type, Content-Length');
+        
+        // Handle preflight
+        if (req.method === 'OPTIONS') {
+            console.log('✅ Handling Capacitor OPTIONS request from:', origin);
+            return res.sendStatus(200);
+        }
+    }
+    
+    next();
+});
+
+// Cookie parser middleware - MUST be before CORS
 app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Body parsing middleware
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Enhanced CORS configuration
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or Postman)
+        if (!origin) {
+            return callback(null, true);
+        }
+        
+        const allowedOrigins = [
+            // Capacitor origins
+            'http://localhost',
+            'https://localhost',
+            'capacitor://localhost',
+            'ionic://localhost',
+            
+            // Development origins
+            'http://localhost:5173', 
+            'http://localhost:3001', 
+            'http://127.0.0.1:5500',
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+            
+            // HTTPS origins for development
+            'https://localhost:5173',
+            'https://localhost:3001',
+            'https://localhost:3000',
+            'https://127.0.0.1:3000',
+            
+            // Network access
+            'http://192.168.1.41:3000',
+            'http://192.168.1.41:3001',
+            
+            // Live Server origins
+            'http://127.0.0.1:59063',
+            'http://localhost:59063',
+            'http://127.0.0.1:5500',
+            'http://127.0.0.1:5501',
+            'http://127.0.0.1:5502',
+            'http://localhost:5500',
+            'http://localhost:5501',
+            'http://localhost:5502',
+            'http://127.0.0.1:63338',
+            'http://localhost:63338',
+            'http://127.0.0.1:64533',
+            'http://localhost:64533',
+            
+            // Production URLs
+            'https://image-to-3d.onrender.com',
+            'https://image-to-3d.onrender.com/',
+            
+            // Android emulator
+            'http://10.0.2.2:5173',
+            'http://10.0.2.2:3000',
+            'http://10.0.2.2:3001',
+            'https://10.0.2.2:3000',
+            'https://10.0.2.2',
+            'http://10.0.2.2'
+        ];
+        
+        // Allow localhost variations
+        const localhostPattern = /^https?:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?$/;
+        
+        if (allowedOrigins.includes(origin) || localhostPattern.test(origin)) {
+            callback(null, true);
+        } else {
+            console.log('⚠️ CORS: Origin not explicitly allowed:', origin, '- allowing anyway for mobile compatibility');
+            callback(null, true); // Allow all for mobile compatibility
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept', 'Origin'],
+    credentials: true,
+    optionsSuccessStatus: 200,
+    maxAge: 86400 // Cache preflight for 24 hours
+};
+
+app.use(cors(corsOptions));
+
+// Double-ensure OPTIONS is handled
+app.options('*', (req, res) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With, Accept, Origin');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.sendStatus(200);
+});
 
 // Import and use auth routes
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
+
+// Rest of your existing code...
+// (Keep everything else the same from line 47 onwards)
 
 // Check if directories exist - DEBUGGING
 const frontendPath = path.join(__dirname, '../frontend');
@@ -69,77 +188,9 @@ console.log("🛠️ Meshy API Key:", process.env.MESHY_API_KEY ? "✅ Loaded" :
 
 const port = process.env.PORT || 3000;
 
-const corsOptions = {
-  origin: [
-    // HTTP origins for backward compatibility
-    'http://localhost:5173', 
-    'http://localhost:3001', 
-    'http://127.0.0.1:5500',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    
-    // HTTPS origins for development
-    'https://localhost:5173',
-    'https://localhost:3001',
-    'https://localhost:3000',
-    'https://127.0.0.1:3000',
-    
-    // ADD YOUR PHONE/NETWORK ACCESS
-    'http://192.168.1.41:3000',  // Your computer's IP
-    'http://192.168.1.41:3001',
-    'http://192.168.1.*',         // Any device on your network
-    /^http:\/\/192\.168\.1\.\d+:\d+$/,  // Pattern for your network
-
-    
-    // Add Live Server origins
-    'http://127.0.0.1:59063',
-    'http://localhost:59063',
-    // Add common Live Server ports
-    'http://127.0.0.1:5500',
-    'http://127.0.0.1:5501',
-    'http://127.0.0.1:5502',
-    'http://localhost:5500',
-    'http://localhost:5501',
-    'http://localhost:5502',
-    // Add your current ports
-    'http://127.0.0.1:63338',
-    'http://localhost:63338',
-    'http://127.0.0.1:64533',
-    'http://localhost:64533',
-    
-    // PRODUCTION URLS
-    'https://image-to-3d.onrender.com',
-    'https://image-to-3d.onrender.com/',
-    
-    // ADD THESE FOR ANDROID EMULATOR - Both HTTP and HTTPS
-    'http://10.0.2.2:5173',
-    'http://10.0.2.2:3000',
-    'http://10.0.2.2:3001',
-    'https://10.0.2.2:3000',  // HTTPS for Android emulator
-    'https://10.0.2.2',
-    'http://10.0.2.2',
-    'https://localhost',       // Capacitor HTTPS
-    'capacitor://localhost',  // Capacitor protocol
-    'http://localhost',        // Capacitor HTTP (without port)
-    
-    // Allow any localhost/127.0.0.1 with any port for development (both HTTP and HTTPS)
-    /^https?:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2):\d+$/
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
-  credentials: true, // This is crucial for cookie-based auth
-  optionsSuccessStatus: 200 // For legacy browser support
-};
-
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
-
-// Cookie parser middleware - Add this BEFORE other middleware
-app.use(cookieParser());
-
-// Body parsing middleware
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// In your main server file
+const paymentRoutes = require('./routes/payment');
+app.use('/api/payment', paymentRoutes);
 
 // STATIC FILE SERVING - UPDATED FOR YOUR STRUCTURE
 // Serve static files from frontend directory with the /frontend prefix
@@ -167,9 +218,6 @@ app.use((req, res, next) => {
     }
     next();
 });
-// In your main server file
-const paymentRoutes = require('./routes/payment');
-app.use('/api/payment', paymentRoutes);
 
 // Serve your homepage at the root URL
 app.get('/', (req, res) => {
@@ -238,7 +286,6 @@ app.get('/api/health', (req, res) => {
     database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
   });
 });
-
 // **IMPORTANT: Import and mount AUTH routes**
 console.log('🔧 Loading authentication routes...');
 try {

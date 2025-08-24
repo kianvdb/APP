@@ -169,6 +169,14 @@
   
 
    <!-- Scripts -->
+    <!-- Add this right after your other script tags but BEFORE auth.js -->
+<script>
+    // Ensure Capacitor plugins are loaded
+    if (window.Capacitor) {
+        window.Capacitor.Plugins = window.Capacitor.Plugins || {};
+        console.log('📱 Capacitor environment detected');
+    }
+</script>
 <script src="src/auth.js"></script>
 <script src="src/local-storage-manager.js"></script>
 <script src="src/enhanced-monitization.js"></script>
@@ -181,8 +189,80 @@
 
 <!-- Initialize the app -->
 <script>
-    // Add this to your index.html or a separate initialization file
-// This ensures tokens are properly synced on app start
+    document.addEventListener('DOMContentLoaded', function() {
+    // Stop 3D animations when not on home
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                const homeSection = document.getElementById('homeSection');
+                if (homeSection) {
+                    const isActive = homeSection.classList.contains('active');
+                    
+                    // Control Three.js rendering
+                    if (window.animationFrame) {
+                        if (!isActive) {
+                            cancelAnimationFrame(window.animationFrame);
+                            window.animationFrame = null;
+                            console.log('🛑 Stopped 3D rendering');
+                        }
+                    }
+                    
+                    // Control Mobile3D
+                    if (window.Mobile3D) {
+                        if (isActive) {
+                            window.Mobile3D.resume && window.Mobile3D.resume();
+                        } else {
+                            window.Mobile3D.pause && window.Mobile3D.pause();
+                        }
+                    }
+                }
+            }
+        });
+    });
+    
+    // Observe all section changes
+    document.querySelectorAll('.app-section').forEach(section => {
+        observer.observe(section, { attributes: true });
+    });
+});
+
+window.optimized3DRendering = {
+    isActive: false,
+    shouldRender: false,
+    
+    start: function() {
+        this.isActive = true;
+        this.shouldRender = true;
+    },
+    
+    stop: function() {
+        this.isActive = false;
+        this.shouldRender = false;
+    },
+    
+    pauseWhenHidden: function() {
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.stop();
+            } else if (document.querySelector('#homeSection.active')) {
+                this.start();
+            }
+        });
+    }
+};
+
+// Initialize optimization
+window.optimized3DRendering.pauseWhenHidden();
+
+// Override requestAnimationFrame for 3D scenes
+const originalRAF = window.requestAnimationFrame;
+window.requestAnimationFrame = function(callback) {
+    // Only run animation frames when needed
+    if (window.optimized3DRendering.shouldRender || !window.optimized3DRendering.isActive) {
+        return originalRAF.call(window, callback);
+    }
+    return null;
+};
 
 async function initializeTokenSystem() {
     console.log('🚀 Initializing token sync system...');
