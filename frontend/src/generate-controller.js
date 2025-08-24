@@ -457,8 +457,7 @@ switchToViewerState() {
     }, 100);
 }
 
-// UPDATE the existing switchToViewerState() method (around line 900)
-// Replace the existing method with this updated version:
+
 switchToViewerState() {
     const loadingState = document.getElementById('generateLoadingState');
     const viewerState = document.getElementById('generateViewerState');
@@ -534,63 +533,83 @@ switchToViewerState() {
 
 
 
-    async handleGenerate() {
-        if (!this.generateState.selectedImage) {
-            this.showPremiumError('Please upload an image first');
-            return;
-        }
-        
-        // Check credits with monetization system
+   async handleGenerate() {
+    if (!this.generateState.selectedImage) {
+        this.showPremiumError('Please upload an image first');
+        return;
+    }
+    
+    // Check credits with monetization system - ADD SAFETY CHECK
+    if (window.MobileMonetization && typeof window.MobileMonetization.beforeGenerate === 'function') {
         if (!window.MobileMonetization.beforeGenerate()) {
             return;
         }
+    } else {
+        console.log('⚠️ MobileMonetization not available, checking alternative monetization');
         
-        // Switch to loading state
-        this.switchToLoadingState();
-        
-        // Start actual generation
-        await this.startGeneration();
-    }
-
-    async startGeneration() {
-        try {
-            const formData = new FormData();
-            formData.append('image', this.generateState.selectedImage);
-            
-            // Send settings with backend expected field names
-            formData.append('symmetryMode', this.generateState.settings.symmetryMode);
-            formData.append('topology', this.generateState.settings.topology);
-            formData.append('targetPolycount', this.generateState.settings.targetPolycount.toString());
-            formData.append('shouldTexture', this.generateState.settings.shouldTexture.toString());
-            formData.append('enablePBR', this.generateState.settings.enablePBR.toString());
-            
-            // Use the correct endpoint from your backend
-            const response = await fetch(`${this.apiBaseUrl}/generateModel`, {
-                method: 'POST',
-                credentials: 'include',
-                body: formData
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-                throw new Error(errorData.error || 'Failed to start generation');
+        // Try enhanced monetization as fallback
+        if (window.enhancedMonetization && typeof window.enhancedMonetization.checkTokensBeforeGeneration === 'function') {
+            const hasTokens = await window.enhancedMonetization.checkTokensBeforeGeneration();
+            if (!hasTokens) {
+                console.log('❌ No tokens available');
+                this.showPremiumError('You need credits to generate. Get more credits in the account section.');
+                return;
             }
-            
-            const data = await response.json();
-            this.generateState.taskId = data.taskId;
-            
-            console.log('🚀 Generation started:', data.taskId);
-            
-            // Start polling for progress
-            this.startProgressPolling();
-            
-        } catch (error) {
-            console.error('❌ Generation error:', error);
-            this.showPremiumError('Something went wrong. Please try again later.');
-            window.MobileMonetization.onGenerationError(error.message);
-            this.resetToForm();
+        } else {
+            console.log('⚠️ No monetization system available - proceeding anyway');
         }
     }
+    
+    // Switch to loading state
+    this.switchToLoadingState();
+    
+    // Start actual generation
+    await this.startGeneration();
+}
+    async startGeneration() {
+    try {
+        const formData = new FormData();
+        formData.append('image', this.generateState.selectedImage);
+        
+        // Send settings with backend expected field names
+        formData.append('symmetryMode', this.generateState.settings.symmetryMode);
+        formData.append('topology', this.generateState.settings.topology);
+        formData.append('targetPolycount', this.generateState.settings.targetPolycount.toString());
+        formData.append('shouldTexture', this.generateState.settings.shouldTexture.toString());
+        formData.append('enablePBR', this.generateState.settings.enablePBR.toString());
+        
+        // Use the correct endpoint from your backend
+        const response = await fetch(`${this.apiBaseUrl}/generateModel`, {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(errorData.error || 'Failed to start generation');
+        }
+        
+        const data = await response.json();
+        this.generateState.taskId = data.taskId;
+        
+        console.log('🚀 Generation started:', data.taskId);
+        
+        // Start polling for progress
+        this.startProgressPolling();
+        
+    } catch (error) {
+        console.error('❌ Generation error:', error);
+        this.showPremiumError('Something went wrong. Please try again later.');
+        
+        // FIX: Add safety check for MobileMonetization
+        if (window.MobileMonetization && typeof window.MobileMonetization.onGenerationError === 'function') {
+            window.MobileMonetization.onGenerationError(error.message);
+        }
+        
+        this.resetToForm();
+    }
+}
 
   startProgressPolling() {
     // Initial UI update
