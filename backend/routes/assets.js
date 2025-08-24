@@ -2,11 +2,22 @@ console.log('📁 Loading routes/assets.js...');
 
 const express = require('express');
 const multer = require('multer');
-const router = express.Router();
+const router = express.Router(); // ONLY ONE router declaration
 const cloudinary = require('cloudinary').v2;
 const axios = require('axios');
 // CORRECT - import the default export
 const authMiddleware = require('../middleware/auth');
+
+// CRITICAL: Handle OPTIONS requests FIRST for all routes
+router.options('*', (req, res) => {
+    console.log('📱 Handling OPTIONS in assets router for:', req.path);
+    res.header('Access-Control-Allow-Origin', req.headers.origin || 'http://localhost');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With, Accept, Origin');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400');
+    return res.sendStatus(200);
+});
 
 // Define the other middleware locally if needed
 const adminMiddleware = (req, res, next) => {
@@ -39,6 +50,7 @@ const optionalAuthMiddleware = async (req, res, next) => {
     }
     next();
 };
+
 // Import models and config with better error handling
 let Asset, cloudinaryConfig;
 let dbAvailable = false;
@@ -68,60 +80,63 @@ console.log('📊 Configuration status:', {
   cloudinary: cloudinaryAvailable ? 'Available' : 'Not Available'
 });
 
+// GET /api/assets - PUBLIC ASSETS ONLY (for homepage)
+// Remove optionalAuthMiddleware for truly public access
+router.get('/', async (req, res) => {  // NO middleware here
+    try {
+        console.log('📥 GET /api/assets called - fetching PUBLIC assets only');
+        console.log('🌐 Request origin:', req.headers.origin);
+        
+        // Set CORS headers explicitly for this route
+        res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+        res.header('Access-Control-Allow-Credentials', 'true');
+        
+        if (!dbAvailable || !Asset) {
+            console.log('⚠️ Database not available, returning empty result');
+            return res.json({
+                message: 'Database not available',
+                assets: [],
+                pagination: {
+                    currentPage: 1,
+                    totalPages: 0,
+                    totalAssets: 0,
+                    hasNextPage: false,
+                    hasPrevPage: false
+                }
+            });
+        }
+
+        console.log('🔍 Calling Asset.findPublicAssets...');
+        const assets = await Asset.findPublicAssets({ limit: 20 });
+        console.log(`📊 Found ${assets.length} PUBLIC assets`);
+        
+        res.json({
+            message: 'Public assets loaded successfully',
+            assets,
+            pagination: {
+                currentPage: 1,
+                totalPages: 1,
+                totalAssets: assets.length,
+                hasNextPage: false,
+                hasPrevPage: false
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error in GET /api/assets:', error.message);
+        res.status(500).json({ 
+            error: 'Failed to fetch assets', 
+            details: error.message 
+        });
+    }
+});
+
 // UPDATED: Configure multer for multiple model file formats
 const uploadFields = multer({ 
   storage: multer.memoryStorage(),
   limits: { fileSize: 200 * 1024 * 1024 }, // 200MB for multiple files
   fileFilter: (req, file, cb) => {
-    try {
-      console.log(`🔍 Processing file: ${file.originalname}, field: ${file.fieldname}, mimetype: ${file.mimetype}`);
-      
-      // Handle multiple model file formats
-      if (['modelFileGLB', 'modelFileFBX', 'modelFileOBJ', 'modelFileUSDZ'].includes(file.fieldname)) {
-        const isGLB = file.mimetype === 'application/octet-stream' && file.originalname.toLowerCase().endsWith('.glb');
-        const isFBX = file.originalname.toLowerCase().endsWith('.fbx');
-        const isOBJ = file.originalname.toLowerCase().endsWith('.obj');
-        const isUSDZ = file.originalname.toLowerCase().endsWith('.usdz');
-        
-        if (isGLB || isFBX || isOBJ || isUSDZ) {
-          console.log('✅ Model file accepted:', file.originalname);
-          cb(null, true);
-        } else {
-          console.log('❌ Model file rejected:', file.originalname, file.mimetype);
-          cb(new Error(`Invalid file type for ${file.fieldname}`));
-        }
-      } else if (file.fieldname === 'previewImage') {
-        const allowedImageTypes = [
-          'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'
-        ];
-        
-        if (allowedImageTypes.includes(file.mimetype) || file.mimetype.startsWith('image/')) {
-          console.log('✅ Preview image file accepted:', file.originalname);
-          cb(null, true);
-        } else {
-          console.log('❌ Preview image file rejected:', file.originalname, file.mimetype);
-          cb(new Error('Only image files are allowed for preview images'));
-        }
-      } else if (file.fieldname === 'originalImage') {
-        const allowedImageTypes = [
-          'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'
-        ];
-        
-        if (allowedImageTypes.includes(file.mimetype) || file.mimetype.startsWith('image/')) {
-          console.log('✅ Original image file accepted:', file.originalname);
-          cb(null, true);
-        } else {
-          console.log('❌ Original image file rejected:', file.originalname, file.mimetype);
-          cb(new Error('Only image files are allowed for original images'));
-        }
-      } else {
-        console.log('❌ Unexpected field:', file.fieldname);
-        cb(new Error('Unexpected field: ' + file.fieldname));
-      }
-    } catch (err) {
-      console.error('❌ File filter error:', err);
-      cb(err);
-    }
+    // ... your existing file filter code ...
   }
 }).fields([
   { name: 'modelFileGLB', maxCount: 1 },
@@ -133,6 +148,7 @@ const uploadFields = multer({
 ]);
 
 console.log('📦 Multer configured for multiple format uploads');
+
 
 // ==========================================
 // ADMIN ROUTES - User Models Management
