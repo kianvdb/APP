@@ -1268,6 +1268,8 @@ async handleDownload() {
     this.closeDownloadModal();
     
     try {
+        this.showFeedback('Preparing download...', 'info');
+        
         const apiUrl = this.getApiBaseUrl();
         const authToken = localStorage.getItem('authToken');
         
@@ -1309,48 +1311,36 @@ async handleDownload() {
                 reader.onloadend = async () => {
                     const base64String = reader.result.split(',')[1];
                     
-                    // Generate filename
-                    const fileName = `${this.currentAsset.name || 'model'}_${Date.now()}.${format}`;
+                    // Generate filename with readable date
+                    const date = new Date().toISOString().split('T')[0];
+                    const fileName = `${this.currentAsset.name || 'model'}_${date}.${format}`;
                     
                     // Save to Documents directory
                     const result = await Filesystem.writeFile({
-                        path: fileName,
+                        path: `Threely/${fileName}`, // Creates Threely folder in Documents
                         data: base64String,
                         directory: Directory.Documents,
+                        recursive: true // Create directory if it doesn't exist
                     });
                     
                     console.log('✅ File saved to:', result.uri);
-                    this.showFeedback(`Saved: ${fileName}`, 'success');
+                    this.showFeedback(`Saved to Documents/Threely/${fileName}`, 'success', 4000);
                 };
                 
             } catch (fsError) {
                 console.error('❌ Filesystem error:', fsError);
-                
-                // Fallback: Use regular download
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${this.currentAsset.name || 'asset'}.${format}`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-                
-                this.showFeedback('Download started...', 'info');
+                this.showFeedback('Failed to save file', 'error');
             }
             
         } else {
-            // Web browser - existing code
-            console.log('💻 Web download detected');
+            // Web browser
             const url = window.URL.createObjectURL(blob);
-            
             const a = document.createElement('a');
             a.href = url;
             a.download = `${this.currentAsset.name || 'asset'}.${format}`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            
             window.URL.revokeObjectURL(url);
             
             this.showFeedback(`${format.toUpperCase()} downloaded!`, 'success');
@@ -1362,25 +1352,143 @@ async handleDownload() {
     }
 }
 
-    // Handle share
     async handleShare() {
-        if (navigator.share) {
+    try {
+        this.showFeedback('Creating export package...', 'info');
+        
+        // Import JSZip
+        const JSZip = (await import('jszip')).default;
+        const zip = new JSZip();
+        
+        const apiUrl = this.getApiBaseUrl();
+        const authToken = localStorage.getItem('authToken');
+        const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+        
+        // Define all formats to include
+        const formats = ['glb', 'fbx', 'obj', 'usdz'];
+        const modelName = this.currentAsset.name || 'model';
+        
+        // Create a folder in the zip
+        const modelFolder = zip.folder(modelName);
+        
+        // Download all formats
+        const downloadPromises = formats.map(async (format) => {
             try {
-                await navigator.share({
-                    title: this.currentAsset.name,
-                    text: `Check out this 3D model: ${this.currentAsset.name}`,
-                    url: window.location.href
+                let downloadUrl;
+                if (this.currentAsset.meshyTaskId) {
+                    downloadUrl = `${apiUrl}/assets/meshy/${this.currentAsset.meshyTaskId}/download?format=${format}`;
+                } else {
+                    downloadUrl = `${apiUrl}/assets/${this.currentAssetId}/download?format=${format}`;
+                }
+                
+                const response = await fetch(downloadUrl, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: headers
                 });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    modelFolder.file(`${modelName}.${format}`, blob);
+                    console.log(`✅ Added ${format} to zip`);
+                    return true;
+                }
             } catch (error) {
-                console.log('Share cancelled or failed');
+                console.warn(`Failed to add ${format}:`, error);
+                return false;
             }
+        });
+        
+        await Promise.all(downloadPromises);
+        
+        // Add a README file with asset info
+        const readme = `
+3D Model: ${modelName}
+Exported from: Threely App
+Date: ${new Date().toLocaleDateString()}
+
+Included Formats:
+- GLB: Universal 3D format (recommended for web)
+- FBX: Autodesk format (for game engines)
+- OBJ: Wavefront format (for 3D software)
+- USDZ: Apple AR format (for iOS devices)
+
+Model Statistics:
+- Views: ${this.currentAsset.views || 0}
+- Downloads: ${this.currentAsset.downloads || 0}
+- Polygons: ${this.currentAsset.polygons || this.currentAsset.polycount || 'N/A'}
+
+Tags: ${this.currentAsset.tags?.join(', ') || 'None'}
+
+Thank you for using Threely!
+        `;
+        
+        modelFolder.file('README.txt', readme);
+        
+        // Generate the zip file
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const zipFileName = `${modelName}_threely_export.zip`;
+        
+        // Check platform
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            // Mobile: Open email with attachment
+            this.openEmailWithAttachment(zipBlob, zipFileName, modelName);
         } else {
-            // Fallback: Copy to clipboard
-            const url = `${window.location.origin}/view-asset?id=${this.currentAssetId}`;
-            navigator.clipboard.writeText(url);
-            this.showFeedback('Link copied to clipboard!', 'success');
+            // Web: Download the zip
+            const url = window.URL.createObjectURL(zipBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = zipFileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            this.showFeedback('Export package downloaded!', 'success');
         }
+        
+    } catch (error) {
+        console.error('❌ Export error:', error);
+        this.showFeedback('Export failed. Please try again.', 'error');
     }
+}
+
+async openEmailWithAttachment(zipBlob, fileName, modelName) {
+    try {
+        // For Capacitor, we need to save the file first, then share it
+        const { Filesystem, Directory } = Capacitor.Plugins;
+        
+        // Convert blob to base64
+        const reader = new FileReader();
+        reader.readAsDataURL(zipBlob);
+        reader.onloadend = async () => {
+            const base64String = reader.result.split(',')[1];
+            
+            // Save temporarily
+            const result = await Filesystem.writeFile({
+                path: fileName,
+                data: base64String,
+                directory: Directory.Cache
+            });
+            
+            // Use Capacitor Share plugin
+            const { Share } = Capacitor.Plugins;
+            
+            await Share.share({
+                title: `3D Model Export: ${modelName}`,
+                text: `Here's your 3D model "${modelName}" exported from Threely app. The ZIP file contains GLB, FBX, OBJ, and USDZ formats.`,
+                url: result.uri,
+                dialogTitle: 'Share your 3D model'
+            });
+            
+            this.showFeedback('Opening share options...', 'success');
+        };
+        
+    } catch (error) {
+        console.error('❌ Email share error:', error);
+        this.showFeedback('Could not open share options', 'error');
+    }
+}
 
 toggleInfo() {
     const infoOverlay = document.getElementById('assetInfoOverlay');
