@@ -22,14 +22,15 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 
-// Unity Ads imports
-import com.unity3d.ads.IUnityAdsInitializationListener;
-import com.unity3d.ads.IUnityAdsLoadListener;
-import com.unity3d.ads.IUnityAdsShowListener;
-import com.unity3d.ads.UnityAds;
-import com.unity3d.ads.UnityAdsShowOptions;
+// Unity Ads imports - COMMENTED OUT UNTIL LIBRARY IS ADDED
+// import com.unity3d.ads.IUnityAdsInitializationListener;
+// import com.unity3d.ads.IUnityAdsLoadListener;
+// import com.unity3d.ads.IUnityAdsShowListener;
+// import com.unity3d.ads.UnityAds;
+// import com.unity3d.ads.UnityAdsShowOptions;
 
-public class MainActivity extends BridgeActivity implements IUnityAdsInitializationListener {
+// REMOVED implements IUnityAdsInitializationListener for now
+public class MainActivity extends BridgeActivity {
 
     private RewardedAd rewardedAd;
     private InterstitialAd interstitialAd;
@@ -37,7 +38,7 @@ public class MainActivity extends BridgeActivity implements IUnityAdsInitializat
     // TEST MODE CONFIGURATION
     private final boolean TEST_MODE = false; // Set to false to load normal app
 
-    // UNITY ADS IDs
+    // UNITY ADS IDs - WILL BE USED WHEN UNITY ADS IS ADDED
     private final String UNITY_GAME_ID = "5928380"; // Your Unity Game ID (get from Unity Dashboard)
     private final String UNITY_PLACEMENT_ID = "Rewarded_Android"; // Default Unity placement
     private final boolean UNITY_TEST_MODE = true; // Set to false for production
@@ -55,7 +56,7 @@ public class MainActivity extends BridgeActivity implements IUnityAdsInitializat
     // CONFIGURATION
     private final boolean USE_TEST_ADS = true; // Set to false when publishing to Play Store
     private final boolean ENABLE_INTERSTITIAL = false; // Set to true if you want interstitial ads
-    private final boolean ENABLE_UNITY_ADS = true; // Enable Unity Ads
+    private final boolean ENABLE_UNITY_ADS = false; // DISABLED UNTIL LIBRARY IS ADDED
 
     // Use test or production IDs based on configuration
     private String admobRewardedAdId;
@@ -75,10 +76,10 @@ public class MainActivity extends BridgeActivity implements IUnityAdsInitializat
         // Setup status bar
         setupStatusBar();
 
-        // Initialize Unity Ads FIRST (highest priority)
-        if (ENABLE_UNITY_ADS) {
+        // Initialize Unity Ads FIRST (highest priority) - COMMENTED OUT
+        /* if (ENABLE_UNITY_ADS) {
             initializeUnityAds();
-        }
+        } */
 
         // Initialize AdMob
         MobileAds.initialize(this, initializationStatus -> {
@@ -95,14 +96,14 @@ public class MainActivity extends BridgeActivity implements IUnityAdsInitializat
         }
     }
 
-    // Initialize Unity Ads
-    private void initializeUnityAds() {
+    // Initialize Unity Ads - COMMENTED OUT UNTIL LIBRARY IS ADDED
+    /* private void initializeUnityAds() {
         UnityAds.initialize(getApplicationContext(), UNITY_GAME_ID, UNITY_TEST_MODE, this);
         Log.d("UnityAds", "Initializing Unity Ads with Game ID: " + UNITY_GAME_ID);
-    }
+    } */
 
-    // Unity Ads Initialization Callback
-    @Override
+    // Unity Ads Initialization Callbacks - COMMENTED OUT
+    /* @Override
     public void onInitializationComplete() {
         Log.d("UnityAds", "Unity Ads initialization complete");
         loadUnityAd();
@@ -112,10 +113,10 @@ public class MainActivity extends BridgeActivity implements IUnityAdsInitializat
     public void onInitializationFailed(UnityAds.UnityAdsInitializationError error, String message) {
         Log.e("UnityAds", "Unity Ads initialization failed: " + error + " - " + message);
         unityAdsReady = false;
-    }
+    } */
 
-    // Load Unity Ad
-    private void loadUnityAd() {
+    // Load Unity Ad - COMMENTED OUT
+    /* private void loadUnityAd() {
         UnityAds.load(UNITY_PLACEMENT_ID, new IUnityAdsLoadListener() {
             @Override
             public void onUnityAdsAdLoaded(String placementId) {
@@ -138,7 +139,7 @@ public class MainActivity extends BridgeActivity implements IUnityAdsInitializat
                 getBridge().getWebView().postDelayed(() -> loadUnityAd(), 30000);
             }
         });
-    }
+    } */
 
     // Method to load the test page
     private void loadTestPage() {
@@ -275,12 +276,11 @@ public class MainActivity extends BridgeActivity implements IUnityAdsInitializat
         @JavascriptInterface
         public void showRewardedAd() {
             runOnUiThread(() -> {
-                // Try Unity Ads first (highest paying)
-                if (ENABLE_UNITY_ADS && unityAdsReady) {
+                // Unity Ads disabled for now, go straight to AdMob
+                /* if (ENABLE_UNITY_ADS && unityAdsReady) {
                     showUnityRewardedAd();
-                }
-                // Fallback to AdMob
-                else if (rewardedAd != null) {
+                } else */
+                if (rewardedAd != null) {
                     showAdMobRewardedAd();
                 }
                 // No ads available
@@ -291,15 +291,15 @@ public class MainActivity extends BridgeActivity implements IUnityAdsInitializat
                                     "window.AdManagerAndroidCallbacks.onAdFailed('No ads available'); }",
                             null
                     );
-                    // Try loading both again
-                    if (ENABLE_UNITY_ADS) loadUnityAd();
+                    // Try loading again
+                    // if (ENABLE_UNITY_ADS) loadUnityAd();
                     loadRewardedAd();
                 }
             });
         }
 
-        // Show Unity Rewarded Ad
-        private void showUnityRewardedAd() {
+        // Show Unity Rewarded Ad - COMMENTED OUT
+        /* private void showUnityRewardedAd() {
             Log.d("UnityAds", "Showing Unity rewarded ad");
 
             UnityAds.show(MainActivity.this, UNITY_PLACEMENT_ID, new UnityAdsShowOptions(), new IUnityAdsShowListener() {
@@ -354,7 +354,7 @@ public class MainActivity extends BridgeActivity implements IUnityAdsInitializat
                     loadUnityAd();
                 }
             });
-        }
+        } */
 
         // Show AdMob Rewarded Ad
         private void showAdMobRewardedAd() {
@@ -373,12 +373,12 @@ public class MainActivity extends BridgeActivity implements IUnityAdsInitializat
 
         @JavascriptInterface
         public boolean isReady() {
-            // Check if ANY ad is ready (Unity or AdMob)
-            boolean ready = (ENABLE_UNITY_ADS && unityAdsReady) || (rewardedAd != null);
+            // Check if ANY ad is ready (Unity disabled for now)
+            boolean ready = /* (ENABLE_UNITY_ADS && unityAdsReady) || */ (rewardedAd != null);
             // Log the status
             runOnUiThread(() -> {
                 getBridge().getWebView().evaluateJavascript(
-                        "console.log('Ad ready status - Unity: " + unityAdsReady + ", AdMob: " + (rewardedAd != null) + "');",
+                        "console.log('Ad ready status - Unity: disabled, AdMob: " + (rewardedAd != null) + "');",
                         null
                 );
             });
@@ -387,7 +387,8 @@ public class MainActivity extends BridgeActivity implements IUnityAdsInitializat
 
         @JavascriptInterface
         public boolean isUnityReady() {
-            return ENABLE_UNITY_ADS && unityAdsReady;
+            // return ENABLE_UNITY_ADS && unityAdsReady;
+            return false; // Unity disabled for now
         }
 
         @JavascriptInterface
@@ -395,18 +396,18 @@ public class MainActivity extends BridgeActivity implements IUnityAdsInitializat
             return rewardedAd != null;
         }
 
-        // Test Unity Ad separately
+        // Test Unity Ad separately - DISABLED
         @JavascriptInterface
         public void showUnityAdOnly() {
             runOnUiThread(() -> {
-                if (ENABLE_UNITY_ADS && unityAdsReady) {
+                /* if (ENABLE_UNITY_ADS && unityAdsReady) {
                     showUnityRewardedAd();
-                } else {
-                    getBridge().getWebView().evaluateJavascript(
-                            "console.log('❌ Unity Ad not ready');",
-                            null
-                    );
-                }
+                } else { */
+                getBridge().getWebView().evaluateJavascript(
+                        "console.log('❌ Unity Ads disabled temporarily');",
+                        null
+                );
+                // }
             });
         }
 

@@ -21,8 +21,10 @@ allprojects {
         google()
         mavenCentral()
     }
-    
-    // FORCE Java 17 compatibility for ALL modules including plugins
+}
+
+// Force Java 17 for all subprojects
+subprojects {
     afterEvaluate { project ->
         if (project.hasProperty("android")) {
             android {
@@ -32,15 +34,24 @@ allprojects {
                 }
             }
         }
-    }
-}
-
-// Force Java 17 for all Java compilation tasks
-subprojects {
-    tasks.withType(JavaCompile).configureEach {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-        options.release = 17
+        
+        // Force Java 17 for Java compilation
+        tasks.withType(JavaCompile) {
+            sourceCompatibility = JavaVersion.VERSION_17
+            targetCompatibility = JavaVersion.VERSION_17
+            options.release = 17
+        }
+        
+        // Force Kotlin to use Java 17 if it exists
+        project.tasks.configureEach { task ->
+            if (task.name.contains("compileDebugKotlin") || task.name.contains("compileReleaseKotlin")) {
+                try {
+                    task.kotlinOptions.jvmTarget = "17"
+                } catch (Exception e) {
+                    // Kotlin not present, ignore
+                }
+            }
+        }
     }
 }
 
