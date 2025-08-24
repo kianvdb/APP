@@ -4,19 +4,23 @@ if (window.Capacitor) {
 }
 class AuthManager {
     constructor() {
-        this.user = null;
-        this.isInitialized = false;
-        this.initialized = false; // Backward compatibility
-        
-        // DISABLE account dropdown functionality - let main.js handle it
-        this.accountDropdownDisabled = true;
-         this.isCapacitor = window.Capacitor !== undefined;
+    this.user = null;
+    this.isInitialized = false;
+    this.initialized = false;
+    
+    // DISABLE account dropdown functionality - let main.js handle it
+    this.accountDropdownDisabled = true;
+    this.isCapacitor = window.Capacitor !== undefined;
     console.log('📱 Is Capacitor environment:', this.isCapacitor);
-        
-     // Force use the updated config API URL
-this.apiBaseUrl = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : config.API_BASE_URL;
-console.log('🔧 Auth API Base URL:', this.apiBaseUrl);
-console.log('🔧 Window APP_CONFIG:', window.APP_CONFIG);
+    
+    // Use the config API URL - IMPORTANT: Make sure config is loaded first
+    this.apiBaseUrl = window.APP_CONFIG?.API_BASE_URL || 
+                      window.config?.API_BASE_URL || 
+                      getAPIBaseURL() || // Call the function if available
+                      'https://threely-ai.onrender.com/api'; // Final fallback
+    
+    console.log('🔧 Auth API Base URL:', this.apiBaseUrl);
+    console.log('🔧 Window APP_CONFIG:', window.APP_CONFIG);
             
         console.log('🔧 Auth API Base URL:', this.apiBaseUrl);
         
@@ -54,43 +58,46 @@ console.log('🔧 Window APP_CONFIG:', window.APP_CONFIG);
     }
 
     async init() {
-        console.log('🔐 Initializing AuthManager...');
+    console.log('🔐 Initializing AuthManager...');
+    
+    try {
+        // Create login modal
+        this.createLoginModal();
         
-        try {
-            // Create login modal
-            this.createLoginModal();
-            
-            // Create account dropdown (disabled)
-            this.createAccountDropdown();
-            
-            // Check current authentication status FIRST and wait for it
-            this.authCheckPromise = this.checkAuthStatus();
-            await this.authCheckPromise;
-            
-            // Set currentUser for backward compatibility
-            this.currentUser = this.user;
-            
-            // Handle protected pages with modal instead of redirect
-            this.handleProtectedPageAccess();
-            
-            // Set up event listeners
-            this.setupEventListeners();
-            
-            // Mark as initialized BEFORE dispatching events
-            this.isInitialized = true;
-            this.initialized = true; // For backward compatibility
-            
-            console.log('✅ AuthManager initialized successfully');
-            
-            // Dispatch auth ready event
-            window.dispatchEvent(new CustomEvent('authManagerReady', {
-                detail: { 
-                    authenticated: !!this.user,
-                    user: this.user 
-                }
-            }));
-            
-            return true;
+        // Create account dropdown (disabled)
+        this.createAccountDropdown();
+        
+        // Check current authentication status FIRST and wait for it
+        this.authCheckPromise = this.checkAuthStatus();
+        await this.authCheckPromise;
+        
+        // Set currentUser for backward compatibility
+        this.currentUser = this.user;
+        
+        // Handle protected pages with modal instead of redirect
+        this.handleProtectedPageAccess();
+        
+        // Set up event listeners
+        this.setupEventListeners();
+        
+        // ADD THIS: Setup auth state listener for gallery updates
+        this.setupAuthStateListener();
+        
+        // Mark as initialized BEFORE dispatching events
+        this.isInitialized = true;
+        this.initialized = true; // For backward compatibility
+        
+        console.log('✅ AuthManager initialized successfully');
+        
+        // Dispatch auth ready event
+        window.dispatchEvent(new CustomEvent('authManagerReady', {
+            detail: { 
+                authenticated: !!this.user,
+                user: this.user 
+            }
+        }));
+        
+        return true;
         } catch (error) {
             console.error('❌ AuthManager initialization error:', error);
             
@@ -217,14 +224,36 @@ async makeAuthenticatedRequest(url, options = {}) {
 }
 
     // Dispatch auth state change event
-    dispatchAuthStateChange() {
-        window.dispatchEvent(new CustomEvent('authStateChange', {
-            detail: { 
-                authenticated: !!this.user,
-                user: this.user 
+   dispatchAuthStateChange() {
+    window.dispatchEvent(new CustomEvent('authStateChange', {
+        detail: { 
+            authenticated: !!this.user,
+            user: this.user 
+        }
+    }));
+}
+
+// Setup auth state listener for gallery updates
+setupAuthStateListener() {
+    window.addEventListener('authStateChange', async (event) => {
+        console.log('🔄 Auth state changed, updating gallery if needed...');
+        
+        // Check if AppNavigation exists and user is viewing gallery
+        if (window.AppNavigation && window.AppNavigation.currentSection === 'assets') {
+            if (event.detail.authenticated) {
+                // User just logged in while viewing gallery
+                console.log('👤 User logged in while viewing gallery, updating likes...');
+                await window.AppNavigation.loadUserLikedAssets();
+                window.AppNavigation.updateLikeButtons();
+            } else {
+                // User logged out while viewing gallery
+                console.log('👤 User logged out while viewing gallery, clearing likes...');
+                window.AppNavigation.userLikedAssets = new Set();
+                window.AppNavigation.updateLikeButtons();
             }
-        }));
-    }
+        }
+    });
+}
 
     // Wait for auth check to complete
     async waitForAuthCheck() {
@@ -774,19 +803,22 @@ async makeAuthenticatedRequest(url, options = {}) {
         }
     }
 
-    // Show/hide modal
     showLoginModal() {
-        if (this.loginModal) {
-            this.loginModal.style.display = 'flex';
-            document.body.classList.add('premium-modal-open');
-            this.clearModalMessages();
-            
-            setTimeout(() => {
-                const firstInput = this.loginModal.querySelector('input');
-                if (firstInput) firstInput.focus();
-            }, 100);
-        }
+    console.trace('🔍 Login modal triggered from:');
+    console.log('🔍 Current page:', window.location.pathname);
+    console.log('🔍 Current section:', window.AppNavigation?.currentSection);
+    
+    if (this.loginModal) {
+        this.loginModal.style.display = 'flex';
+        document.body.classList.add('premium-modal-open');
+        this.clearModalMessages();
+        
+        setTimeout(() => {
+            const firstInput = this.loginModal.querySelector('input');
+            if (firstInput) firstInput.focus();
+        }, 100);
     }
+}
 
     hideLoginModal() {
         if (this.loginModal) {
@@ -827,23 +859,93 @@ async makeAuthenticatedRequest(url, options = {}) {
         console.log('📡 Login response data:', data);
 
         if (response.ok) {
-            // Your existing success code...
             console.log('✅ Login successful!');
             
-            // Rest of your code...
+            // Store token if provided
+            if (data.token) {
+                localStorage.setItem('authToken', data.token);
+                console.log('🔑 Auth token stored');
+            }
+            
+            // IMPORTANT: Update user data
+            this.user = {
+                ...data.user,
+                tokens: data.user.tokens !== undefined ? data.user.tokens : 1
+            };
+            this.currentUser = this.user;
+            
+            console.log('👤 User set:', this.user.username, 'Tokens:', this.user.tokens);
+            
+            // Sync with monetization system
+            if (window.enhancedMonetization || window.EnhancedMonetization?.instance) {
+                const monetization = window.enhancedMonetization || window.EnhancedMonetization.instance;
+                monetization.userTokens = this.user.tokens;
+                monetization.userId = this.user.id;
+                monetization.isAdmin = this.user.isAdmin || false;
+                monetization.updateTokensDisplay();
+                console.log('💰 Synced tokens to monetization:', this.user.tokens);
+            }
+            
+            // Update AppNavigation
+            if (window.AppNavigation && window.AppNavigation.updateAccountStats) {
+                window.AppNavigation.updateAccountStats(this.user);
+            }
+            
+            // Update UI
+            this.updateUI();
+            
+            // Show success message
+            this.showModalMessage('premiumLoginMessage', 'Login successful! Welcome back!', 'success');
+            
+            // Dispatch auth state change
+            this.dispatchAuthStateChange();
+            
+            // Update status bar visibility if needed
+            if (window.AppNavigation && window.AppNavigation.updateStatusBarVisibility) {
+                window.AppNavigation.updateStatusBarVisibility(true);
+            }
+            
+            // Wait a moment for the success message to show
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Hide modal
+            this.hideLoginModal();
+            
+            // Clear form
+            document.getElementById('premium-login-form').reset();
+            
+            // Handle redirect
+            const redirectTo = localStorage.getItem('dalma_redirectAfterLogin');
+            if (redirectTo) {
+                console.log('🔀 Redirecting to:', redirectTo);
+                localStorage.removeItem('dalma_redirectAfterLogin');
+                
+                // If it's a section name, navigate to it
+                if (['generate', 'assets', 'account', 'about'].includes(redirectTo)) {
+                    setTimeout(() => {
+                        if (window.AppNavigation) {
+                            window.AppNavigation.navigateToSection(redirectTo);
+                        }
+                    }, 200);
+                } else if (redirectTo.includes('.html')) {
+                    // If it's a URL, go there
+                    window.location.href = redirectTo;
+                }
+            }
+            
+            console.log('✅ Login complete');
+            
         } else {
             console.error('❌ Login failed:', data);
             this.showModalMessage('premiumLoginMessage', data.error || 'Login failed', 'error');
         }
     } catch (error) {
         console.error('❌ Modal login error:', error);
-        console.error('Full error:', error.message, error.stack);
-        this.showModalMessage('premiumLoginMessage', 'Cannot connect to server. Please check your internet connection.', 'error');
+        this.showModalMessage('premiumLoginMessage', 'Cannot connect to server. Please check your connection.', 'error');
     } finally {
         this.setModalLoading('premium-login-form', false);
     }
 }
-
 // FIX 2: Update handleModalRegister to sync tokens properly
 async handleModalRegister(e) {
     e.preventDefault();

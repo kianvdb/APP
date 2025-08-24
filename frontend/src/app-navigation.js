@@ -2341,43 +2341,37 @@ async initializeAssets() {
 }
 
     async loadUserLikedAssets() {
-    if (this.assetsData.isLoadingLikes) return;
+    // Skip if not authenticated - don't trigger login modal
+    if (!window.authManager?.isAuthenticated()) {
+        console.log('👤 User not authenticated, skipping liked assets load');
+        this.userLikedAssets = new Set();
+        return;
+    }
     
     try {
-        this.assetsData.isLoadingLikes = true;
-        
-        const isAuthenticated = await this.checkAuthentication();
-        if (!isAuthenticated) {
-            this.assetsData.likedAssets.clear();
-            return;
-        }
-        
-        // Use makeAuthenticatedRequest
-        const response = await window.makeAuthenticatedRequest(
-            `${this.getApiBaseUrl()}/auth/liked-assets`,
-            { method: 'GET' }
-        );
-        
-        if (!response.ok) {
-            this.assetsData.likedAssets.clear();
-            return;
-        }
-        
-        const data = await response.json();
-        const likedAssetsList = data.assets || [];
-        
-        this.assetsData.likedAssets.clear();
-        likedAssetsList.forEach(asset => {
-            this.assetsData.likedAssets.add(asset._id);
+        // Use a direct fetch instead of makeAuthenticatedRequest to avoid modal
+        const response = await fetch(`${this.getApiBaseUrl()}/auth/liked-assets`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
         });
         
-        console.log('💖 Loaded', this.assetsData.likedAssets.size, 'liked assets');
-        
+        if (response.ok) {
+            const data = await response.json();
+            this.userLikedAssets = new Set(data.assets || []);
+            console.log('❤️ Loaded user liked assets:', this.userLikedAssets.size);
+        } else {
+            // Silently fail - user just won't see their likes
+            this.userLikedAssets = new Set();
+            console.log('ℹ️ Could not load liked assets (not authenticated)');
+        }
     } catch (error) {
-        console.error('❌ Error loading liked assets:', error);
-        this.assetsData.likedAssets.clear();
-    } finally {
-        this.assetsData.isLoadingLikes = false;
+        // Silently handle error
+        console.log('ℹ️ Could not load liked assets:', error.message);
+        this.userLikedAssets = new Set();
     }
 }
 

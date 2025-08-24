@@ -2,24 +2,31 @@
 (function() {
     'use strict';
     
-  const getAPIBaseURL = () => {
+  // config.js - Update the getAPIBaseURL function
+const getAPIBaseURL = () => {
     // Check if running in Capacitor (mobile app)
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-        // ALWAYS use your production URL for Capacitor
         console.log('📱 CAPACITOR DETECTED - Using production URL');
         return 'https://threely-ai.onrender.com/api';
     }
     
-    // Web browser (development or production)
+    // For web browser, check if local server is running
     const hostname = window.location.hostname;
     const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
     
     if (isDevelopment) {
-        console.log('💻 Web Development - Using localhost');
-        return 'http://localhost:3000/api';
+        // Check if you actually have a local server running
+        // If not, use production
+        console.log('💻 Development environment detected');
+        
+        // Option 1: Always use production for now since you don't have local server
+        return 'https://threely-ai.onrender.com/api';
+        
+        // Option 2: Only use local if you're actually running the backend locally
+        // return 'http://localhost:3000/api';
     } else {
-        console.log('🌐 Production - Using current hostname');
-        return `${window.location.protocol}//${hostname}/api`;
+        console.log('🌐 Production - Using deployed server');
+        return 'https://threely-ai.onrender.com/api';
     }
 };
     
