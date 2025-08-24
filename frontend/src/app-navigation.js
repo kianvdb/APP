@@ -879,66 +879,81 @@ init(initialSection = null) {
   
 
     async loadSectionContent(sectionName) {
-        const sectionElement = document.getElementById(`${sectionName}Section`);
+    const sectionElement = document.getElementById(`${sectionName}Section`);
+    
+    if (!sectionElement) {
+        console.error(`❌ Section element not found: ${sectionName}Section`);
+        return;
+    }
+
+    console.log(`📦 Loading content for section: ${sectionName}`);
+
+    // Show loading state with smooth spinner
+    sectionElement.innerHTML = `
+        <div class="section-loading">
+            <div class="section-loading-spinner"></div>
+            <div class="section-loading-text">Loading ${sectionName}...</div>
+        </div>
+    `;
+
+    try {
+        let content = '';
         
-        if (!sectionElement) {
-            console.error(`❌ Section element not found: ${sectionName}Section`);
-            return;
+        switch (sectionName) {
+            case 'home':
+                content = await this.loadHomeContent();
+                break;
+            case 'generate':
+                content = await this.loadGenerateContent();
+                break;
+            case 'assets':
+                content = await this.loadAssetsContent();
+                break;
+            case 'account':
+                content = await this.loadAccountContent();
+                break;
+            case 'about':
+                content = await this.loadAboutContent();
+                break;
+            default:
+                content = '<div class="section-content">Section not found</div>';
         }
 
-        // Show loading state with smooth spinner
+        // DEBUG: Log content length
+        console.log(`✅ Content loaded for ${sectionName}, length: ${content.length}`);
+        
+        if (!content || content.length === 0) {
+            console.error(`❌ Empty content for section: ${sectionName}`);
+            content = `<div style="padding: 2rem; text-align: center; color: white;">Error: Empty content for ${sectionName}</div>`;
+        }
+
+        sectionElement.innerHTML = `<div class="section-content">${content}</div>`;
+        
+        // DEBUG: Check if content was actually inserted
+        console.log(`📊 Section element after insert:`, sectionElement.innerHTML.substring(0, 100));
+        
+        // Initialize section-specific functionality
+        await this.initializeSectionFunctionality(sectionName);
+        
+        this.loadedSections.add(sectionName);
+        console.log(`✅ Section loaded: ${sectionName}`);
+        
+    } catch (error) {
+        console.error(`❌ Error loading section ${sectionName}:`, error);
+        console.error('Full stack:', error.stack);
         sectionElement.innerHTML = `
-            <div class="section-loading">
-                <div class="section-loading-spinner"></div>
-                <div class="section-loading-text">Loading ${sectionName}...</div>
+            <div class="section-content" style="padding: 2rem; text-align: center;">
+                <h3 style="color: #dc3545; margin-bottom: 1rem;">Error Loading Section</h3>
+                <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem;">Failed to load ${sectionName} content.</p>
+                <p style="color: #ff6b6b; font-size: 0.85rem;">${error.message}</p>
+                <button onclick="window.AppNavigation.reloadSection('${sectionName}')" 
+                        style="background: #00bcd4; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer;">
+                    Retry
+                </button>
             </div>
         `;
-
-        try {
-            let content = '';
-            
-            switch (sectionName) {
-                case 'home':
-                    content = await this.loadHomeContent();
-                    break;
-                case 'generate':
-                    content = await this.loadGenerateContent();
-                    break;
-                case 'assets':
-                    content = await this.loadAssetsContent();
-                    break;
-                case 'account':
-                    content = await this.loadAccountContent();
-                    break;
-                case 'about':
-                    content = await this.loadAboutContent();
-                    break;
-                default:
-                    content = '<div class="section-content">Section not found</div>';
-            }
-
-            sectionElement.innerHTML = `<div class="section-content">${content}</div>`;
-            
-            // Initialize section-specific functionality
-            await this.initializeSectionFunctionality(sectionName);
-            
-            this.loadedSections.add(sectionName);
-            console.log(`✅ Section loaded: ${sectionName}`);
-            
-        } catch (error) {
-            console.error(`❌ Error loading section ${sectionName}:`, error);
-            sectionElement.innerHTML = `
-                <div class="section-content" style="padding: 2rem; text-align: center;">
-                    <h3 style="color: #dc3545; margin-bottom: 1rem;">Error Loading Section</h3>
-                    <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem;">Failed to load ${sectionName} content.</p>
-                    <button onclick="window.AppNavigation.reloadSection('${sectionName}')" 
-                            style="background: #00bcd4; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer;">
-                        Retry
-                    </button>
-                </div>
-            `;
-        }
     }
+}
 
     async loadHomeContent() {
         return `
@@ -2968,17 +2983,60 @@ control3DRendering(sectionName) {
     }
 }
 
-// Update your showSection method to include this:
 async showSection(sectionName, skipAnimation = false) {
+    console.log(`🔍 Attempting to show section: ${sectionName}`);
+    
     const sectionElement = document.getElementById(`${sectionName}Section`);
     
     if (!sectionElement) {
-        console.error(`❌ Section not found: ${sectionName}`);
+        console.error(`❌ Section not found: ${sectionName}Section`);
         return;
     }
 
-    // CONTROL 3D RENDERING
-    this.control3DRendering(sectionName);}
+    // Hide all sections first
+    document.querySelectorAll('.app-section').forEach(section => {
+        section.classList.remove('active');
+        section.style.display = 'none';
+        console.log(`👁️ Hiding section: ${section.id}`);
+    });
+
+    // Load content if not already loaded
+    if (!this.loadedSections.has(sectionName)) {
+        console.log(`📦 Section ${sectionName} not loaded yet, loading now...`);
+        await this.loadSectionContent(sectionName);
+    } else {
+        console.log(`✅ Section ${sectionName} already loaded`);
+    }
+
+    // ALWAYS reset scroll position before showing
+    sectionElement.scrollTop = 0;
+
+    // Show new section - IMPORTANT: Make sure display is set
+    sectionElement.style.display = 'block';
+    sectionElement.classList.add('active');
+    
+    // Force a reflow to ensure styles are applied
+    sectionElement.offsetHeight;
+    
+    // Check if section is actually visible
+    const rect = sectionElement.getBoundingClientRect();
+    console.log(`📏 Section ${sectionName} position:`, {
+        display: sectionElement.style.display,
+        hasActiveClass: sectionElement.classList.contains('active'),
+        visible: rect.width > 0 && rect.height > 0,
+        dimensions: `${rect.width}x${rect.height}`,
+        position: `top: ${rect.top}, left: ${rect.left}`
+    });
+    
+    // Force scroll reset again after display
+    sectionElement.scrollTop = 0;
+    const contentWrapper = sectionElement.querySelector('.section-content');
+    if (contentWrapper) {
+        contentWrapper.scrollTop = 0;
+    }
+    
+    console.log(`✅ Section displayed: ${sectionName}`);
+}
 } 
 
 window.AppNavigation = new AppNavigation();

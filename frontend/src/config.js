@@ -7,7 +7,7 @@
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         // ALWAYS use your production URL for Capacitor
         console.log('📱 CAPACITOR DETECTED - Using production URL');
-        return 'https://image-to-3d.onrender.com/api';
+        return 'https://threely-ai.onrender.com/api';
     }
     
     // Web browser (development or production)
