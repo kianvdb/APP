@@ -192,25 +192,28 @@ constructor() {
 }
 
     // Get API base URL
-    getApiBaseUrl() {
-        if (window.DALMA_CONFIG && window.DALMA_CONFIG.API_BASE_URL) {
-            return window.DALMA_CONFIG.API_BASE_URL;
-        } else if (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) {
-            return window.APP_CONFIG.API_BASE_URL;
-        } else {
-            const protocol = window.location.protocol;
-            const hostname = window.location.hostname;
-            const isDev = hostname === 'localhost' || hostname === '127.0.0.1';
-            
-            if (isDev) {
-                return `http://${hostname}:3000/api`;
-            } else {
-                return protocol === 'https:' 
-                    ? `https://${hostname}/api`
-                    : `http://${hostname}:3000/api`;
-            }
-        }
+   getApiBaseUrl() {
+    // Check multiple sources for API URL
+    if (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) {
+        return window.APP_CONFIG.API_BASE_URL;
     }
+    
+    // Capacitor/Android emulator
+    if (window.Capacitor) {
+        return 'http://10.0.2.2:3000/api';
+    }
+    
+    // Local development
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:3000/api';
+    }
+    
+    // Production
+    const protocol = window.location.protocol;
+    return protocol === 'https:' 
+        ? `https://${window.location.hostname}/api`
+        : `http://${window.location.hostname}:3000/api`;
+}
    showViewer() {
     const overlay = document.getElementById('mobileAssetViewer');
     if (overlay) {
@@ -287,7 +290,7 @@ showErrorState() {
     if (error) error.style.display = 'flex';
 }
 
-   async openAsset(assetId) {
+ async openAsset(assetId) {
     console.log('📱 Opening asset:', assetId);
     
     // Check if viewer HTML exists, if not initialize it
@@ -306,13 +309,28 @@ showErrorState() {
         // Show the viewer immediately with loading state
         this.showViewer();
         
-        // Then load the asset data
-        const apiBase = this.getApiBaseUrl();
-        console.log('🔗 API URL:', `${apiBase}/assets/${assetId}`);
+        // FIX: Use proper API URL
+        const apiUrl = window.APP_CONFIG?.API_BASE_URL || 
+                      (window.Capacitor ? 'http://10.0.2.2:3000/api' : 
+                       window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api');
         
-        const response = await fetch(`${apiBase}/assets/${assetId}`, {
+        console.log('🔗 API URL:', `${apiUrl}/assets/${assetId}`);
+        
+        // FIX: Add auth token to request
+        const authToken = localStorage.getItem('authToken');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+            console.log('🔑 Including auth token in request');
+        }
+        
+        const response = await fetch(`${apiUrl}/assets/${assetId}`, {
             method: 'GET',
-            credentials: 'include'
+            credentials: 'include',
+            headers: headers
         });
         
         if (!response.ok) {
@@ -320,7 +338,7 @@ showErrorState() {
         }
         
         const data = await response.json();
-        this.currentAsset = data.asset || data; // Handle both response formats
+        this.currentAsset = data.asset || data;
         
         console.log('✅ Asset data loaded:', this.currentAsset);
         
@@ -710,39 +728,55 @@ async cacheAssetInBackground(assetData) {
         console.warn('Background caching failed:', error);
     }
 }
-    // Load asset data
     async loadAssetData() {
-        try {
-            console.log('📥 Loading asset data:', this.currentAssetId);
-            
-            // Show loading state
-            this.showLoadingState();
-            
-            const response = await fetch(`${this.getApiBaseUrl()}/assets/${this.currentAssetId}`, {
-                method: 'GET',
-                credentials: 'include'
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Failed to load asset: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            this.currentAsset = data.asset;
-            
-            console.log('✅ Asset loaded:', this.currentAsset.name);
-            
-            // Detect available formats
-            this.detectFormats();
-            
-            // Update UI
-            this.updateAssetInfo();
-            
-        } catch (error) {
-            console.error('❌ Error loading asset:', error);
-            this.showErrorState();
+    try {
+        console.log('📥 Loading asset data:', this.currentAssetId);
+        
+        // Show loading state
+        this.showLoadingState();
+        
+        // FIX: Use proper API URL
+        const apiUrl = window.APP_CONFIG?.API_BASE_URL || 
+                      (window.Capacitor ? 'http://10.0.2.2:3000/api' : 
+                       window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api');
+        
+        // FIX: Add auth token
+        const authToken = localStorage.getItem('authToken');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+            console.log('🔑 Including auth token in loadAssetData');
         }
+        
+        const response = await fetch(`${apiUrl}/assets/${this.currentAssetId}`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: headers
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to load asset: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        this.currentAsset = data.asset;
+        
+        console.log('✅ Asset loaded:', this.currentAsset.name);
+        
+        // Detect available formats
+        this.detectFormats();
+        
+        // Update UI
+        this.updateAssetInfo();
+        
+    } catch (error) {
+        console.error('❌ Error loading asset:', error);
+        this.showErrorState();
     }
+}
 
     // Detect available formats
     detectFormats() {
@@ -1169,30 +1203,23 @@ frameModel() {
     }
     
     try {
-        let response;
-        const body = JSON.stringify({ assetId: this.currentAssetId });
+        const apiUrl = this.getApiBaseUrl();
+        const authToken = localStorage.getItem('authToken');
         
-        if (window.makeAuthenticatedRequest) {
-            response = await window.makeAuthenticatedRequest(
-                `${this.getApiBaseUrl()}/auth/like-asset`,
-                {
-                    method: 'POST',
-                    body: body
-                }
-            );
-        } else {
-            // Fallback
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            response = await fetch(`${this.getApiBaseUrl()}/auth/like-asset`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': token ? `Bearer ${token}` : ''
-                },
-                credentials: 'include',
-                body: body
-            });
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
         }
+        
+        const response = await fetch(`${apiUrl}/auth/like-asset`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: headers,
+            body: JSON.stringify({ assetId: this.currentAssetId })
+        });
         
         if (response.ok) {
             const data = await response.json();
@@ -1229,37 +1256,32 @@ async handleDownload() {
     }
 }
 
-    async downloadAsset(format) {
+   async downloadAsset(format) {
     console.log('📥 Downloading format:', format);
     
     this.closeDownloadModal();
     
     try {
+        const apiUrl = this.getApiBaseUrl();
+        const authToken = localStorage.getItem('authToken');
+        
         let downloadUrl;
-        
         if (this.currentAsset.meshyTaskId) {
-            downloadUrl = `${this.getApiBaseUrl()}/assets/meshy/${this.currentAsset.meshyTaskId}/download?format=${format}`;
+            downloadUrl = `${apiUrl}/assets/meshy/${this.currentAsset.meshyTaskId}/download?format=${format}`;
         } else {
-            downloadUrl = `${this.getApiBaseUrl()}/assets/${this.currentAssetId}/download?format=${format}`;
+            downloadUrl = `${apiUrl}/assets/${this.currentAssetId}/download?format=${format}`;
         }
         
-        // Use the global makeAuthenticatedRequest if available
-        let response;
-        if (window.makeAuthenticatedRequest) {
-            response = await window.makeAuthenticatedRequest(downloadUrl, {
-                method: 'GET'
-            });
-        } else {
-            // Fallback with auth headers
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            response = await fetch(downloadUrl, {
-                method: 'GET',
-                credentials: 'include',
-                headers: token ? {
-                    'Authorization': `Bearer ${token}`
-                } : {}
-            });
+        const headers = {};
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
         }
+        
+        const response = await fetch(downloadUrl, {
+            method: 'GET',
+            credentials: 'include',
+            headers: headers
+        });
         
         if (!response.ok) {
             throw new Error(`Download failed: ${response.status}`);
@@ -1320,24 +1342,24 @@ toggleInfo() {
 }
  async checkAuthentication() {
     try {
-        // Use the global makeAuthenticatedRequest if available
-        if (window.makeAuthenticatedRequest) {
-            const response = await window.makeAuthenticatedRequest(
-                `${this.getApiBaseUrl()}/auth/me`,
-                { method: 'GET' }
-            );
-            return response.ok;
-        } else {
-            // Fallback to regular fetch
-            const response = await fetch(`${this.getApiBaseUrl()}/auth/me`, {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token') || ''}`
-                }
-            });
-            return response.ok;
+        const apiUrl = this.getApiBaseUrl();
+        const authToken = localStorage.getItem('authToken');
+        
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
         }
+        
+        const response = await fetch(`${apiUrl}/auth/me`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: headers
+        });
+        
+        return response.ok;
     } catch (error) {
         console.error('❌ Auth check error:', error);
         return false;

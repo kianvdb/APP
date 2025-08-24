@@ -746,6 +746,24 @@ window.debugTokens = () => {
     console.log('- Header display:', document.getElementById('creditsCount')?.textContent);
     console.log('- Account display:', document.getElementById('accountCreditsCount')?.textContent);
 };
+
+
+// Emergency performance fix
+document.addEventListener('DOMContentLoaded', function() {
+    // Pause all animations by default
+    document.body.classList.add('reduce-animations');
+    
+    // Stop any infinite loops
+    const highFrequencyElements = document.querySelectorAll('[style*="animation"]');
+    highFrequencyElements.forEach(el => {
+        if (!el.closest('.active')) {
+            el.style.animationPlayState = 'paused';
+        }
+    });
+});
+
+
+
 </script>
     
 </body>

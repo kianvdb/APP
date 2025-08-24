@@ -4533,3 +4533,19 @@ body.status-bar-hidden .mobile-asset-viewer-overlay .asset-viewer-header::before
 body.status-bar-hidden .app-loading-screen {
     padding-top: 0 !important;
 }
+
+/* Disable animations when not needed */
+body.reduce-animations * {
+    animation: none !important;
+    transition: none !important;
+}
+
+/* Limit particle animations */
+.particle {
+    animation-play-state: paused;
+}
+
+/* Only animate when visible */
+.about-container:not(.active) .particle {
+    display: none;
+}

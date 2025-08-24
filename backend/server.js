@@ -84,6 +84,13 @@ const corsOptions = {
     'https://localhost:3000',
     'https://127.0.0.1:3000',
     
+    // ADD YOUR PHONE/NETWORK ACCESS
+    'http://192.168.1.41:3000',  // Your computer's IP
+    'http://192.168.1.41:3001',
+    'http://192.168.1.*',         // Any device on your network
+    /^http:\/\/192\.168\.1\.\d+:\d+$/,  // Pattern for your network
+
+    
     // Add Live Server origins
     'http://127.0.0.1:59063',
     'http://localhost:59063',

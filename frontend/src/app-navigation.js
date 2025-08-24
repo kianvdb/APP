@@ -286,6 +286,9 @@ async showSection(sectionName, skipAnimation = false) {
         return;
     }
 
+    // STOP ALL ANIMATIONS FIRST
+    this.stopAllAnimations();
+
     // Hide all sections first
     document.querySelectorAll('.app-section').forEach(section => {
         section.classList.remove('active');
@@ -304,9 +307,7 @@ async showSection(sectionName, skipAnimation = false) {
     if (skipAnimation) {
         sectionElement.style.display = 'block';
         sectionElement.classList.add('active');
-        // Force scroll reset again after display
         sectionElement.scrollTop = 0;
-        // Also try scrolling the content wrapper if it exists
         const contentWrapper = sectionElement.querySelector('.section-content');
         if (contentWrapper) contentWrapper.scrollTop = 0;
         console.log(`✅ Section displayed immediately: ${sectionName}`);
@@ -314,15 +315,17 @@ async showSection(sectionName, skipAnimation = false) {
         setTimeout(() => {
             sectionElement.style.display = 'block';
             sectionElement.classList.add('active');
-            // Force scroll reset after display
             sectionElement.scrollTop = 0;
-            // Also try scrolling the content wrapper if it exists
             const contentWrapper = sectionElement.querySelector('.section-content');
             if (contentWrapper) contentWrapper.scrollTop = 0;
-            
             console.log(`✅ Section displayed: ${sectionName}`);
         }, 50);
     }
+    
+    // START ANIMATIONS ONLY FOR ACTIVE SECTION
+    setTimeout(() => {
+        this.startSectionAnimations(sectionName);
+    }, 100);
 }
 
     confirmLogout() {
@@ -722,18 +725,37 @@ async updateLikedModelsCount() {
 init(initialSection = null) {
     console.log('🎯 Setting up app navigation with public assets access...');
     
+    // CLEAR ANY STUCK REDIRECTS IF NOT AUTHENTICATED
+    const isAuthenticated = window.authManager?.isAuthenticated();
+    if (!isAuthenticated) {
+        // Clear any redirect that requires authentication
+        localStorage.removeItem('dalma_redirectAfterLogin');
+        sessionStorage.removeItem('redirect');
+        sessionStorage.removeItem('pendingRedirect');
+        
+        // Remove redirect from URL params
+        const url = new URL(window.location);
+        url.searchParams.delete('redirect');
+        if (url.searchParams.toString() === '') {
+            window.history.replaceState({}, '', window.location.pathname);
+        } else {
+            window.history.replaceState({}, '', url);
+        }
+        
+        console.log('🚫 Cleared stuck redirects - user not authenticated');
+    }
+    
     this.setupBottomNavigation();
     
     // Initialize Mobile Asset Viewer immediately - ENHANCED CHECK
     if (typeof MobileAssetViewer !== 'undefined' && !window.MobileAssetViewer) {
-    window.MobileAssetViewer = new MobileAssetViewer();
-    console.log('✅ Created new MobileAssetViewer instance');
-}
+        window.MobileAssetViewer = new MobileAssetViewer();
+        console.log('✅ Created new MobileAssetViewer instance');
+    }
 
-if (window.MobileAssetViewer && !window.MobileAssetViewer.viewerInitialized) {
-    window.MobileAssetViewer.initializeViewerHTML();
-    console.log('✅ Mobile Asset Viewer HTML initialized');
-
+    if (window.MobileAssetViewer && !window.MobileAssetViewer.viewerInitialized) {
+        window.MobileAssetViewer.initializeViewerHTML();
+        console.log('✅ Mobile Asset Viewer HTML initialized');
     } else if (window.MobileAssetViewer && window.MobileAssetViewer.viewerInitialized) {
         console.log('✅ Mobile Asset Viewer already initialized');
     } else {
@@ -750,47 +772,94 @@ if (window.MobileAssetViewer && !window.MobileAssetViewer.viewerInitialized) {
         }, 1000);
     }
     
-    // Check for redirect section first
+    // Define which sections require authentication
+    const protectedSections = ['generate', 'account'];
+    const publicSections = ['home', 'assets', 'about'];
+    
+    // Check for redirect section first - BUT VALIDATE IT
     const urlParams = new URLSearchParams(window.location.search);
-    const redirectSection = urlParams.get('redirect') || localStorage.getItem('dalma_redirectAfterLogin');
+    let redirectSection = null;
+    
+    if (isAuthenticated) {
+        // Authenticated users can go anywhere
+        redirectSection = urlParams.get('redirect') || localStorage.getItem('dalma_redirectAfterLogin');
+        // Clean up after reading
+        if (redirectSection) {
+            localStorage.removeItem('dalma_redirectAfterLogin');
+            // Remove from URL
+            const url = new URL(window.location);
+            url.searchParams.delete('redirect');
+            window.history.replaceState({}, '', url.searchParams.toString() === '' ? window.location.pathname : url);
+        }
+    } else {
+        // For non-authenticated users, only allow navigation to public sections
+        const requestedSection = urlParams.get('redirect');
+        if (requestedSection && publicSections.includes(requestedSection)) {
+            redirectSection = requestedSection;
+        } else if (requestedSection && protectedSections.includes(requestedSection)) {
+            // If they tried to access a protected section, redirect to home
+            console.log('🔒 Attempted to access protected section without auth:', requestedSection);
+            redirectSection = null; // Will fall back to home
+        }
+    }
     
     // Determine which section to load initially
+    // Default to HOME for safety (always accessible)
     const sectionToLoad = initialSection || redirectSection || 'home';
     console.log('📍 Initial section to load:', sectionToLoad);
     
-    // Update navigation state immediately if not home
-    if (sectionToLoad !== 'home') {
+    // Double-check: if section requires auth and user isn't authenticated, go home
+    if (protectedSections.includes(sectionToLoad) && !isAuthenticated) {
+        console.log('🔒 Redirecting to home - attempted to load protected section:', sectionToLoad);
+        this.currentSection = 'home';
+        this.updateNavigation('home');
+    } else if (!this.sections.includes(sectionToLoad)) {
+        // Validate the section exists
+        console.warn(`⚠️ Invalid section: ${sectionToLoad}, defaulting to home`);
+        this.currentSection = 'home';
+        this.updateNavigation('home');
+    } else {
+        // Valid section, proceed
         this.currentSection = sectionToLoad;
         this.updateNavigation(sectionToLoad);
     }
     
     // Load the appropriate section (skip animation for initial load)
-    this.loadSectionContent(sectionToLoad).then(() => {
-        this.showSection(sectionToLoad, true); // Skip animation for initial load
+    this.loadSectionContent(this.currentSection).then(() => {
+        this.showSection(this.currentSection, true); // Skip animation for initial load
+    }).catch(error => {
+        console.error('❌ Failed to load initial section:', error);
+        // Fallback to home on error (always safe)
+        this.currentSection = 'home';
+        this.updateNavigation('home');
+        this.loadSectionContent('home').then(() => {
+            this.showSection('home', true);
+        });
     });
     
-   // Check authentication and update navigation labels
-const isAuthenticated = window.authManager?.isAuthenticated();
+    // Update status bar based on auth state
+    this.updateStatusBarVisibility(isAuthenticated);
 
-// Update status bar based on auth state
-this.updateStatusBarVisibility(isAuthenticated);
-
-if (isAuthenticated) {
-    const userData = window.authManager?.currentUser || {};
-    this.updateAccountNavLabel(userData.email);
-    this.updateTopBarAccountButton();
-    
-    // Fetch and display liked models count
-    this.updateLikedCount();
-} else {
-    this.updateAccountNavLabel(null);
-    this.updateTopBarAccountButton();
-}
+    if (isAuthenticated) {
+        const userData = window.authManager?.currentUser || {};
+        this.updateAccountNavLabel(userData.email);
+        this.updateTopBarAccountButton();
+        
+        // Fetch and display liked models count
+        this.updateLikedCount();
+    } else {
+        this.updateAccountNavLabel(null);
+        this.updateTopBarAccountButton();
+    }
     
     // Set up account button click handler
     const accountBtn = document.querySelector('.header-actions .account-btn');
     if (accountBtn) {
-        accountBtn.addEventListener('click', () => {
+        // Remove any existing listeners
+        accountBtn.replaceWith(accountBtn.cloneNode(true));
+        const newAccountBtn = document.querySelector('.header-actions .account-btn');
+        
+        newAccountBtn.addEventListener('click', () => {
             const isAuth = window.authManager?.isAuthenticated();
             if (!isAuth) {
                 window.authManager?.showLoginModal();
@@ -799,6 +868,7 @@ if (isAuthenticated) {
             }
         });
     }
+    
     this.setupTokenUpdateListener();
     
     console.log('✅ App navigation ready with public assets access');
@@ -1787,61 +1857,39 @@ async initializeAssets() {
 }
 
     async initializeAbout() {
-        console.log('🎯 Initializing about section animations...');
-        
-        // Create floating particles
-const particleField = document.getElementById('particleField');
-if (particleField) {
-    // Clear existing particles first
-    particleField.innerHTML = '';
+    console.log('🎯 Initializing about section animations...');
     
-    for (let i = 0; i < 30; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle'; // Use existing particle class
-        particle.style.cssText = `
-            position: absolute;
-            width: 2px;
-            height: 2px;
-            background: rgba(0, 188, 212, 0.6);
-            border-radius: 50%;
-            opacity: 0;
-            left: ${Math.random() * 100}%;
-            top: ${Math.random() * 100}%;
-            animation: float-particle ${10 + Math.random() * 20}s linear infinite;
-            animation-delay: ${Math.random() * 10}s;
-        `;
-        particleField.appendChild(particle);
+    // Create floating particles - LIMIT TO 10 instead of 30
+    const particleField = document.getElementById('particleField');
+    if (particleField && !particleField.hasChildNodes()) { // Only create if empty
+        particleField.innerHTML = '';
+        
+        for (let i = 0; i < 10; i++) { // REDUCED from 30
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.cssText = `
+                position: absolute;
+                width: 2px;
+                height: 2px;
+                background: rgba(0, 188, 212, 0.6);
+                border-radius: 50%;
+                opacity: 0;
+                left: ${Math.random() * 100}%;
+                top: ${Math.random() * 100}%;
+                animation: float-particle ${10 + Math.random() * 20}s linear infinite;
+                animation-delay: ${Math.random() * 10}s;
+                animation-play-state: paused; /* Start paused */
+            `;
+            particleField.appendChild(particle);
+        }
+        console.log('✅ Created 10 floating particles (paused)');
     }
-    console.log('✅ Created 30 floating particles');
-} else {
-    console.log('❌ particleField not found');
+    
+    // Only animate stats if section is visible
+    if (document.getElementById('aboutSection').classList.contains('active')) {
+        // Your stats animation code here
+    }
 }
-        
-        // Animate stats numbers when they come into view
-        setTimeout(() => {
-            const statNumbers = document.querySelectorAll('.stat-number');
-            statNumbers.forEach(stat => {
-                const target = parseInt(stat.getAttribute('data-target'));
-                const duration = 2000;
-                const start = 0;
-                const increment = target / (duration / 16);
-                let current = start;
-                
-                const updateNumber = () => {
-                    current += increment;
-                    if (current < target) {
-                        stat.textContent = Math.floor(current);
-                        requestAnimationFrame(updateNumber);
-                    } else {
-                        stat.textContent = target + (stat.parentElement.textContent.includes('%') ? '%' : '');
-                    }
-                };
-                
-                updateNumber();
-            });
-        }, 300);
-    }
-    
 
     // Liked Models functionality
     async showLikedModels() {
@@ -2816,6 +2864,33 @@ showAssetsLoading() {
             timeout = setTimeout(later, wait);
         };
     }
+    stopAllAnimations() {
+    // Stop all particle animations
+    const particles = document.querySelectorAll('.particle');
+    particles.forEach(p => p.style.animationPlayState = 'paused');
+    
+    // Stop any running intervals/timeouts
+    if (window.animationIntervals) {
+        window.animationIntervals.forEach(id => clearInterval(id));
+        window.animationIntervals = [];
+    }
+    
+    // Add class to reduce animations
+    document.body.classList.add('reduce-animations');
+}
+
+startSectionAnimations(sectionName) {
+    // Only start animations for the active section
+    if (sectionName === 'about') {
+        const particles = document.querySelectorAll('#particleField .particle');
+        particles.forEach(p => p.style.animationPlayState = 'running');
+    }
+    
+    // Remove animation reduction for active sections
+    if (['home', 'about'].includes(sectionName)) {
+        document.body.classList.remove('reduce-animations');
+    }
+}
 
 } // END OF APPNAVIGATION CLASS - THIS CLOSING BRACE IS CRITICAL
 

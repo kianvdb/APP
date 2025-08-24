@@ -2,34 +2,41 @@
 (function() {
     'use strict';
     
-    // Function to determine the correct API base URL
-    const getAPIBaseURL = () => {
-        // Check if running in Capacitor (mobile app)
-        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            // Android emulator/device
-            if (window.Capacitor.getPlatform() === 'android') {
-                console.log('🚨 ANDROID DETECTED - Using 10.0.2.2 with HTTP');
+   const getAPIBaseURL = () => {
+    // Check if running in Capacitor (mobile app)
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        // Android device (NOT emulator)
+        if (window.Capacitor.getPlatform() === 'android') {
+            // Check if it's emulator or real device
+            const isEmulator = window.location.hostname === 'localhost';
+            
+            if (isEmulator) {
+                console.log('🚨 ANDROID EMULATOR - Using 10.0.2.2');
                 return 'http://10.0.2.2:3000/api';
-            }
-            // iOS simulator/device
-            if (window.Capacitor.getPlatform() === 'ios') {
-                console.log('📱 iOS DETECTED - Using localhost with HTTP');
-                return 'http://localhost:3000/api';
+            } else {
+                console.log('📱 ANDROID PHONE - Using network IP');
+                return 'http://192.168.1.41:3000/api'; // YOUR COMPUTER'S IP!
             }
         }
-        
-        // Web browser (development or production)
-        const hostname = window.location.hostname;
-        const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
-        
-        if (isDevelopment) {
-            console.log('💻 Web Development - Using localhost with HTTP');
+        // iOS simulator/device
+        if (window.Capacitor.getPlatform() === 'ios') {
+            console.log('📱 iOS DETECTED - Using localhost with HTTP');
             return 'http://localhost:3000/api';
-        } else {
-            console.log('🌐 Production - Using current hostname');
-            return `${window.location.protocol}//${hostname}/api`;
         }
-    };
+    }
+    
+    // Web browser (development or production)
+    const hostname = window.location.hostname;
+    const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
+    
+    if (isDevelopment) {
+        console.log('💻 Web Development - Using localhost with HTTP');
+        return 'http://localhost:3000/api';
+    } else {
+        console.log('🌐 Production - Using current hostname');
+        return `${window.location.protocol}//${hostname}/api`;
+    }
+};
     
     // Function to determine which Stripe key to use
     const getStripePublicKey = () => {
