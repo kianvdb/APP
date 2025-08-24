@@ -1025,7 +1025,7 @@ async loadGenerateContent() {
                     <div class="control-section image-upload">
                         <label class="control-label">Upload Image</label>
                         <div class="upload-area" id="uploadArea">
-                            <input type="file" id="imageInput" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/*" capture="environment" hidden/>
+                           <input type="file" id="imageInput" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/*" hidden/>
                             <div class="upload-placeholder" id="uploadPlaceholder">
                                 <svg class="upload-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
@@ -2192,8 +2192,15 @@ async initializeAssets() {
             this.assetsData.likedAssets.delete(assetId);
         }
         
-        // Update like button states
-        document.querySelectorAll(`[data-asset-id="${assetId}"]`).forEach(button => {
+        // CRITICAL: Save to localStorage for persistence
+        localStorage.setItem('userLikedAssets', JSON.stringify([...this.assetsData.likedAssets]));
+        
+        // Update like button states - improved selector
+        const likeButtons = document.querySelectorAll(
+            `[data-asset-id="${assetId}"], .asset-card[data-asset-id="${assetId}"] .like-btn`
+        );
+        
+        likeButtons.forEach(button => {
             if (isLiked) {
                 button.classList.add('liked');
                 button.style.background = 'rgba(0, 188, 212, 0.2)';
@@ -2218,7 +2225,7 @@ async initializeAssets() {
             : `Removed "${assetName}" from your liked models`;
         this.showFeedback(message, 'success');
         this.updateLikedCount();  
-        // Update account stats - THIS IS THE KEY PART
+        // Update account stats
         await this.updateLikedModelsCount();
        
     } catch (error) {
@@ -2226,7 +2233,6 @@ async initializeAssets() {
         this.showFeedback('Failed to update like status. Please try again.', 'error');
     }
 }
-
     showFeedback(message, type = 'success') {
         const existingFeedback = document.querySelector('.mobile-feedback-message');
         if (existingFeedback) existingFeedback.remove();
@@ -2341,37 +2347,47 @@ async initializeAssets() {
 }
 
     async loadUserLikedAssets() {
-    // Skip if not authenticated - don't trigger login modal
+    // First, try to load from localStorage for immediate UI update
+    const stored = localStorage.getItem('userLikedAssets');
+    if (stored) {
+        try {
+            this.userLikedAssets = new Set(JSON.parse(stored));
+            // Update UI immediately with stored likes
+            this.updateAllLikeButtons();
+        } catch (e) {
+            this.userLikedAssets = new Set();
+        }
+    }
+    
+    // Then fetch from server to sync
     if (!window.authManager?.isAuthenticated()) {
-        console.log('👤 User not authenticated, skipping liked assets load');
-        this.userLikedAssets = new Set();
         return;
     }
     
     try {
-        // Use a direct fetch instead of makeAuthenticatedRequest to avoid modal
         const response = await fetch(`${this.getApiBaseUrl()}/auth/liked-assets`, {
             method: 'GET',
             credentials: 'include',
             headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
+                'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
             }
         });
         
         if (response.ok) {
             const data = await response.json();
-            this.userLikedAssets = new Set(data.assets || []);
+            const likedIds = data.assets.map(a => a._id || a);
+            this.userLikedAssets = new Set(likedIds);
+            
+            // Save to localStorage
+            localStorage.setItem('userLikedAssets', JSON.stringify([...this.userLikedAssets]));
+            
+            // Update all like buttons
+            this.updateAllLikeButtons();
+            
             console.log('❤️ Loaded user liked assets:', this.userLikedAssets.size);
-        } else {
-            // Silently fail - user just won't see their likes
-            this.userLikedAssets = new Set();
-            console.log('ℹ️ Could not load liked assets (not authenticated)');
         }
     } catch (error) {
-        // Silently handle error
         console.log('ℹ️ Could not load liked assets:', error.message);
-        this.userLikedAssets = new Set();
     }
 }
 

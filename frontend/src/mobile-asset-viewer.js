@@ -79,7 +79,8 @@ constructor() {
             </div>
 
             <!-- Asset Info Overlay (Top Left) -->
-            <div class="asset-info-overlay" id="assetInfoOverlay">
+          <!-- Asset Info Overlay (Top Left) -->
+<div class="asset-info-overlay" id="assetInfoOverlay" style="display: block; opacity: 1;">
                 <div class="asset-info-content">
                     <h3 class="asset-title" id="assetTitle">Loading...</h3>
                     <div class="asset-details">
@@ -215,6 +216,11 @@ constructor() {
         : `http://${window.location.hostname}:3000/api`;
 }
    showViewer() {
+    const infoOverlay = document.getElementById('assetInfoOverlay');
+if (infoOverlay) {
+    infoOverlay.style.display = 'block';
+    infoOverlay.style.opacity = '1';
+}
     const overlay = document.getElementById('mobileAssetViewer');
     if (overlay) {
         // Make sure it's visible
@@ -1288,18 +1294,67 @@ async handleDownload() {
         }
         
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
         
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${this.currentAsset.name || 'asset'}.${format}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        window.URL.revokeObjectURL(url);
-        
-        this.showFeedback(`${format.toUpperCase()} downloaded!`, 'success');
+        // Check if running on mobile (Capacitor)
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            console.log('📱 Mobile download detected, saving to device...');
+            
+            try {
+                // Import Filesystem plugin
+                const { Filesystem, Directory } = Capacitor.Plugins;
+                
+                // Convert blob to base64
+                const reader = new FileReader();
+                reader.readAsDataURL(blob);
+                reader.onloadend = async () => {
+                    const base64String = reader.result.split(',')[1];
+                    
+                    // Generate filename
+                    const fileName = `${this.currentAsset.name || 'model'}_${Date.now()}.${format}`;
+                    
+                    // Save to Documents directory
+                    const result = await Filesystem.writeFile({
+                        path: fileName,
+                        data: base64String,
+                        directory: Directory.Documents,
+                    });
+                    
+                    console.log('✅ File saved to:', result.uri);
+                    this.showFeedback(`Saved: ${fileName}`, 'success');
+                };
+                
+            } catch (fsError) {
+                console.error('❌ Filesystem error:', fsError);
+                
+                // Fallback: Use regular download
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${this.currentAsset.name || 'asset'}.${format}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                this.showFeedback('Download started...', 'info');
+            }
+            
+        } else {
+            // Web browser - existing code
+            console.log('💻 Web download detected');
+            const url = window.URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${this.currentAsset.name || 'asset'}.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            window.URL.revokeObjectURL(url);
+            
+            this.showFeedback(`${format.toUpperCase()} downloaded!`, 'success');
+        }
         
     } catch (error) {
         console.error('❌ Download error:', error);
@@ -1331,7 +1386,7 @@ toggleInfo() {
     const infoOverlay = document.getElementById('assetInfoOverlay');
     if (infoOverlay) {
         // Toggle visibility
-        if (infoOverlay.style.display === 'none' || !infoOverlay.style.display) {
+        if (infoOverlay.style.display === 'none') {
             infoOverlay.style.display = 'block';
             infoOverlay.style.opacity = '1';
         } else {

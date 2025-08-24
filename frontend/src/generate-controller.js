@@ -1313,18 +1313,88 @@ async downloadModel(format) {
         // Use proxy endpoint for download
         const downloadUrl = `${this.apiBaseUrl}/proxyModel/${this.generateState.taskId}?format=${format}`;
         
-        // Create a temporary link and click it
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = `Threely-model.${format}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        // Close modal
-        document.querySelector('.download-modal')?.remove();
-        
-        this.showFeedback('Download started!', 'success');
+        // Check if running on mobile (Capacitor)
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            console.log('📱 Mobile download detected');
+            
+            try {
+                // Fetch the file
+                const response = await fetch(downloadUrl, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Download failed: ${response.status}`);
+                }
+                
+                const blob = await response.blob();
+                
+                // Import Filesystem plugin
+                const { Filesystem, Directory } = Capacitor.Plugins;
+                
+                // Convert blob to base64
+                const reader = new FileReader();
+                reader.readAsDataURL(blob);
+                reader.onloadend = async () => {
+                    const base64String = reader.result.split(',')[1];
+                    
+                    // Generate filename with timestamp
+                    const fileName = `Threely_${Date.now()}.${format}`;
+                    
+                    // Save to Documents directory
+                    const result = await Filesystem.writeFile({
+                        path: fileName,
+                        data: base64String,
+                        directory: Directory.Documents,
+                    });
+                    
+                    console.log('✅ File saved to:', result.uri);
+                    
+                    // Close modal
+                    document.querySelector('.download-modal')?.remove();
+                    
+                    this.showFeedback(`Saved: ${fileName}`, 'success');
+                };
+                
+                reader.onerror = () => {
+                    throw new Error('Failed to read file');
+                };
+                
+            } catch (fsError) {
+                console.error('❌ Mobile download error:', fsError);
+                
+                // Fallback: Try browser download
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = `Threely-model.${format}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                document.querySelector('.download-modal')?.remove();
+                this.showFeedback('Download started...', 'info');
+            }
+            
+        } else {
+            // Web browser - existing code
+            console.log('💻 Web download detected');
+            
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = `Threely-model.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            // Close modal
+            document.querySelector('.download-modal')?.remove();
+            
+            this.showFeedback('Download started!', 'success');
+        }
         
     } catch (error) {
         console.error('❌ Download error:', error);
