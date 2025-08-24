@@ -22,7 +22,9 @@
         pmremGenerator: null,
         isInitialized: false,
         gridGroup: null,
-        animationId: null
+        animationId: null,
+        modelLoadPromise: null, 
+    modelLoaded: false 
     };
 
     // Smart model path detection based on current location
@@ -364,14 +366,18 @@
     }
 
     function loadDogModel() {
-        console.log('🐕 Loading dog model...');
-        
+    console.log('🐕 Loading dog model...');
+    
+    // Create a promise for model loading
+    Mobile3D.modelLoadPromise = new Promise((resolve, reject) => {
         const modelPaths = getModelPaths();
         console.log('🔄 Trying paths:', modelPaths);
         
         if (!THREE.GLTFLoader) {
             console.error('❌ GLTFLoader not available');
             createFallbackDog();
+            Mobile3D.modelLoaded = true;
+            resolve();
             return;
         }
         
@@ -381,6 +387,8 @@
             if (pathIndex >= modelPaths.length) {
                 console.log('⚠️ All paths failed, creating fallback');
                 createFallbackDog();
+                Mobile3D.modelLoaded = true;
+                resolve();
                 return;
             }
 
@@ -392,11 +400,19 @@
                 (gltf) => {
                     console.log('✅ Model loaded from:', modelPath);
                     processLoadedModel(gltf.scene);
+                    Mobile3D.modelLoaded = true;
+                    resolve();
                 },
                 (progress) => {
                     if (progress.total > 0) {
                         const percent = (progress.loaded / progress.total * 100).toFixed(1);
                         console.log(`📊 Loading: ${percent}%`);
+                        
+                        // Update loading screen if it's still visible
+                        const loadingText = document.getElementById('loadingText');
+                        if (loadingText && loadingText.textContent.includes('3D')) {
+                            loadingText.textContent = `Loading 3D environment... ${percent}%`;
+                        }
                     }
                 },
                 (error) => {
@@ -407,8 +423,10 @@
         }
 
         tryLoadModel();
-    }
-
+    });
+    
+    return Mobile3D.modelLoadPromise;
+}
     function processLoadedModel(model) {
         try {
             Mobile3D.dogModel = model;

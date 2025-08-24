@@ -744,6 +744,11 @@ onAdWatched() {
     // Show boost animation on progress circle
     const progressFill = document.getElementById('progressFill');
     if (progressFill) {
+        // Remove class first to reset animation
+        progressFill.classList.remove('progress-boosted');
+        // Force reflow
+        void progressFill.offsetWidth;
+        // Add class back to trigger animation
         progressFill.classList.add('progress-boosted');
         setTimeout(() => progressFill.classList.remove('progress-boosted'), 1000);
     }
@@ -751,16 +756,21 @@ onAdWatched() {
     // Add visual boost indicator
     this.addBoostIndicator();
     
-    // Update button for unlimited ads - PRESERVE STYLING
+    // Update button for unlimited ads
     const watchAdBtn = document.getElementById('watchAdBtn');
     if (watchAdBtn) {
         watchAdBtn.disabled = false;
-        // Don't replace innerHTML, just update the text content
         const adText = watchAdBtn.querySelector('.ad-text');
         const adBoost = watchAdBtn.querySelector('.ad-boost');
         
         if (adText) adText.textContent = 'Watch Another Ad';
         if (adBoost) adBoost.textContent = `${this.generateState.adsWatched + 1}x Faster`;
+        
+        // Add pulse animation to button
+        watchAdBtn.style.animation = 'pulse 0.5s ease';
+        setTimeout(() => {
+            watchAdBtn.style.animation = '';
+        }, 500);
     }
     
     // Optional: Call backend to notify about ad watch (for priority processing)
@@ -786,7 +796,22 @@ addBoostIndicator() {
         const boostIcon = document.createElement('div');
         boostIcon.className = 'boost-icon';
         boostIcon.innerHTML = '⚡';
-        boostIcon.style.animationDelay = `${(this.generateState.adsWatched - 1) % 3}s`;
+        
+        // Calculate orbit position based on number of boosts
+        const angle = (this.generateState.adsWatched - 1) * 120; // 120 degrees apart
+        boostIcon.style.cssText = `
+            position: absolute;
+            font-size: 1.5rem;
+            color: #00e5ff;
+            animation: orbitBoost 3s linear infinite;
+            filter: drop-shadow(0 0 5px #00e5ff);
+            animation-delay: ${(this.generateState.adsWatched - 1) * 0.3}s;
+            transform-origin: center;
+            left: 50%;
+            top: 50%;
+            margin-left: -12px;
+            margin-top: -12px;
+        `;
         
         // Keep max 3 orbiting icons for visual clarity
         if (boostContainer.children.length >= 3) {
@@ -794,8 +819,21 @@ addBoostIndicator() {
         }
         
         boostContainer.appendChild(boostIcon);
+        
+        // Add container styles if not set
+        if (!boostContainer.style.position) {
+            boostContainer.style.cssText = `
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                top: 0;
+                left: 0;
+                pointer-events: none;
+            `;
+        }
     }
 }
+
 
 // Optional: Notify backend about ad watch for priority processing
 async notifyAdWatched() {

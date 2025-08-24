@@ -4498,54 +4498,125 @@ html, body {
     display: block !important;
     box-shadow: 0 2px 8px rgba(255, 152, 0, 0.4);
 }
-/* ========================================
-   STATUS BAR VISIBILITY BASED ON LOGIN STATE
-   ======================================== */
 
-/* When status bar is hidden (user logged in) */
-body.status-bar-hidden {
-    --status-bar-height: 0px !important;
-}
-
-body.status-bar-hidden .app-header {
-    padding-top: 1rem !important;
-    min-height: 70px !important;
-}
-
-body.status-bar-hidden .app-header::before {
-    display: none !important;
-}
-
-body.status-bar-hidden .app-main {
-    padding-top: 70px !important;
-    height: calc(100vh - 140px) !important;
-}
-
-body.status-bar-hidden .mobile-asset-viewer-overlay .asset-viewer-header {
-    padding-top: 1rem !important;
-    min-height: 70px !important;
-}
-
-body.status-bar-hidden .mobile-asset-viewer-overlay .asset-viewer-header::before {
-    display: none !important;
-}
-
-body.status-bar-hidden .app-loading-screen {
-    padding-top: 0 !important;
-}
-
-/* Disable animations when not needed */
+/* Only disable animations when explicitly requested */
 body.reduce-animations * {
     animation: none !important;
     transition: none !important;
 }
 
-/* Limit particle animations */
-.particle {
-    animation-play-state: paused;
+/* Smooth animations by default */
+.model-card,
+.btn,
+button {
+    transition: all 0.3s ease;
 }
 
-/* Only animate when visible */
+/* Keep particles animated by default */
+.particle {
+    animation-play-state: running;
+}
+
+/* Hide particles only when container is inactive */
 .about-container:not(.active) .particle {
     display: none;
+}
+/* Animation control */
+body.reduce-animations * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+}
+
+body.reduce-animations .particle,
+body.reduce-animations .gradient-orb {
+    animation-play-state: paused !important;
+}
+
+/* Ensure About section animations work */
+#aboutSection.active * {
+    animation-play-state: running !important;
+}
+
+#aboutSection.active .particle {
+    animation-play-state: running !important;
+}
+@keyframes float-particle {
+    0% {
+        transform: translateY(100vh) translateX(0);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-100vh) translateX(100px);
+        opacity: 0;
+    }
+}
+/* Progress boost animation */
+.progress-boosted {
+    animation: boostPulse 1s ease-out;
+}
+
+@keyframes boostPulse {
+    0% {
+        stroke-width: 8;
+        filter: drop-shadow(0 0 10px #00bcd4);
+    }
+    50% {
+        stroke-width: 12;
+        filter: drop-shadow(0 0 20px #00e5ff);
+    }
+    100% {
+        stroke-width: 8;
+        filter: drop-shadow(0 0 10px #00bcd4);
+    }
+}
+
+/* Boost indicators animation */
+.boost-icon {
+    position: absolute;
+    font-size: 1.5rem;
+    color: #00e5ff;
+    animation: orbitBoost 3s linear infinite;
+    filter: drop-shadow(0 0 5px #00e5ff);
+}
+
+@keyframes orbitBoost {
+    0% {
+        transform: rotate(0deg) translateX(100px) rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg) translateX(100px) rotate(-360deg);
+    }
+}
+
+/* Watch ad button pulse */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 4px 20px rgba(0, 188, 212, 0.3);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 6px 30px rgba(0, 188, 212, 0.5);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 4px 20px rgba(0, 188, 212, 0.3);
+    }
+}
+
+/* Ad button hover effect */
+.watch-ad-btn {
+    transition: all 0.3s ease;
+}
+
+.watch-ad-btn:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(0, 188, 212, 0.4);
 }

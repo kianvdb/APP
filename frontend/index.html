@@ -479,108 +479,163 @@ document.addEventListener('visibilitychange', () => {
     }
 
     // Check authentication and initialize app
-    async function initializeApp() {
-        if (appInitialized) {
-            console.log('⚠️ App already initialized, skipping re-initialization');
-            return;
-        }
+   async function initializeApp() {
+    if (appInitialized) {
+        console.log('⚠️ App already initialized, skipping re-initialization');
+        return;
+    }
+    
+    console.log('🚀 Initializing app with public assets access...');
+    updateLoadingScreen(20, 'Loading interface...');
+    
+    // Check for redirect in URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlRedirect = urlParams.get('redirect');
+    
+    // Store any pending redirect (from URL or sessionStorage)
+    const pendingRedirect = urlRedirect || sessionStorage.getItem('redirectAfterLogin');
+    console.log('📍 Pending redirect detected:', pendingRedirect);
+    console.log('📍 URL redirect:', urlRedirect);
+    console.log('📍 SessionStorage redirect:', sessionStorage.getItem('redirectAfterLogin'));
+    
+    // Clean up URL if we have a redirect parameter
+    if (urlRedirect) {
+        // Remove the redirect parameter from URL without reload
+        const newUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, document.title, newUrl);
+    }
+    
+    // Wait for auth manager to be ready
+    await new Promise(resolve => {
+        let attempts = 0;
+        const maxAttempts = 50;
         
-        console.log('🚀 Initializing app with public assets access...');
-        updateLoadingScreen(20, 'Loading interface...');
-        
-        // Check for redirect in URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlRedirect = urlParams.get('redirect');
-        
-        // Store any pending redirect (from URL or sessionStorage)
-        const pendingRedirect = urlRedirect || sessionStorage.getItem('redirectAfterLogin');
-        console.log('📍 Pending redirect detected:', pendingRedirect);
-        console.log('📍 URL redirect:', urlRedirect);
-        console.log('📍 SessionStorage redirect:', sessionStorage.getItem('redirectAfterLogin'));
-        
-        // Clean up URL if we have a redirect parameter
-        if (urlRedirect) {
-            // Remove the redirect parameter from URL without reload
-            const newUrl = window.location.pathname + window.location.hash;
-            window.history.replaceState({}, document.title, newUrl);
-        }
-        
-        // Wait for auth manager to be ready
+        const checkAuth = setInterval(() => {
+            attempts++;
+            if (window.authManager?.isInitialized || attempts >= maxAttempts) {
+                clearInterval(checkAuth);
+                resolve();
+            }
+        }, 100);
+    });
+    
+    updateLoadingScreen(50, 'Setting up app...');
+    
+    // Show the app container for everyone
+    document.getElementById('appContainer').style.display = 'flex';
+    
+    // Check authentication status
+    const isAuthenticated = window.authManager?.isAuthenticated();
+    console.log('🔐 User authenticated:', isAuthenticated);
+    
+    // Update UI based on auth state
+    updateUIForAuthState(isAuthenticated);
+    
+    // Initialize app navigation with public assets
+    updateLoadingScreen(70, 'Loading sections...');
+    
+    if (window.AppNavigation) {
         await new Promise(resolve => {
-            let attempts = 0;
-            const maxAttempts = 50;
-            
-            const checkAuth = setInterval(() => {
-                attempts++;
-                if (window.authManager?.isInitialized || attempts >= maxAttempts) {
-                    clearInterval(checkAuth);
-                    resolve();
-                }
-            }, 100);
-        });
-        
-        updateLoadingScreen(50, 'Setting up app...');
-        
-        // Show the app container for everyone
-        document.getElementById('appContainer').style.display = 'flex';
-        
-        // Check authentication status
-        const isAuthenticated = window.authManager?.isAuthenticated();
-        console.log('🔐 User authenticated:', isAuthenticated);
-        
-        // Update UI based on auth state
-        updateUIForAuthState(isAuthenticated);
-        
-        // Initialize app navigation with public assets
-        updateLoadingScreen(70, 'Loading sections...');
-        
-        if (window.AppNavigation) {
-            await new Promise(resolve => {
-                setTimeout(() => {
-                    // Pass the pending redirect to init if we have one and user is authenticated
-                    const initialSection = (isAuthenticated && pendingRedirect && ['generate', 'assets', 'account', 'about'].includes(pendingRedirect)) 
-                        ? pendingRedirect 
-                        : null;
-                        
-                    if (initialSection) {
-                        console.log('🎯 Initializing navigation with redirect section:', initialSection);
-                        localStorage.removeItem('dalma_redirectAfterLogin');
-                    }
-                    
-                    window.AppNavigation.init(initialSection);
-                    resolve();
-                }, 300);
-            });
-        }
-        
-        // Setup restricted navigation - ONLY generate section requires auth
-        setupRestrictedNavigation(isAuthenticated);
-        
-        // Setup account button handler
-        setupAccountButton();
-        
-        // Handle pending redirect if authenticated
-        if (isAuthenticated && pendingRedirect && ['generate', 'assets', 'account', 'about'].includes(pendingRedirect)) {
-            console.log('🚀 Processing pending redirect to:', pendingRedirect);
-            sessionStorage.removeItem('redirectAfterLogin');
-            
-            // Wait a bit longer to ensure everything is ready
             setTimeout(() => {
-                if (window.AppNavigation) {
-                    console.log('🎯 Navigating to section:', pendingRedirect);
-                    window.AppNavigation.navigateToSection(pendingRedirect);
+                // Pass the pending redirect to init if we have one and user is authenticated
+                const initialSection = (isAuthenticated && pendingRedirect && ['generate', 'assets', 'account', 'about'].includes(pendingRedirect)) 
+                    ? pendingRedirect 
+                    : null;
+                    
+                if (initialSection) {
+                    console.log('🎯 Initializing navigation with redirect section:', initialSection);
+                    localStorage.removeItem('dalma_redirectAfterLogin');
                 }
-            }, 1000);
-        }
+                
+                window.AppNavigation.init(initialSection);
+                resolve();
+            }, 300);
+        });
+    }
+    
+    // If we're loading the home section (default), wait for 3D model
+    if (!pendingRedirect || pendingRedirect === 'home') {
+        updateLoadingScreen(80, 'Loading 3D environment...');
         
-        updateLoadingScreen(100, 'Ready!');
+        // Wait for 3D model to load
+        await waitFor3DModel();
         
-        // Hide loading screen and mark as initialized
+        updateLoadingScreen(95, 'Finalizing...');
+    } else {
+        updateLoadingScreen(90, 'Preparing content...');
+    }
+    
+    // Setup restricted navigation - ONLY generate section requires auth
+    setupRestrictedNavigation(isAuthenticated);
+    
+    // Setup account button handler
+    setupAccountButton();
+    
+    // Handle pending redirect if authenticated
+    if (isAuthenticated && pendingRedirect && ['generate', 'assets', 'account', 'about'].includes(pendingRedirect)) {
+        console.log('🚀 Processing pending redirect to:', pendingRedirect);
+        sessionStorage.removeItem('redirectAfterLogin');
+        
+        // Wait a bit longer to ensure everything is ready
         setTimeout(() => {
-            hideLoadingScreen();
-            appInitialized = true; // Set flag here to prevent re-initialization
+            if (window.AppNavigation) {
+                console.log('🎯 Navigating to section:', pendingRedirect);
+                window.AppNavigation.navigateToSection(pendingRedirect);
+            }
         }, 1000);
     }
+    
+    updateLoadingScreen(100, 'Ready!');
+    
+    // Hide loading screen and mark as initialized
+    setTimeout(() => {
+        hideLoadingScreen();
+        appInitialized = true; // Set flag here to prevent re-initialization
+    }, 500); // Reduced from 1000ms since we're actually waiting for content
+}
+
+// Add this new function to wait for 3D model
+async function waitFor3DModel() {
+    return new Promise((resolve) => {
+        let checkAttempts = 0;
+        const maxAttempts = 50; // 5 seconds max wait
+        
+        const checkModelLoaded = () => {
+            checkAttempts++;
+            
+            // Check if Mobile3D is initialized and model is loaded
+            if (window.Mobile3D && window.Mobile3D.scene && window.Mobile3D.scene()) {
+                const scene = window.Mobile3D.scene();
+                if (scene.dogModel) {
+                    console.log('✅ 3D model loaded successfully');
+                    resolve();
+                    return;
+                }
+            }
+            
+            // If home section hero3d exists but model isn't ready, keep waiting
+            const hero3d = document.getElementById('appHero3d');
+            if (hero3d && hero3d.querySelector('canvas')) {
+                // Canvas exists, check if model is in scene
+                if (checkAttempts < maxAttempts) {
+                    setTimeout(checkModelLoaded, 100);
+                } else {
+                    console.log('⚠️ 3D model load timeout, proceeding anyway');
+                    resolve();
+                }
+            } else if (checkAttempts < maxAttempts) {
+                // No canvas yet, keep waiting
+                setTimeout(checkModelLoaded, 100);
+            } else {
+                console.log('⚠️ 3D initialization timeout, proceeding anyway');
+                resolve();
+            }
+        };
+        
+        // Start checking
+        checkModelLoaded();
+    });
+}
     
    // Setup navigation with restrictions - UPDATED: Remove assets from restricted sections
     function setupRestrictedNavigation(isAuthenticated) {
@@ -829,19 +884,6 @@ window.debugTokens = () => {
 };
 
 
-// Emergency performance fix
-document.addEventListener('DOMContentLoaded', function() {
-    // Pause all animations by default
-    document.body.classList.add('reduce-animations');
-    
-    // Stop any infinite loops
-    const highFrequencyElements = document.querySelectorAll('[style*="animation"]');
-    highFrequencyElements.forEach(el => {
-        if (!el.closest('.active')) {
-            el.style.animationPlayState = 'paused';
-        }
-    });
-});
 
 
 

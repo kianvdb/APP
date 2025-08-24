@@ -1031,7 +1031,7 @@ async loadGenerateContent() {
                                     <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
                                 </svg>
                                 <p class="upload-text">Tap to upload image</p>
-                                <p class="upload-formats">Supported: JPG, PNG, WEBP</p>
+                                <p class="upload-formats">Supported: JPG, JPEG, PNG</p>
                             </div>
                             <div class="upload-preview" id="uploadPreview" style="display: none;">
                                 <img id="previewImage" alt="Preview"/>
@@ -1128,27 +1128,27 @@ async loadGenerateContent() {
                 <div class="loading-content">
                     <h2 class="loading-title">Creating Your 3D Model</h2>
                     
-                    <!-- Enhanced Progress Circle -->
-                    <div class="progress-circle-container">
-                        <div class="progress-glow"></div>
-                        <svg class="progress-circle" width="180" height="180" viewBox="0 0 180 180">
-                            <defs>
-                                <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" style="stop-color:#00bcd4;stop-opacity:1" />
-                                    <stop offset="100%" style="stop-color:#00e5ff;stop-opacity:1" />
-                                </linearGradient>
-                            </defs>
-                            <circle cx="90" cy="90" r="85" class="progress-bg"/>
-                            <circle cx="90" cy="90" r="85" class="progress-fill" id="progressFill" stroke="url(#progressGradient)"/>
-                        </svg>
-                        <div class="progress-text">
-                            <span class="progress-percent" id="progressPercent">0%</span>
-                            <span class="progress-status" id="progressStatus">Initializing...</span>
-                        </div>
-                        
-                        <!-- Boost Indicators -->
-                        <div class="boost-indicators" id="boostIndicators"></div>
-                    </div>
+                  <!-- Enhanced Progress Circle -->
+<div class="progress-circle-container" style="position: relative;">
+    <div class="progress-glow"></div>
+    <svg class="progress-circle" width="180" height="180" viewBox="0 0 180 180">
+        <defs>
+            <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#00bcd4;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#00e5ff;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+        <circle cx="90" cy="90" r="85" class="progress-bg"/>
+        <circle cx="90" cy="90" r="85" class="progress-fill" id="progressFill" stroke="url(#progressGradient)"/>
+    </svg>
+    <div class="progress-text">
+        <span class="progress-percent" id="progressPercent">0%</span>
+        <span class="progress-status" id="progressStatus">Initializing...</span>
+    </div>
+    
+    <!-- Boost Indicators - properly positioned -->
+    <div class="boost-indicators" id="boostIndicators" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none;"></div>
+</div>
 
                     <!-- 3D Facts with enhanced styling -->
                     <div class="dog-fact-container">
@@ -1732,30 +1732,38 @@ async loadGenerateContent() {
     }
 
     async initializeHome() {
-        console.log('🎯 Initializing home section...');
+    console.log('🎯 Initializing home section...');
+    
+    // Setup hero generate button
+    setTimeout(() => {
+        const heroGenerateBtn = document.getElementById('heroGenerateBtn');
+        if (heroGenerateBtn) {
+            heroGenerateBtn.addEventListener('click', () => {
+                this.navigateToSection('generate');
+            });
+            console.log('✅ Hero generate button connected');
+        }
+    }, 100);
+    
+    // Initialize 3D viewer and wait for model
+    const container = document.getElementById('appHero3d');
+    if (container) {
+        console.log('✅ Found appHero3d container, initializing 3D...');
+        const scene = window.Mobile3D.init('appHero3d');
         
-        // Setup hero generate button
-        setTimeout(() => {
-            const heroGenerateBtn = document.getElementById('heroGenerateBtn');
-            if (heroGenerateBtn) {
-                heroGenerateBtn.addEventListener('click', () => {
-                    this.navigateToSection('generate');
-                });
-                console.log('✅ Hero generate button connected');
+        // If there's a model load promise, wait for it
+        if (window.Mobile3D && window.Mobile3D.scene) {
+            const sceneData = window.Mobile3D.scene();
+            if (sceneData.modelLoadPromise) {
+                console.log('⏳ Waiting for 3D model to load...');
+                await sceneData.modelLoadPromise;
+                console.log('✅ 3D model ready');
             }
-        }, 100);
-        
-        // Initialize 3D viewer
-        setTimeout(() => {
-            const container = document.getElementById('appHero3d');
-            if (container) {
-                console.log('✅ Found appHero3d container, initializing 3D...');
-                window.Mobile3D.init('appHero3d');
-            } else {
-                console.error('❌ appHero3d container not found!');
-            }
-        }, 500);
+        }
+    } else {
+        console.error('❌ appHero3d container not found!');
     }
+}
 
    async initializeGenerate() {
     console.log('🎯 Initializing generate section...');
@@ -1876,36 +1884,88 @@ async initializeAssets() {
     async initializeAbout() {
     console.log('🎯 Initializing about section animations...');
     
-    // Create floating particles - LIMIT TO 10 instead of 30
+    // Create floating particles
     const particleField = document.getElementById('particleField');
-    if (particleField && !particleField.hasChildNodes()) { // Only create if empty
+    if (particleField && !particleField.hasChildNodes()) {
         particleField.innerHTML = '';
         
-        for (let i = 0; i < 10; i++) { // REDUCED from 30
+        // Add the particle animation CSS if not exists
+        if (!document.getElementById('particleAnimationStyles')) {
+            const style = document.createElement('style');
+            style.id = 'particleAnimationStyles';
+            style.textContent = `
+                @keyframes float-particle {
+                    0% {
+                        transform: translateY(100vh) translateX(0);
+                        opacity: 0;
+                    }
+                    10% {
+                        opacity: 1;
+                    }
+                    90% {
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateY(-100vh) translateX(100px);
+                        opacity: 0;
+                    }
+                }
+                
+                .particle {
+                    position: absolute;
+                    width: 2px;
+                    height: 2px;
+                    background: rgba(0, 188, 212, 0.6);
+                    border-radius: 50%;
+                    pointer-events: none;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        for (let i = 0; i < 10; i++) {
             const particle = document.createElement('div');
             particle.className = 'particle';
             particle.style.cssText = `
-                position: absolute;
-                width: 2px;
-                height: 2px;
-                background: rgba(0, 188, 212, 0.6);
-                border-radius: 50%;
-                opacity: 0;
                 left: ${Math.random() * 100}%;
                 top: ${Math.random() * 100}%;
                 animation: float-particle ${10 + Math.random() * 20}s linear infinite;
                 animation-delay: ${Math.random() * 10}s;
-                animation-play-state: paused; /* Start paused */
             `;
             particleField.appendChild(particle);
         }
-        console.log('✅ Created 10 floating particles (paused)');
+        console.log('✅ Created 10 floating particles');
     }
     
-    // Only animate stats if section is visible
-    if (document.getElementById('aboutSection').classList.contains('active')) {
-        // Your stats animation code here
-    }
+    // Animate stats counters if visible
+    this.animateStatsIfVisible();
+}
+animateStatsIfVisible() {
+    const aboutSection = document.getElementById('aboutSection');
+    if (!aboutSection || !aboutSection.classList.contains('active')) return;
+    
+    const statNumbers = aboutSection.querySelectorAll('.stat-number');
+    statNumbers.forEach(stat => {
+        const target = parseInt(stat.dataset.target) || 0;
+        const duration = 2000; // 2 seconds
+        const start = 0;
+        const startTime = Date.now();
+        
+        const updateNumber = () => {
+            const now = Date.now();
+            const progress = Math.min((now - startTime) / duration, 1);
+            const current = Math.floor(start + (target - start) * progress);
+            stat.textContent = current.toLocaleString();
+            
+            if (progress < 1) {
+                requestAnimationFrame(updateNumber);
+            } else {
+                stat.textContent = target.toLocaleString();
+            }
+        };
+        
+        updateNumber();
+    });
 }
 
     // Liked Models functionality
@@ -2945,9 +3005,12 @@ showNoAssetsMessage() {
         };
     }
     stopAllAnimations() {
-    // Stop all particle animations
-    const particles = document.querySelectorAll('.particle');
-    particles.forEach(p => p.style.animationPlayState = 'paused');
+    // Only pause particles if we're leaving the about section
+    const aboutSection = document.getElementById('aboutSection');
+    if (aboutSection && !aboutSection.classList.contains('active')) {
+        const particles = document.querySelectorAll('.particle');
+        particles.forEach(p => p.style.animationPlayState = 'paused');
+    }
     
     // Stop any running intervals/timeouts
     if (window.animationIntervals) {
@@ -2955,8 +3018,11 @@ showNoAssetsMessage() {
         window.animationIntervals = [];
     }
     
-    // Add class to reduce animations
-    document.body.classList.add('reduce-animations');
+    // Only add reduce-animations class if not on animated sections
+    const currentSection = this.currentSection;
+    if (!['home', 'about'].includes(currentSection)) {
+        document.body.classList.add('reduce-animations');
+    }
 }
 
 startSectionAnimations(sectionName) {
@@ -2964,15 +3030,20 @@ startSectionAnimations(sectionName) {
     if (sectionName === 'about') {
         const particles = document.querySelectorAll('#particleField .particle');
         particles.forEach(p => p.style.animationPlayState = 'running');
+        
+        // Also trigger stats animation
+        this.animateStatsIfVisible();
     }
     
     // Remove animation reduction for active sections
     if (['home', 'about'].includes(sectionName)) {
         document.body.classList.remove('reduce-animations');
     }
-
-
     
+    // Control 3D rendering for home section
+    if (sectionName === 'home' && window.Mobile3D) {
+        window.Mobile3D.resume && window.Mobile3D.resume();
+    }
 }
 
 control3DRendering(sectionName) {
@@ -2994,56 +3065,55 @@ control3DRendering(sectionName) {
 }
 
 async showSection(sectionName, skipAnimation = false) {
-    console.log(`🔍 Attempting to show section: ${sectionName}`);
-    
     const sectionElement = document.getElementById(`${sectionName}Section`);
     
     if (!sectionElement) {
-        console.error(`❌ Section not found: ${sectionName}Section`);
+        console.error(`❌ Section not found: ${sectionName}`);
         return;
     }
+
+    // STOP ALL ANIMATIONS FIRST (but not too aggressively)
+    this.stopAllAnimations();
 
     // Hide all sections first
     document.querySelectorAll('.app-section').forEach(section => {
         section.classList.remove('active');
         section.style.display = 'none';
-        console.log(`👁️ Hiding section: ${section.id}`);
     });
 
     // Load content if not already loaded
     if (!this.loadedSections.has(sectionName)) {
-        console.log(`📦 Section ${sectionName} not loaded yet, loading now...`);
         await this.loadSectionContent(sectionName);
-    } else {
-        console.log(`✅ Section ${sectionName} already loaded`);
     }
 
     // ALWAYS reset scroll position before showing
     sectionElement.scrollTop = 0;
 
-    // Show new section - IMPORTANT: Make sure display is set
+    // Show new section
     sectionElement.style.display = 'block';
     sectionElement.classList.add('active');
     
-    // Force a reflow to ensure styles are applied
+    // Force layout recalculation
     sectionElement.offsetHeight;
     
-    // Check if section is actually visible
-    const rect = sectionElement.getBoundingClientRect();
-    console.log(`📏 Section ${sectionName} position:`, {
-        display: sectionElement.style.display,
-        hasActiveClass: sectionElement.classList.contains('active'),
-        visible: rect.width > 0 && rect.height > 0,
-        dimensions: `${rect.width}x${rect.height}`,
-        position: `top: ${rect.top}, left: ${rect.left}`
-    });
-    
-    // Force scroll reset again after display
+    // Reset scroll again after display
     sectionElement.scrollTop = 0;
-    const contentWrapper = sectionElement.querySelector('.section-content');
-    if (contentWrapper) {
-        contentWrapper.scrollTop = 0;
+    
+    // For About section, ensure container is scrollable
+    if (sectionName === 'about') {
+        const aboutContainer = sectionElement.querySelector('.about-container');
+        if (aboutContainer) {
+            aboutContainer.scrollTop = 0;
+            // Ensure it's scrollable
+            aboutContainer.style.overflowY = 'auto';
+            aboutContainer.style.height = '100%';
+        }
     }
+    
+    // START ANIMATIONS ONLY FOR ACTIVE SECTION
+    setTimeout(() => {
+        this.startSectionAnimations(sectionName);
+    }, 100);
     
     console.log(`✅ Section displayed: ${sectionName}`);
 }
