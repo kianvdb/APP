@@ -2304,7 +2304,7 @@ async initializeAssets() {
     // For Capacitor/Android, use your actual server URL
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         // Replace with your actual server URL
-        return 'https://image-to-3d.onrender.com/api';
+        return 'https://threely-ai.onrender.com/api';
     }
     
     if (window.DALMA_CONFIG && window.DALMA_CONFIG.API_BASE_URL) {

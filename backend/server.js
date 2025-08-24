@@ -117,8 +117,8 @@ const corsOptions = {
             'http://localhost:64533',
             
             // Production URLs
-            'https://image-to-3d.onrender.com',
-            'https://image-to-3d.onrender.com/',
+            'https://threely-ai.onrender.com',
+            'https://threely-ai.onrender.com/',
             
             // Android emulator
             'http://10.0.2.2:5173',
@@ -324,8 +324,8 @@ app.use('/api/assets/*/download', (req, res, next) => {
     'http://127.0.0.1:64533',  // Your current port
     'http://localhost:64533',
     // ADD PRODUCTION URLS HERE TOO
-    'https://image-to-3d.onrender.com',
-    'https://image-to-3d.onrender.com/'
+    'https://threely-ai.onrender.com',
+    'https://threely-ai.onrender.com/'
   ];
   
   const isAllowed = allowedOrigins.includes(origin) || 
@@ -372,8 +372,8 @@ app.options('/api/assets/*', (req, res) => {
     'http://localhost:5502', 'http://127.0.0.1:63338', 'http://localhost:63338',
     'http://127.0.0.1:64533', 'http://localhost:64533',  // Your current port
     // ADD PRODUCTION URLS HERE TOO
-    'https://image-to-3d.onrender.com',
-    'https://image-to-3d.onrender.com/'
+    'https://threely-ai.onrender.com',
+    'https://threely-ai.onrender.com/'
   ];
   
   const isAllowed = allowedOrigins.includes(origin) || 
@@ -886,7 +886,7 @@ if (isProduction) {
   // Production: Use regular HTTP (Render handles HTTPS via their proxy)
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Production server running on port ${PORT}`);
-    console.log(`🌐 Server URL: https://image-to-3d.onrender.com`);
+    console.log(`🌐 Server URL: https://threely-ai.onrender.com`);
   });
 } else {
   // Development: Simple HTTP only
