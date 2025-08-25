@@ -1,24 +1,53 @@
+/**
+ * Authentication Routes
+ * Handles user registration, login, and authentication-related operations
+ */
+
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 const router = express.Router();
 
-// Validation helpers
+/**
+ * Validation Helpers
+ */
+
+/**
+ * Validate email format
+ * @param {string} email - Email address to validate
+ * @returns {boolean} True if email is valid
+ */
 const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email) && email.length >= 7;
 };
 
+/**
+ * Validate username format
+ * @param {string} username - Username to validate
+ * @returns {boolean} True if username is valid
+ */
 const validateUsername = (username) => {
     return /^[a-zA-Z0-9_]{3,20}$/.test(username);
 };
 
+/**
+ * Validate password strength
+ * @param {string} password - Password to validate
+ * @returns {boolean} True if password meets requirements
+ */
 const validatePassword = (password) => {
     return password && password.length >= 6;
 };
 
-
+/**
+ * Generate JWT token
+ * @param {string} userId - User ID
+ * @param {string} username - Username
+ * @param {boolean} isAdmin - Admin status
+ * @returns {string} JWT token
+ */
 const generateToken = (userId, username, isAdmin) => {
     return jwt.sign(
         { 
@@ -26,16 +55,19 @@ const generateToken = (userId, username, isAdmin) => {
             username,
             isAdmin 
         },
-        process.env.JWT_SECRET,  
-        { expiresIn: '7d' }      
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
     );
 };
 
-// Auth middleware that accepts both cookie and header token
+/**
+ * Authentication middleware
+ * Validates JWT tokens from cookies or headers
+ */
 const authMiddleware = async (req, res, next) => {
     try {
         // Try to get token from cookie first
-      let token = req.cookies.token;
+        let token = req.cookies.token;
         
         // If no cookie, try Authorization header
         if (!token && req.headers.authorization) {
@@ -46,7 +78,7 @@ const authMiddleware = async (req, res, next) => {
         }
         
         console.log('🔐 Auth middleware - Token found:', !!token);
-        console.log('🔐 Auth middleware - From cookie:', !!req.cookies.dalma_auth_token);
+        console.log('🔐 Auth middleware - From cookie:', !!req.cookies.token);
         console.log('🔐 Auth middleware - From header:', !!req.headers.authorization);
 
         if (!token) {
@@ -89,14 +121,17 @@ const authMiddleware = async (req, res, next) => {
     }
 };
 
-// POST /api/auth/register
+/**
+ * POST /api/auth/register
+ * Register new user account
+ */
 router.post('/register', async (req, res) => {
     try {
         const { username, email, password } = req.body;
 
         console.log('📝 Registration attempt:', { username, email });
 
-        // Validation
+        // Validate input
         if (!username || !email || !password) {
             return res.status(400).json({ error: 'All fields are required' });
         }
@@ -128,55 +163,56 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Email already exists' });
         }
 
-       const user = new User({
-    username,
-    email,
-    password,
-    tokens: 1, // Use 'tokens' not 'credits', and give 1 free token as per model default
-    isAdmin: (await User.countDocuments()) === 0 
-});
+        // Create new user
+        const user = new User({
+            username,
+            email,
+            password,
+            tokens: 1, // Default free token
+            isAdmin: (await User.countDocuments()) === 0 // First user becomes admin
+        });
 
-await user.save();
+        await user.save();
 
-// Generate token
-const token = generateToken(user._id, user.username, user.isAdmin);
+        // Generate token
+        const token = generateToken(user._id, user.username, user.isAdmin);
 
-// IMPORTANT: Clear any existing cookies first to prevent session conflicts
-res.clearCookie('token', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-    path: '/'
-});
+        // Clear any existing cookies
+        res.clearCookie('token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+            path: '/'
+        });
 
-// Set new cookie
-const isProduction = process.env.NODE_ENV === 'production';
-const cookieOptions = {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? 'strict' : 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: '/'
-};
+        // Set new cookie
+        const isProduction = process.env.NODE_ENV === 'production';
+        const cookieOptions = {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'strict' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            path: '/'
+        };
 
-res.cookie('token', token, cookieOptions);
-console.log('🍪 Cookie set with token');
+        res.cookie('token', token, cookieOptions);
+        console.log('🍪 Cookie set with token');
 
-console.log('✅ User registered successfully:', user.username);
+        console.log('✅ User registered successfully:', user.username);
 
-// Return response with CONSISTENT field names
-res.status(201).json({
-    success: true,
-    message: 'User registered successfully',
-    user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        isAdmin: user.isAdmin,
-        tokens: user.tokens || 1  // Use 'tokens' consistently
-    },
-    token: token
-});
+        // Return response
+        res.status(201).json({
+            success: true,
+            message: 'User registered successfully',
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                isAdmin: user.isAdmin,
+                tokens: user.tokens || 1
+            },
+            token: token
+        });
 
     } catch (error) {
         console.error('❌ Registration error:', error);
@@ -188,12 +224,15 @@ res.status(201).json({
     }
 });
 
-// POST /api/auth/login - CORRECTED VERSION
+/**
+ * POST /api/auth/login
+ * User login
+ */
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
 
-        console.log('🔐 Login attempt:', { username });
+        console.log('🔑 Login attempt:', { username });
 
         if (!username || !password) {
             return res.status(400).json({ error: 'Username and password are required' });
@@ -205,13 +244,13 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid username or password' });
         }
 
-        // Check password
+        // Verify password
         const isPasswordValid = await user.comparePassword(password);
         if (!isPasswordValid) {
             return res.status(401).json({ error: 'Invalid username or password' });
         }
 
-        // NOW clear any existing cookies (after validating user)
+        // Clear existing cookies
         res.clearCookie('token', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -219,16 +258,16 @@ router.post('/login', async (req, res) => {
             path: '/'
         });
 
-        // Generate token
+        // Generate new token
         const token = generateToken(user._id, user.username, user.isAdmin);
 
-        // Set new cookie
+        // Set cookie
         const isProduction = process.env.NODE_ENV === 'production';
         const cookieOptions = {
             httpOnly: true,
             secure: isProduction,
             sameSite: isProduction ? 'strict' : 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
             path: '/'
         };
         
@@ -237,7 +276,7 @@ router.post('/login', async (req, res) => {
 
         console.log('✅ User logged in successfully:', user.username);
 
-        // Return token in response body for mobile - USE TOKENS not credits!
+        // Return response with token for mobile clients
         res.json({
             success: true,
             message: 'Login successful',
@@ -246,9 +285,9 @@ router.post('/login', async (req, res) => {
                 username: user.username,
                 email: user.email,
                 isAdmin: user.isAdmin,
-                tokens: user.tokens || 1  // FIXED: Use 'tokens' consistently, not 'credits'
+                tokens: user.tokens || 1
             },
-            token: token // Include token in response
+            token: token
         });
 
     } catch (error) {
@@ -257,8 +296,11 @@ router.post('/login', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/auth/logout
+ * User logout
+ */
 router.post('/logout', (req, res) => {
-    // Clear ALL possible cookie variations to ensure clean logout
     const isProduction = process.env.NODE_ENV === 'production';
     
     const cookieOptions = {
@@ -268,11 +310,11 @@ router.post('/logout', (req, res) => {
         path: '/'
     };
     
-    // Clear both possible cookie names
+    // Clear authentication cookies
     res.clearCookie('token', cookieOptions);
     res.clearCookie('dalma_auth_token', cookieOptions); // Legacy cookie name
     
-    // Clear session if exists
+    // Destroy session if exists
     if (req.session) {
         req.session.destroy();
     }
@@ -285,7 +327,10 @@ router.post('/logout', (req, res) => {
     console.log('✅ User logged out and all cookies cleared');
 });
 
-// GET /api/auth/me - Get current user
+/**
+ * GET /api/auth/me
+ * Get current user information
+ */
 router.get('/me', authMiddleware, async (req, res) => {
     try {
         const user = await User.findById(req.user.userId);
@@ -300,7 +345,7 @@ router.get('/me', authMiddleware, async (req, res) => {
                 username: user.username,
                 email: user.email,
                 isAdmin: user.isAdmin,
-                tokens: user.tokens || 1,  // ALWAYS return tokens, default to 1
+                tokens: user.tokens || 1,
                 likedAssets: user.likedAssets || [],
                 generatedModels: user.generatedModels || []
             }
@@ -312,7 +357,10 @@ router.get('/me', authMiddleware, async (req, res) => {
     }
 });
 
-// POST /api/auth/like-asset - Toggle liked asset
+/**
+ * POST /api/auth/like-asset
+ * Toggle liked status for an asset
+ */
 router.post('/like-asset', authMiddleware, async (req, res) => {
     try {
         const { assetId } = req.body;
@@ -325,17 +373,17 @@ router.post('/like-asset', authMiddleware, async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Initialize likedAssets if it doesn't exist
+        // Initialize likedAssets if needed
         if (!user.likedAssets) {
             user.likedAssets = [];
         }
 
-        // Check if the method exists, if not, do it manually
+        // Toggle liked status
         let isLiked;
         if (typeof user.toggleLikedAsset === 'function') {
             isLiked = user.toggleLikedAsset(assetId);
         } else {
-            // Manual toggle
+            // Manual toggle fallback
             const likedIndex = user.likedAssets.indexOf(assetId);
             if (likedIndex > -1) {
                 user.likedAssets.splice(likedIndex, 1);
@@ -360,17 +408,19 @@ router.post('/like-asset', authMiddleware, async (req, res) => {
     }
 });
 
-// GET /api/auth/liked-assets - Get user's liked assets
+/**
+ * GET /api/auth/liked-assets
+ * Get user's liked assets
+ */
 router.get('/liked-assets', authMiddleware, async (req, res) => {
     try {
-        // First get the user
         const user = await User.findById(req.user.userId);
         
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Try to populate liked assets if they exist
+        // Populate liked assets if they exist
         let likedAssets = [];
         if (user.likedAssets && user.likedAssets.length > 0) {
             try {
@@ -382,7 +432,7 @@ router.get('/liked-assets', authMiddleware, async (req, res) => {
                 likedAssets = populatedUser.likedAssets || [];
             } catch (populateError) {
                 console.warn('⚠️ Could not populate liked assets:', populateError.message);
-                // Return empty array instead of failing
+                // Return empty array on error
             }
         }
 
@@ -397,7 +447,10 @@ router.get('/liked-assets', authMiddleware, async (req, res) => {
     }
 });
 
-// POST /api/auth/save-generated-model - Save generated model to user profile
+/**
+ * POST /api/auth/save-generated-model
+ * Save generated model to user profile
+ */
 router.post('/save-generated-model', authMiddleware, async (req, res) => {
     try {
         const { taskId, name } = req.body;
@@ -411,16 +464,16 @@ router.post('/save-generated-model', authMiddleware, async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Initialize generatedModels if it doesn't exist
+        // Initialize generatedModels if needed
         if (!user.generatedModels) {
             user.generatedModels = [];
         }
 
-        // Check if method exists, if not, add manually
+        // Add generated model
         if (typeof user.addGeneratedModel === 'function') {
             await user.addGeneratedModel(taskId, name);
         } else {
-            // Manual add
+            // Manual add fallback
             user.generatedModels.push({
                 taskId,
                 name: name || `Model ${Date.now()}`,
@@ -440,6 +493,6 @@ router.post('/save-generated-model', authMiddleware, async (req, res) => {
     }
 });
 
-// Export both router and middleware
+// Export router and middleware
 module.exports = router;
 module.exports.authMiddleware = authMiddleware;

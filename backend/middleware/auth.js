@@ -1,35 +1,52 @@
-// backend/middleware/auth.js
+/**
+ * Authentication Middleware
+ * Verifies JWT tokens from multiple sources (cookies, headers)
+ */
+
 const jwt = require('jsonwebtoken');
 
-module.exports = (req, res, next) => {
-    console.log('🔐 Auth middleware - checking authentication');
-    
-    // Check for token in multiple places
-    let token = null;
-    
-    // 1. Check cookies (web)
+/**
+ * Extract JWT token from request
+ * @param {Object} req - Express request object
+ * @returns {string|null} JWT token or null if not found
+ */
+const extractToken = (req) => {
+    // Check cookies (web browser)
     if (req.cookies && req.cookies.token) {
-        token = req.cookies.token;
-        console.log('🔐 Token from cookie:', !!token);
+        console.log('🔐 Token found in cookie');
+        return req.cookies.token;
     }
     
-    // 2. Check Authorization header (mobile/Capacitor)
-    if (!token && req.headers.authorization) {
+    // Check Authorization header (mobile/API)
+    if (req.headers.authorization) {
         const authHeader = req.headers.authorization;
         if (authHeader.startsWith('Bearer ')) {
-            token = authHeader.substring(7);
-            console.log('🔐 Token from Authorization header:', !!token);
+            console.log('🔐 Token found in Authorization header');
+            return authHeader.substring(7);
         }
     }
     
-    // 3. Check x-auth-token header (alternative)
-    if (!token && req.headers['x-auth-token']) {
-        token = req.headers['x-auth-token'];
-        console.log('🔐 Token from x-auth-token header:', !!token);
+    // Check x-auth-token header (alternative)
+    if (req.headers['x-auth-token']) {
+        console.log('🔐 Token found in x-auth-token header');
+        return req.headers['x-auth-token'];
     }
     
+    return null;
+};
+
+/**
+ * Authentication middleware
+ * Validates JWT tokens and attaches user data to request
+ */
+module.exports = (req, res, next) => {
+    console.log('🔍 Auth middleware - checking authentication');
+    
+    // Extract token from request
+    const token = extractToken(req);
+    
     if (!token) {
-        console.log('❌ No auth token found in cookies or headers');
+        console.log('❌ No auth token found in request');
         return res.status(401).json({ 
             error: 'Authentication required',
             isAuthenticated: false 
@@ -37,14 +54,27 @@ module.exports = (req, res, next) => {
     }
     
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dalma-ai-secret-key-change-this-in-production');
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        // Attach user data to request
         req.user = decoded;
         console.log('✅ User authenticated:', decoded.username);
+        
         next();
     } catch (error) {
         console.log('❌ Invalid token:', error.message);
+        
+        // Determine specific error type
+        let errorMessage = 'Invalid or expired token';
+        if (error.name === 'TokenExpiredError') {
+            errorMessage = 'Token has expired';
+        } else if (error.name === 'JsonWebTokenError') {
+            errorMessage = 'Invalid token';
+        }
+        
         return res.status(401).json({ 
-            error: 'Invalid or expired token',
+            error: errorMessage,
             isAuthenticated: false 
         });
     }

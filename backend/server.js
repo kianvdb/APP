@@ -1,6 +1,9 @@
 require('dotenv').config();
 
-// Validate required environment variables FIRST
+/**
+ * Environment Variable Validation
+ * Ensures all required environment variables are present before server startup
+ */
 const requiredEnvVars = ['JWT_SECRET', 'MONGODB_URI', 'MESHY_API_KEY'];
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
@@ -10,13 +13,19 @@ if (missingEnvVars.length > 0) {
     process.exit(1);
 }
 
-// Debug information for Render
+/**
+ * Server Startup Logging
+ * Provides diagnostic information for deployment environments
+ */
 console.log('🚀 Server starting...');
-console.log('📁 __dirname:', __dirname);
-console.log('📁 process.cwd():', process.cwd());
-console.log('📁 NODE_ENV:', process.env.NODE_ENV);
-console.log('📁 Running on Render?', process.env.RENDER === 'true');
+console.log('📍 __dirname:', __dirname);
+console.log('📍 process.cwd():', process.cwd());
+console.log('📍 NODE_ENV:', process.env.NODE_ENV);
+console.log('📍 Running on Render?', process.env.RENDER === 'true');
 
+/**
+ * Core Dependencies
+ */
 const https = require('https');
 const http = require('http');
 const express = require('express');
@@ -30,14 +39,15 @@ const fs = require('fs');
 
 const authMiddleware = require('./middleware/auth');
 
-// Create Express app
 const app = express();
 
-// CRITICAL FIX: Handle Capacitor/Mobile CORS BEFORE other middleware
+/**
+ * Capacitor/Mobile CORS Handler
+ * Handles CORS for mobile app requests before other middleware
+ */
 app.use((req, res, next) => {
     const origin = req.headers.origin;
     
-    // List of Capacitor/mobile origins
     const capacitorOrigins = [
         'http://localhost',
         'https://localhost', 
@@ -45,7 +55,6 @@ app.use((req, res, next) => {
         'ionic://localhost'
     ];
     
-    // Check if request is from Capacitor
     if (capacitorOrigins.includes(origin) || origin === 'http://localhost') {
         res.header('Access-Control-Allow-Origin', origin);
         res.header('Access-Control-Allow-Credentials', 'true');
@@ -53,7 +62,6 @@ app.use((req, res, next) => {
         res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, Cache-Control, Pragma, X-Cache-Control, If-Modified-Since, If-None-Match');
         res.header('Access-Control-Expose-Headers', 'Content-Disposition, Content-Type, Content-Length');
         
-        // Handle preflight
         if (req.method === 'OPTIONS') {
             console.log('✅ Handling Capacitor OPTIONS request from:', origin);
             return res.sendStatus(200);
@@ -63,17 +71,19 @@ app.use((req, res, next) => {
     next();
 });
 
-// Cookie parser middleware - MUST be before CORS
+/**
+ * Middleware Configuration
+ */
 app.use(cookieParser());
-
-// Body parsing middleware
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Enhanced CORS configuration
+/**
+ * CORS Configuration
+ * Comprehensive origin whitelist for development and production
+ */
 const corsOptions = {
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or Postman)
         if (!origin) {
             return callback(null, true);
         }
@@ -118,7 +128,6 @@ const corsOptions = {
             
             // Production URLs
             'https://threely-ai.onrender.com',
-            'https://threely-ai.onrender.com/',
             
             // Android emulator
             'http://10.0.2.2:5173',
@@ -129,26 +138,28 @@ const corsOptions = {
             'http://10.0.2.2'
         ];
         
-        // Allow localhost variations
         const localhostPattern = /^https?:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?$/;
         
         if (allowedOrigins.includes(origin) || localhostPattern.test(origin)) {
             callback(null, true);
         } else {
             console.log('⚠️ CORS: Origin not explicitly allowed:', origin, '- allowing anyway for mobile compatibility');
-            callback(null, true); // Allow all for mobile compatibility
+            callback(null, true);
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept', 'Origin'],
     credentials: true,
     optionsSuccessStatus: 200,
-    maxAge: 86400 // Cache preflight for 24 hours
+    maxAge: 86400
 };
 
 app.use(cors(corsOptions));
 
-// Double-ensure OPTIONS is handled
+/**
+ * Global OPTIONS Handler
+ * Ensures preflight requests are handled properly
+ */
 app.options('*', (req, res) => {
     res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
@@ -157,14 +168,24 @@ app.options('*', (req, res) => {
     res.sendStatus(200);
 });
 
-// Import and use auth routes
+/**
+ * Route Imports
+ */
 const authRoutes = require('./routes/auth');
+const paymentRoutes = require('./routes/payment');
+const assetRoutes = require('./routes/assets');
+
+/**
+ * Route Mounting
+ */
 app.use('/api/auth', authRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/assets', assetRoutes);
 
-// Rest of your existing code...
-// (Keep everything else the same from line 47 onwards)
-
-// Check if directories exist - DEBUGGING
+/**
+ * Frontend Directory Validation
+ * Logs frontend structure for deployment debugging
+ */
 const frontendPath = path.join(__dirname, '../frontend');
 console.log('📁 Frontend path:', frontendPath);
 console.log('📁 Frontend exists?', fs.existsSync(frontendPath));
@@ -172,7 +193,6 @@ console.log('📁 Frontend exists?', fs.existsSync(frontendPath));
 if (fs.existsSync(frontendPath)) {
     console.log('📁 Frontend contents:', fs.readdirSync(frontendPath));
     
-    // Check subdirectories
     ['css', 'src', 'js', 'public', 'html', 'models'].forEach(dir => {
         const dirPath = path.join(frontendPath, dir);
         if (fs.existsSync(dirPath)) {
@@ -183,17 +203,14 @@ if (fs.existsSync(frontendPath)) {
     });
 }
 
-// Just confirm it exists without showing the value
 console.log("🛠️ Meshy API Key:", process.env.MESHY_API_KEY ? "✅ Loaded" : "❌ Missing");
 
 const port = process.env.PORT || 3000;
 
-// In your main server file
-const paymentRoutes = require('./routes/payment');
-app.use('/api/payment', paymentRoutes);
-
-// STATIC FILE SERVING - UPDATED FOR YOUR STRUCTURE
-// Serve static files from frontend directory with the /frontend prefix
+/**
+ * Static File Serving
+ * Serves frontend assets with proper caching
+ */
 app.use('/frontend', express.static(path.join(__dirname, '../frontend'), {
     fallthrough: true,
     index: false,
@@ -201,15 +218,17 @@ app.use('/frontend', express.static(path.join(__dirname, '../frontend'), {
     etag: true
 }));
 
-// Also serve specific subdirectories explicitly to ensure they work
 app.use('/frontend/css', express.static(path.join(__dirname, '../frontend/css')));
 app.use('/frontend/src', express.static(path.join(__dirname, '../frontend/src')));
-app.use('/frontend/js', express.static(path.join(__dirname, '../frontend/js'))); // In case you have both src and js
+app.use('/frontend/js', express.static(path.join(__dirname, '../frontend/js')));
 app.use('/frontend/public', express.static(path.join(__dirname, '../frontend/public')));
 app.use('/frontend/html', express.static(path.join(__dirname, '../frontend/html')));
 app.use('/frontend/models', express.static(path.join(__dirname, '../frontend/models')));
 
-// Debug middleware for static file requests
+/**
+ * Static File Request Logger
+ * Debug middleware for tracking static file requests
+ */
 app.use((req, res, next) => {
     if (req.path.startsWith('/frontend')) {
         console.log('📁 Static file requested:', req.path);
@@ -219,19 +238,19 @@ app.use((req, res, next) => {
     next();
 });
 
-// Serve your homepage at the root URL
+/**
+ * HTML Route Handlers
+ */
 app.get('/', (req, res) => {
     console.log('🏠 Serving homepage at root');
     res.sendFile(path.join(__dirname, '../frontend/html/homepage.html'));
 });
 
-// ALSO serve homepage at /homepage.html to handle direct navigation
 app.get('/homepage.html', (req, res) => {
     console.log('🏠 Serving homepage at /homepage.html');
     res.sendFile(path.join(__dirname, '../frontend/html/homepage.html'));
 });
 
-// Serve other HTML files
 app.get('/:page.html', (req, res, next) => {
     const page = req.params.page;
     const filePath = path.join(__dirname, '../frontend/html/', `${page}.html`);
@@ -239,22 +258,22 @@ app.get('/:page.html', (req, res, next) => {
     console.log(`📄 Trying to serve HTML page: ${page}.html`);
     console.log(`📄 Looking for file at: ${filePath}`);
     
-    // Skip if it's an API route
     if (page.startsWith('api')) {
         return next();
     }
     
-    // Check if file exists before sending
     if (fs.existsSync(filePath)) {
         console.log(`✅ Found and serving: ${page}.html`);
         res.sendFile(filePath);
     } else {
         console.log(`❌ HTML file not found: ${page}.html`);
-        next(); // Pass to next handler
+        next();
     }
 });
 
-// MongoDB connection
+/**
+ * MongoDB Connection
+ */
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/dalma-ai');
@@ -268,16 +287,19 @@ const connectDB = async () => {
   }
 };
 
-// Connect to database
 connectDB();
 
-// Existing multer setup for Meshy
+/**
+ * Multer Configuration for File Uploads
+ */
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 const YOUR_API_KEY = process.env.MESHY_API_KEY || '';
 
-// Health check
+/**
+ * Health Check Endpoint
+ */
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
@@ -286,23 +308,15 @@ app.get('/api/health', (req, res) => {
     database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
   });
 });
-// **IMPORTANT: Import and mount AUTH routes**
-console.log('🔧 Loading authentication routes...');
-try {
-  const authRoutes = require('./routes/auth');
-  console.log('✅ Auth routes file loaded successfully');
-  app.use('/api/auth', authRoutes);
-  console.log('✅ Auth routes mounted at /api/auth');
-} catch (error) {
-  console.error('❌ Error loading auth routes:', error.message);
-  console.error('Stack:', error.stack);
-}
 
-// Enhanced CORS handling specifically for download routes
+/**
+ * Download Route CORS Handler
+ * Special CORS handling for file download endpoints
+ */
 app.use('/api/assets/*/download', (req, res, next) => {
-  console.log(`📥 CORS middleware for download route: ${req.method} ${req.url}`);
-  console.log(`📥 Origin: ${req.headers.origin}`);
-  console.log(`📥 Request headers:`, Object.keys(req.headers));
+  console.log(`🔥 CORS middleware for download route: ${req.method} ${req.url}`);
+  console.log(`🔥 Origin: ${req.headers.origin}`);
+  console.log(`🔥 Request headers:`, Object.keys(req.headers));
   
   const origin = req.headers.origin;
   const allowedOrigins = [
@@ -321,11 +335,9 @@ app.use('/api/assets/*/download', (req, res, next) => {
     'http://localhost:5502',
     'http://127.0.0.1:63338',
     'http://localhost:63338',
-    'http://127.0.0.1:64533',  // Your current port
+    'http://127.0.0.1:64533',
     'http://localhost:64533',
-    // ADD PRODUCTION URLS HERE TOO
     'https://threely-ai.onrender.com',
-    'https://threely-ai.onrender.com/'
   ];
   
   const isAllowed = allowedOrigins.includes(origin) || 
@@ -341,11 +353,8 @@ app.use('/api/assets/*/download', (req, res, next) => {
   
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
-  
-  // FIXED: Add Cache-Control and other headers that might be sent by fetch
   res.header('Access-Control-Allow-Headers', 
     'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, Cache-Control, Pragma, X-Cache-Control, If-Modified-Since, If-None-Match');
-  
   res.header('Access-Control-Expose-Headers', 'Content-Disposition, Content-Type, Content-Length');
   res.header('Access-Control-Max-Age', '86400');
   
@@ -359,7 +368,9 @@ app.use('/api/assets/*/download', (req, res, next) => {
   next();
 });
 
-// Updated OPTIONS handler for all asset routes
+/**
+ * Asset Routes OPTIONS Handler
+ */
 app.options('/api/assets/*', (req, res) => {
   console.log(`🔍 OPTIONS request for ${req.url} from origin: ${req.headers.origin}`);
   
@@ -370,10 +381,8 @@ app.options('/api/assets/*', (req, res) => {
     'http://localhost:59063', 'http://127.0.0.1:5500', 'http://127.0.0.1:5501',
     'http://127.0.0.1:5502', 'http://localhost:5500', 'http://localhost:5501',
     'http://localhost:5502', 'http://127.0.0.1:63338', 'http://localhost:63338',
-    'http://127.0.0.1:64533', 'http://localhost:64533',  // Your current port
-    // ADD PRODUCTION URLS HERE TOO
+    'http://127.0.0.1:64533', 'http://localhost:64533',
     'https://threely-ai.onrender.com',
-    'https://threely-ai.onrender.com/'
   ];
   
   const isAllowed = allowedOrigins.includes(origin) || 
@@ -385,27 +394,26 @@ app.options('/api/assets/*', (req, res) => {
   
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
-  
-  // FIXED: Add Cache-Control and other headers
   res.header('Access-Control-Allow-Headers', 
     'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, Cache-Control, Pragma, X-Cache-Control, If-Modified-Since, If-None-Match');
   
   res.status(200).end();
 });
 
-// Import and use asset routes
-console.log('🔧 Testing asset routes loading...');
-try {
-  const assetRoutes = require('./routes/assets');
-  console.log('✅ Asset routes file loaded successfully');
-  app.use('/api/assets', assetRoutes);
-  console.log('✅ Asset routes mounted at /api/assets');
-} catch (error) {
-  console.error('❌ Error loading asset routes:', error.message);
-  console.error('Stack:', error.stack);
-}
+/**
+ * Meshy AI Integration Functions
+ */
 
-// Your existing Meshy functions (keeping them exactly the same)
+/**
+ * Creates a 3D preview task using Meshy AI API
+ * @param {string} imageBase64 - Base64 encoded image
+ * @param {string} topology - Model topology type
+ * @param {boolean} shouldTexture - Whether to apply texture
+ * @param {string} symmetryMode - Symmetry mode for generation
+ * @param {boolean} enablePBR - Enable PBR materials
+ * @param {number} targetPolycount - Target polygon count
+ * @returns {string} Task ID for tracking generation progress
+ */
 const createPreviewTask = async (imageBase64, topology = 'triangle', shouldTexture = true, symmetryMode = 'auto', enablePBR = false, targetPolycount = 30000) => {
   const headers = { Authorization: `Bearer ${YOUR_API_KEY}` };
 
@@ -423,7 +431,7 @@ const createPreviewTask = async (imageBase64, topology = 'triangle', shouldTextu
 
   try {
     console.log("🚀 Sending request to Meshy API...");
-    console.log("🔺 Topology being sent to Meshy:", topology);
+    console.log("📺 Topology being sent to Meshy:", topology);
     const response = await axios.post(
       'https://api.meshy.ai/openapi/v1/image-to-3d',
       payload,
@@ -437,7 +445,10 @@ const createPreviewTask = async (imageBase64, topology = 'triangle', shouldTextu
   }
 };
 
-// Enhanced generateModel endpoint that also saves to database
+/**
+ * Generate 3D Model Endpoint
+ * Initiates 3D model generation from uploaded image
+ */
 app.post('/api/generateModel', upload.single('image'), async (req, res) => {
   console.log('📥 Received a request to generate model...');
   try {
@@ -469,7 +480,6 @@ app.post('/api/generateModel', upload.single('image'), async (req, res) => {
       PBR: ${enablePBR}
       Polycount: ${targetPolycount}
     `);
-    console.log("🔺 CRITICAL: Topology value being sent to Meshy:", selectedTopology);
 
     const previewTaskId = await createPreviewTask(
       imageBase64,
@@ -482,12 +492,14 @@ app.post('/api/generateModel', upload.single('image'), async (req, res) => {
 
     console.log(`✅ Preview task started with taskId: ${previewTaskId}`);
     
-    // Store metadata for potential asset creation INCLUDING TOPOLOGY
+    /**
+     * Store generation metadata for later asset creation
+     */
     req.app.locals.pendingAssets = req.app.locals.pendingAssets || {};
     req.app.locals.pendingAssets[previewTaskId] = {
       originalImage: imageBase64,
       parameters: {
-        topology: selectedTopology,  // CRITICAL: Store topology
+        topology: selectedTopology,
         shouldTexture,
         symmetryMode: selectedSymmetryMode,
         enablePBR,
@@ -504,7 +516,10 @@ app.post('/api/generateModel', upload.single('image'), async (req, res) => {
   }
 });
 
-// All your other existing endpoints...
+/**
+ * Get Model Status Endpoint
+ * Retrieves the current status of a model generation task
+ */
 app.get('/api/getModel/:taskId', async (req, res) => {
   const { taskId } = req.params;
   console.log(`🔍 Received status request for taskId: ${taskId}`);
@@ -522,6 +537,10 @@ app.get('/api/getModel/:taskId', async (req, res) => {
   }
 });
 
+/**
+ * Model Status Endpoint (Alias)
+ * Alternative endpoint for checking model generation status
+ */
 app.get('/api/status/:taskId', async (req, res) => {
   const { taskId } = req.params;
   console.log(`🔍 Received status request (alias /status) for taskId: ${taskId}`);
@@ -539,6 +558,10 @@ app.get('/api/status/:taskId', async (req, res) => {
   }
 });
 
+/**
+ * Proxy Model Download Endpoint
+ * Fetches and serves model files from Meshy API
+ */
 app.get('/api/proxyModel/:taskId', async (req, res) => {
   const { taskId } = req.params;
   const format = req.query.format || 'glb';
@@ -572,10 +595,8 @@ app.get('/api/proxyModel/:taskId', async (req, res) => {
       return res.status(404).send(`Format '${format}' not available for this model.`);
     }
 
-    // Fetch the model file
     const fileResponse = await axios.get(modelUrl, { responseType: 'arraybuffer' });
 
-    // Force download with proper headers
     const contentTypes = {
       glb: 'model/gltf-binary',
       gltf: 'model/gltf+json',
@@ -602,16 +623,21 @@ app.get('/api/proxyModel/:taskId', async (req, res) => {
   }
 });
 
-// UPDATED: Save asset with permanent storage for all formats AND TOPOLOGY using PROXY URLs
+/**
+ * Save Asset Endpoint
+ * Saves generated model as a user asset with permanent storage
+ */
 app.post('/api/saveAsset/:taskId', authMiddleware, async (req, res) => {
   const { taskId } = req.params;
   const { name, breed, description, isPublic, isUserGenerated, category, topology, texture, symmetry, pbr, polygons } = req.body;
   
   try {
     console.log('💾 Saving USER asset for taskId:', taskId, 'user:', req.user.username);
-    console.log('🔺 CRITICAL: Topology received in save request:', topology);
+    console.log('📺 Topology received in save request:', topology);
     
-    // Get model status and URLs from Meshy
+    /**
+     * Fetch model status and URLs from Meshy API
+     */
     const headers = { Authorization: `Bearer ${YOUR_API_KEY}` };
     const statusRes = await axios.get(
       `https://api.meshy.ai/openapi/v1/image-to-3d/${taskId}`,
@@ -631,15 +657,15 @@ app.post('/api/saveAsset/:taskId', authMiddleware, async (req, res) => {
 
     console.log('📥 Model URLs available:', Object.keys(modelUrls));
 
-    // Import required modules
     const cloudinaryConfig = require('./config/cloudinary');
     const Asset = require('./models/Asset');
 
-    // Get the original image from pending assets metadata
+    /**
+     * Retrieve original image and generation parameters
+     */
     const pendingAsset = req.app.locals.pendingAssets?.[taskId];
     let cloudinaryOriginalImage = null;
     
-    // Get generation parameters from pending asset OR from request body
     const generationParams = {
       topology: topology || pendingAsset?.parameters?.topology || 'triangle',
       texture: texture !== undefined ? texture : (pendingAsset?.parameters?.shouldTexture || false),
@@ -648,11 +674,11 @@ app.post('/api/saveAsset/:taskId', authMiddleware, async (req, res) => {
       polycount: polygons || pendingAsset?.parameters?.targetPolycount || 30000
     };
     
-    console.log('🔺 CRITICAL: Generation parameters being saved:', generationParams);
-    console.log('🔺 CRITICAL: Topology from pending asset:', pendingAsset?.parameters?.topology);
-    console.log('🔺 CRITICAL: Final topology to save:', generationParams.topology);
+    console.log('📺 Generation parameters being saved:', generationParams);
     
-    // Upload original image to Cloudinary if available
+    /**
+     * Upload original image to Cloudinary if available
+     */
     if (pendingAsset && pendingAsset.originalImage) {
       try {
         console.log('🖼️ Uploading original image to Cloudinary...');
@@ -669,22 +695,22 @@ app.post('/api/saveAsset/:taskId', authMiddleware, async (req, res) => {
       }
     }
 
-    // CRITICAL: Download and save all model formats permanently with proxy URL fallback
+    /**
+     * Download and store all available model formats
+     */
     console.log('🚀 Starting permanent storage of all model formats...');
     const modelFiles = {};
     const availableFormats = [];
-    const proxyFormats = []; // Track which formats use proxy
+    const proxyFormats = [];
     let totalSize = 0;
 
-    // Process each available format
     for (const [format, url] of Object.entries(modelUrls)) {
       try {
         console.log(`📥 Downloading ${format.toUpperCase()} from Meshy...`);
         
-        // Download the file from Meshy
         const response = await axios.get(url, {
           responseType: 'arraybuffer',
-          timeout: 60000 // 60 second timeout
+          timeout: 60000
         });
         
         const buffer = Buffer.from(response.data);
@@ -693,18 +719,19 @@ app.post('/api/saveAsset/:taskId', authMiddleware, async (req, res) => {
         
         console.log(`📦 Downloaded ${format.toUpperCase()}: ${(fileSize / 1024 / 1024).toFixed(2)} MB`);
         
-        // Check if file is too large BEFORE attempting Cloudinary upload
-        if (fileSize > 10 * 1024 * 1024) { // 10MB limit
+        /**
+         * Use proxy URL for files exceeding Cloudinary size limit
+         */
+        if (fileSize > 10 * 1024 * 1024) {
           console.log(`⚠️ ${format.toUpperCase()} is ${(fileSize / 1024 / 1024).toFixed(2)} MB - too large for Cloudinary`);
           
-          // CRITICAL: Store PROXY URL instead of direct Meshy URL
           modelFiles[format] = {
             filename: `${taskId}.${format}`,
-            url: `/api/proxyModel/${taskId}?format=${format}`, // PROXY URL
+            url: `/api/proxyModel/${taskId}?format=${format}`,
             publicId: `meshy-proxy-${taskId}-${format}`,
             size: fileSize,
-            isProxy: true, // Flag to identify proxy URLs
-            originalMeshyUrl: url // Keep original for reference
+            isProxy: true,
+            originalMeshyUrl: url
           };
           
           availableFormats.push(format);
@@ -713,7 +740,9 @@ app.post('/api/saveAsset/:taskId', authMiddleware, async (req, res) => {
           continue;
         }
         
-        // Upload to Cloudinary
+        /**
+         * Upload to Cloudinary for permanent storage
+         */
         console.log(`☁️ Uploading ${format.toUpperCase()} to Cloudinary...`);
         
         const cloudinaryResult = await cloudinaryConfig.uploadModelFromBuffer(
@@ -723,7 +752,6 @@ app.post('/api/saveAsset/:taskId', authMiddleware, async (req, res) => {
         
         console.log(`✅ ${format.toUpperCase()} uploaded to Cloudinary:`, cloudinaryResult.url);
         
-        // Store the Cloudinary result
         modelFiles[format] = {
           filename: cloudinaryResult.filename,
           url: cloudinaryResult.url,
@@ -736,10 +764,12 @@ app.post('/api/saveAsset/:taskId', authMiddleware, async (req, res) => {
       } catch (formatError) {
         console.error(`❌ Error processing ${format}:`, formatError.message);
         
-        // CRITICAL: Use PROXY URL as fallback for any failure
+        /**
+         * Fallback to proxy URL on any error
+         */
         modelFiles[format] = {
           filename: `${taskId}.${format}`,
-          url: `/api/proxyModel/${taskId}?format=${format}`, // PROXY URL
+          url: `/api/proxyModel/${taskId}?format=${format}`,
           publicId: `meshy-proxy-${taskId}-${format}`,
           size: 0,
           isProxy: true,
@@ -759,12 +789,13 @@ app.post('/api/saveAsset/:taskId', authMiddleware, async (req, res) => {
       totalSize: `${(totalSize / 1024 / 1024).toFixed(2)} MB`
     });
 
-    // Ensure we have at least GLB
     if (!modelFiles.glb || !modelFiles.glb.url) {
       throw new Error('Failed to save GLB format, which is required');
     }
 
-    // Create asset with permanently stored files AND TOPOLOGY
+    /**
+     * Create asset document with all metadata
+     */
     const assetData = {
       name: name || `Generated Dog Model`,
       breed: breed || 'Mixed Breed',
@@ -774,20 +805,16 @@ app.post('/api/saveAsset/:taskId', authMiddleware, async (req, res) => {
       tags: ['generated', 'meshy', 'ai'],
       description: description || 'AI-generated 3D dog model from uploaded image',
       
-      // CRITICAL: Save topology as first-class field
       topology: generationParams.topology,
       texture: generationParams.texture,
       symmetry: generationParams.symmetry,
       pbr: generationParams.pbr,
       
-      // Store all model formats
       modelFiles: modelFiles,
       availableFormats: availableFormats,
       
-      // Keep legacy modelFile for backward compatibility (GLB)
       modelFile: modelFiles.glb,
       
-      // Include original image data
       originalImage: cloudinaryOriginalImage ? {
         filename: cloudinaryOriginalImage.filename,
         url: cloudinaryOriginalImage.url,
@@ -795,18 +822,15 @@ app.post('/api/saveAsset/:taskId', authMiddleware, async (req, res) => {
         size: cloudinaryOriginalImage.size
       } : null,
       
-      // Still store Meshy task ID for reference
       meshyTaskId: taskId,
       generatedFromImage: true,
       
-      // USER OWNERSHIP
       userId: req.user.userId,
       isPublic: isPublic !== undefined ? isPublic : false,
       isUserGenerated: isUserGenerated !== undefined ? isUserGenerated : true,
       category: category || 'user_generated',
       createdBy: 'user',
       
-      // Enhanced generation metadata
       generationMetadata: {
         topology: generationParams.topology,
         hasTexture: generationParams.texture,
@@ -817,7 +841,7 @@ app.post('/api/saveAsset/:taskId', authMiddleware, async (req, res) => {
         isMeshyGenerated: true,
         autoSaved: req.body.autoSaved || false,
         originalGenerationParams: generationParams,
-        proxyFormats: proxyFormats // Track which formats use proxy
+        proxyFormats: proxyFormats
       }
     };
 
@@ -830,11 +854,12 @@ app.post('/api/saveAsset/:taskId', authMiddleware, async (req, res) => {
       hasOriginalImage: !!assetData.originalImage,
       topology: assetData.topology
     });
-    console.log('🔺 FINAL TOPOLOGY VALUE BEING SAVED:', assetData.topology);
 
     const asset = await Asset.create(assetData);
     
-    // Cleanup pending assets
+    /**
+     * Cleanup temporary pending asset data
+     */
     if (req.app.locals.pendingAssets && req.app.locals.pendingAssets[taskId]) {
       delete req.app.locals.pendingAssets[taskId];
       console.log('🧹 Cleaned up pending asset data for taskId:', taskId);
@@ -863,33 +888,46 @@ app.post('/api/saveAsset/:taskId', authMiddleware, async (req, res) => {
     
   } catch (error) {
     console.error('❌ Error saving user asset:', error);
-    console.error('📍 Stack trace:', error.stack);
+    console.error('🔍 Stack trace:', error.stack);
     res.status(500).json({ error: 'Failed to save asset to your collection: ' + error.message });
   }
 });
 
-// Static files
+/**
+ * Static Files Fallback
+ */
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Graceful shutdown
+/**
+ * Graceful Shutdown Handler
+ */
 process.on('SIGINT', async () => {
   console.log('🛑 Shutting down gracefully...');
   await mongoose.connection.close();
   process.exit(0);
 });
 
-// Server startup logic
+/**
+ * Server Initialization
+ * Configures server for production or development environment
+ */
 const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
 const PORT = process.env.PORT || 3000;
 
 if (isProduction) {
-  // Production: Use regular HTTP (Render handles HTTPS via their proxy)
+  /**
+   * Production Server
+   * Render handles HTTPS via their proxy
+   */
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Production server running on port ${PORT}`);
     console.log(`🌐 Server URL: https://threely-ai.onrender.com`);
   });
 } else {
-  // Development: Simple HTTP only
+  /**
+   * Development Server
+   * HTTP only for local development
+   */
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Development server: http://localhost:${PORT}`);
     console.log(`📱 Android: http://10.0.2.2:${PORT}`);

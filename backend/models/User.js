@@ -1,8 +1,15 @@
-// backend/models/User.js
+/**
+ * User Model
+ * Mongoose schema for user management with token-based system
+ */
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-// Define the transaction subdocument schema
+/**
+ * Transaction subdocument schema
+ * Records all token purchases and grants
+ */
 const transactionSchema = new mongoose.Schema({
     id: String,
     date: Date,
@@ -18,6 +25,9 @@ const transactionSchema = new mongoose.Schema({
     grantedBy: String
 }, { _id: false });
 
+/**
+ * User schema definition
+ */
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
@@ -68,7 +78,7 @@ const userSchema = new mongoose.Schema({
         enum: ['user', 'premium', 'admin'],
         default: 'user'
     },
-    transactions: [transactionSchema], // Using the subdocument schema
+    transactions: [transactionSchema],
     totalSpent: {
         type: Number,
         default: 0
@@ -91,8 +101,12 @@ const userSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// Hash password before saving (ONLY ONCE)
+/**
+ * Pre-save middleware
+ * Hash password and check for admin status
+ */
 userSchema.pre('save', async function(next) {
+    // Only hash password if it has been modified
     if (!this.isModified('password')) return next();
     
     try {
@@ -113,7 +127,15 @@ userSchema.pre('save', async function(next) {
     }
 });
 
-// INSTANCE METHODS
+/**
+ * Instance Methods
+ */
+
+/**
+ * Compare provided password with hashed password
+ * @param {string} candidatePassword - Password to compare
+ * @returns {Promise<boolean>} True if passwords match
+ */
 userSchema.methods.comparePassword = async function(candidatePassword) {
     try {
         return await bcrypt.compare(candidatePassword, this.password);
@@ -122,11 +144,22 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
     }
 };
 
+/**
+ * Check if user has enough tokens for an operation
+ * @param {number} required - Number of tokens required
+ * @returns {boolean} True if user has enough tokens
+ */
 userSchema.methods.hasEnoughTokens = function(required = 1) {
     return this.role === 'admin' || this.tokens >= required;
 };
 
+/**
+ * Consume tokens for a generation
+ * @param {number} amount - Number of tokens to consume
+ * @returns {Promise<boolean>} True if tokens were consumed successfully
+ */
 userSchema.methods.consumeTokens = async function(amount = 1) {
+    // Admin users have unlimited tokens
     if (this.role === 'admin') {
         return true;
     }
@@ -146,6 +179,12 @@ userSchema.methods.consumeTokens = async function(amount = 1) {
     return true;
 };
 
+/**
+ * Add tokens to user account
+ * @param {number} amount - Number of tokens to add
+ * @param {Object} transactionDetails - Transaction details to record
+ * @returns {Promise<number>} Updated token balance
+ */
 userSchema.methods.addTokens = async function(amount, transactionDetails) {
     this.tokens += amount;
     
@@ -161,6 +200,11 @@ userSchema.methods.addTokens = async function(amount, transactionDetails) {
     return this.tokens;
 };
 
+/**
+ * Toggle liked status for an asset
+ * @param {ObjectId} assetId - Asset ID to toggle
+ * @returns {boolean} True if asset was added, false if removed
+ */
 userSchema.methods.toggleLikedAsset = function(assetId) {
     const index = this.likedAssets.indexOf(assetId);
     if (index > -1) {
@@ -172,6 +216,12 @@ userSchema.methods.toggleLikedAsset = function(assetId) {
     }
 };
 
+/**
+ * Add a generated model to user's history
+ * @param {string} taskId - Task ID from generation service
+ * @param {string} name - Model name
+ * @returns {Promise<User>} Updated user document
+ */
 userSchema.methods.addGeneratedModel = function(taskId, name) {
     this.generatedModels.push({
         taskId,
@@ -180,7 +230,15 @@ userSchema.methods.addGeneratedModel = function(taskId, name) {
     return this.save();
 };
 
-// STATIC METHODS
+/**
+ * Static Methods
+ */
+
+/**
+ * Find user by username or email
+ * @param {string} username - Username or email to search
+ * @returns {Promise<User>} User document if found
+ */
 userSchema.statics.findByUsername = async function(username) {
     const isEmail = username.includes('@');
     
@@ -200,6 +258,11 @@ userSchema.statics.findByUsername = async function(username) {
     }
 };
 
+/**
+ * Find user by email
+ * @param {string} email - Email address to search
+ * @returns {Promise<User>} User document if found
+ */
 userSchema.statics.findByEmail = function(email) {
     return this.findOne({ 
         email: email.toLowerCase(), 
@@ -207,8 +270,6 @@ userSchema.statics.findByEmail = function(email) {
     });
 };
 
-// Create the model
+// Create and export the model
 const User = mongoose.model('User', userSchema);
-
-// Export the model
 module.exports = User;

@@ -3,9 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Threely - Mobile App</title>
+    <title>Threely - AI-Powered 3D Generation</title>
     
-    <!-- Existing CSS files -->
+    <!-- Favicon -->
+    <link rel="icon" href="public/co5.png" type="image/png">
+    
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Application Styles -->
     <link rel="stylesheet" href="css/homepage.css">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/auth-modal.css">
@@ -13,28 +25,22 @@
     <link rel="stylesheet" href="css/mobile-app.css">
     <link rel="stylesheet" href="css/monetization.css">
     
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Scripts -->
-    <script src="src/config.js"></script>
+    <!-- External Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="https://unityads.unity3d.com/webview/sdk/3.0/unityads.min.js"></script>
-    <script src="https://unityads.unity3d.com/webview/sdk/3.0/unityads.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="src/ad-manager.js"></script>
-    <link rel="icon" href="public/co5.png" type="image/png">
-
+    <script src="https://unityads.unity3d.com/webview/sdk/3.0/unityads.min.js"></script>
+    
+    <!-- Application Configuration -->
+    <script src="src/config.js"></script>
+    <script src="src/ad-manager.js"></script>
 </head>
 <body>
     <!-- Premium Loading Screen -->
     <div class="app-loading-screen" id="appLoadingScreen">
-        <img src="public/threely3.png" alt="Dalma AI" class="loading-logo">
+        <img src="public/threely3.png" alt="Threely" class="loading-logo">
         <p class="loading-subtitle">Transforming pictures into 3D magic</p>
         
         <div class="loading-spinner-container">
@@ -50,11 +56,11 @@
         <div class="loading-text" id="loadingText">Initializing...</div>
     </div>
 
-    <!-- Main App Container -->
+    <!-- Main Application Container -->
     <div class="app-container" id="appContainer" style="display: none;">
-        <!-- App Header with Credits -->
+        <!-- Application Header -->
         <header class="app-header">
-            <img src="public/co5.png" alt="Dalma AI" class="app-logo">
+            <img src="public/co5.png" alt="Threely" class="app-logo">
             
             <div class="header-credits">
                 <div class="credits-container" id="creditsContainer" style="display: none;">
@@ -67,35 +73,20 @@
                 <button class="buy-credits-btn" id="buyCreditsBtn" style="display: none;">
                     Buy Credits
                 </button>
-                
             </div>
         </header>
 
         <!-- Main Content Area -->
         <main class="app-main" id="appMain">
-            <!-- Content sections will be loaded here -->
-            <div class="app-section active" id="homeSection">
-                <!-- Homepage content will be loaded here -->
-            </div>
-            
-            <div class="app-section" id="generateSection">
-                <!-- Generate content will be loaded here -->
-            </div>
-            
-            <div class="app-section" id="assetsSection">
-                <!-- Assets content will be loaded here -->
-            </div>
-            
-            <div class="app-section" id="accountSection">
-                <!-- Account content will be loaded here -->
-            </div>
-            
-            <div class="app-section" id="aboutSection">
-                <!-- About content will be loaded here -->
-            </div>
+            <!-- Content sections - dynamically loaded -->
+            <div class="app-section active" id="homeSection"></div>
+            <div class="app-section" id="generateSection"></div>
+            <div class="app-section" id="assetsSection"></div>
+            <div class="app-section" id="accountSection"></div>
+            <div class="app-section" id="aboutSection"></div>
         </main>
 
-        <!-- Enhanced Bottom Navigation with Assets -->
+        <!-- Bottom Navigation -->
         <nav class="bottom-nav">
             <button class="nav-item active" data-section="home">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -104,7 +95,6 @@
                 <span class="nav-label">Home</span>
             </button>
             
-            
             <button class="nav-item" data-section="assets">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2z"/>
@@ -112,14 +102,12 @@
                 <span class="nav-label">Gallery</span>
             </button>
 
-  <button class="nav-item" data-section="generate">
+            <button class="nav-item" data-section="generate">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                 </svg>
                 <span class="nav-label">Generate</span>
             </button>
-
-
             
             <button class="nav-item" data-section="account">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -137,12 +125,10 @@
         </nav>
     </div>
 
-    <!-- Auth Modal (reuse existing auth system) -->
-    <div class="auth-overlay" id="authOverlay">
-        <!-- Auth modal content will be inserted here by auth.js -->
-    </div>
+    <!-- Authentication Modal Container -->
+    <div class="auth-overlay" id="authOverlay"></div>
 
-    <!-- Pricing Modal for Mobile Monetization -->
+    <!-- Pricing Modal -->
     <div class="pricing-modal" id="pricingModal">
         <div class="pricing-modal-content">
             <div class="pricing-header">
@@ -167,727 +153,645 @@
         </div>
     </div>
 
-  
-
-   <!-- Scripts -->
-    <!-- Add this right after your other script tags but BEFORE auth.js -->
-<script>
-    // Ensure Capacitor plugins are loaded
-    if (window.Capacitor) {
-        window.Capacitor.Plugins = window.Capacitor.Plugins || {};
-        console.log('📱 Capacitor environment detected');
-    }
-</script>
-<script src="src/auth.js"></script>
-<script src="src/local-storage-manager.js"></script>
-<script src="src/enhanced-monitization.js"></script>
-<script src="src/mobile-3d-viewer.js"></script>
-<script src="src/mobile-asset-viewer.js"></script>
-<script src="src/generate-controller.js"></script>
-<script src="src/app-navigation.js"></script>
-
-
-
-<!-- Initialize the app -->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-    // Stop 3D animations when not on home
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                const homeSection = document.getElementById('homeSection');
-                if (homeSection) {
-                    const isActive = homeSection.classList.contains('active');
-                    
-                    // Control Three.js rendering
-                    if (window.animationFrame) {
-                        if (!isActive) {
-                            cancelAnimationFrame(window.animationFrame);
-                            window.animationFrame = null;
-                            console.log('🛑 Stopped 3D rendering');
-                        }
-                    }
-                    
-                    // Control Mobile3D
-                    if (window.Mobile3D) {
-                        if (isActive) {
-                            window.Mobile3D.resume && window.Mobile3D.resume();
-                        } else {
-                            window.Mobile3D.pause && window.Mobile3D.pause();
-                        }
-                    }
-                }
-            }
-        });
-    });
-    
-    // Observe all section changes
-    document.querySelectorAll('.app-section').forEach(section => {
-        observer.observe(section, { attributes: true });
-    });
-});
-
-window.optimized3DRendering = {
-    isActive: false,
-    shouldRender: false,
-    
-    start: function() {
-        this.isActive = true;
-        this.shouldRender = true;
-    },
-    
-    stop: function() {
-        this.isActive = false;
-        this.shouldRender = false;
-    },
-    
-    pauseWhenHidden: function() {
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                this.stop();
-            } else if (document.querySelector('#homeSection.active')) {
-                this.start();
-            }
-        });
-    }
-};
-
-// Initialize optimization
-window.optimized3DRendering.pauseWhenHidden();
-
-// Override requestAnimationFrame for 3D scenes
-const originalRAF = window.requestAnimationFrame;
-window.requestAnimationFrame = function(callback) {
-    // Only run animation frames when needed
-    if (window.optimized3DRendering.shouldRender || !window.optimized3DRendering.isActive) {
-        return originalRAF.call(window, callback);
-    }
-    return null;
-};
-
-async function initializeTokenSystem() {
-    console.log('🚀 Initializing token sync system...');
-    
-    // Wait for auth manager to be ready
-    await new Promise((resolve) => {
-        if (window.authManager?.isInitialized) {
-            resolve();
-        } else {
-            const checkInterval = setInterval(() => {
-                if (window.authManager?.isInitialized) {
-                    clearInterval(checkInterval);
-                    resolve();
-                }
-            }, 100);
-            
-            // Timeout after 5 seconds
-            setTimeout(() => {
-                clearInterval(checkInterval);
-                resolve();
-            }, 5000);
+    <!-- Capacitor Environment Check -->
+    <script>
+        if (window.Capacitor) {
+            window.Capacitor.Plugins = window.Capacitor.Plugins || {};
+            console.log('📱 Capacitor environment detected');
         }
-    });
-    
-    // Initialize monetization system
-    if (window.EnhancedMonetization) {
-        const monetization = window.EnhancedMonetization.init();
-        window.enhancedMonetization = monetization;
-        
-        // If authenticated, sync tokens from backend
-        if (window.authManager?.isAuthenticated()) {
-            console.log('🔄 User authenticated, syncing tokens...');
+    </script>
+
+    <!-- Application Scripts -->
+    <script src="src/auth.js"></script>
+    <script src="src/local-storage-manager.js"></script>
+    <script src="src/enhanced-monitization.js"></script>
+    <script src="src/mobile-3d-viewer.js"></script>
+    <script src="src/mobile-asset-viewer.js"></script>
+    <script src="src/generate-controller.js"></script>
+    <script src="src/app-navigation.js"></script>
+
+    <!-- Application Initialization -->
+    <script>
+        // 3D Rendering Optimization Manager
+        window.optimized3DRendering = {
+            isActive: false,
+            shouldRender: false,
             
-            // Get fresh token data from backend
-            try {
-                const response = await window.makeAuthenticatedRequest(
-                    `${monetization.getApiBaseUrl()}/payment/user-tokens`,
-                    { method: 'GET' }
-                );
+            start: function() {
+                this.isActive = true;
+                this.shouldRender = true;
+            },
+            
+            stop: function() {
+                this.isActive = false;
+                this.shouldRender = false;
+            },
+            
+            pauseWhenHidden: function() {
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        this.stop();
+                    } else if (document.querySelector('#homeSection.active')) {
+                        this.start();
+                    }
+                });
+            }
+        };
+
+        // Initialize 3D optimization
+        window.optimized3DRendering.pauseWhenHidden();
+
+        // Override requestAnimationFrame for performance
+        const originalRAF = window.requestAnimationFrame;
+        window.requestAnimationFrame = function(callback) {
+            if (window.optimized3DRendering.shouldRender || !window.optimized3DRendering.isActive) {
+                return originalRAF.call(window, callback);
+            }
+            return null;
+        };
+
+        // Token Synchronization Manager
+        window.TokenSyncManager = {
+            syncTokens: async function() {
+                console.log('🔄 Starting token sync...');
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    // Update all systems with the backend token count
-                    const tokens = data.tokens || 1;
-                    
-                    // Update monetization system
-                    monetization.userTokens = tokens;
-                    monetization.userId = data.id;
-                    monetization.isAdmin = data.isAdmin || false;
-                    
-                    // Update auth manager
-                    if (window.authManager.user) {
-                        window.authManager.user.tokens = tokens;
-                    }
-                    if (window.authManager.currentUser) {
-                        window.authManager.currentUser.tokens = tokens;
-                    }
-                    
-                    // Force update all displays
-                    monetization.forceUpdateAllTokenDisplays();
-                    
-                    console.log('✅ Token sync complete. Current balance:', tokens);
-                }
-            } catch (error) {
-                console.error('Error syncing tokens:', error);
-            }
-        }
-        
-        // Start periodic sync
-        monetization.startPeriodicSync();
-    }
-    
-    // Setup global token update listener
-    window.addEventListener('authStateChange', async (event) => {
-        if (event.detail.authenticated && window.enhancedMonetization) {
-            // Wait a moment for auth to stabilize
-            setTimeout(() => {
-                window.enhancedMonetization.syncTokensFromBackend();
-            }, 500);
-        }
-    });
-}
-
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeTokenSystem);
-} else {
-    initializeTokenSystem();
-}
-
-// Also reinitialize on page visibility change (when app comes back to foreground)
-document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && window.authManager?.isAuthenticated() && window.enhancedMonetization) {
-        console.log('📱 App became visible, syncing tokens...');
-        window.enhancedMonetization.syncTokensFromBackend();
-    }
-});
-    // Add CSS fix for hero content and 3D interaction
-    const styleSheet = document.createElement('style');
-    styleSheet.textContent = `
-        /* Hero content layering fixes */
-        .hero {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-        
-        .hero-3d {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-        
-        .hero-content {
-            position: relative;
-            z-index: 10;
-            pointer-events: none;
-        }
-        
-        .hero-content * {
-            pointer-events: auto;
-        }
-        
-        .cta-button {
-            position: relative;
-            z-index: 20;
-            pointer-events: auto !important;
-            cursor: pointer !important;
-            touch-action: manipulation;
-        }
-        
-        /* Ensure 3D canvas allows proper interaction */
-        #appHero3d {
-            position: relative;
-            pointer-events: auto;
-        }
-        
-        #appHero3d canvas {
-            pointer-events: auto !important;
-        }
-        
-        /* Mobile-specific touch improvements */
-        @media (max-width: 768px) {
-            .cta-button {
-                min-height: 44px;
-                min-width: 120px;
-            }
-        }
-    `;
-    document.head.appendChild(styleSheet);
-    
-    // App initialization state - MOVED TO TOP
-    let appInitialized = false;
-    let loadingProgress = 0;
-    
-    // Update UI based on auth state
-    function updateUIForAuthState(isAuthenticated) {
-        const creditsContainer = document.getElementById('creditsContainer');
-        const buyCreditsBtn = document.getElementById('buyCreditsBtn');
-        const accountBtn = document.getElementById('accountBtn');
-        const accountBtnText = accountBtn?.querySelector('.account-btn-text');
-        
-        if (isAuthenticated) {
-            // Show authenticated UI elements
-            if (creditsContainer) creditsContainer.style.display = 'flex';
-            if (buyCreditsBtn) buyCreditsBtn.style.display = 'block';
-            if (accountBtnText) accountBtnText.textContent = 'Account';
-            
-            // Update credits display
-            if (window.MobileMonetization) {
-                const creditsCount = document.getElementById('creditsCount');
-                if (creditsCount) {
-                    creditsCount.textContent = window.MobileMonetization.getUserCredits();
-                }
-            }
-        } else {
-            // Show unauthenticated UI
-            if (creditsContainer) creditsContainer.style.display = 'none';
-            if (buyCreditsBtn) buyCreditsBtn.style.display = 'none';
-            if (accountBtnText) accountBtnText.textContent = 'Login';
-        }
-    }
-
-    // Enhanced loading screen with smooth progression
-    function updateLoadingScreen(progress, text) {
-        const progressBar = document.getElementById('loadingProgressBar');
-        const loadingText = document.getElementById('loadingText');
-        
-        if (progressBar) {
-            progressBar.style.width = `${progress}%`;
-        }
-        
-        if (loadingText) {
-            loadingText.textContent = text;
-        }
-        
-        loadingProgress = progress;
-    }
-
-    // Hide loading screen with smooth animation
-    function hideLoadingScreen() {
-        const loadingScreen = document.getElementById('appLoadingScreen');
-        if (loadingScreen) {
-            loadingScreen.classList.add('hidden');
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-            }, 800);
-        }
-    }
-
-    // Check authentication and initialize app
-   async function initializeApp() {
-    if (appInitialized) {
-        console.log('⚠️ App already initialized, skipping re-initialization');
-        return;
-    }
-    
-    console.log('🚀 Initializing app with public assets access...');
-    updateLoadingScreen(20, 'Loading interface...');
-    
-    // Check for redirect in URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlRedirect = urlParams.get('redirect');
-    
-    // Store any pending redirect (from URL or sessionStorage)
-    const pendingRedirect = urlRedirect || sessionStorage.getItem('redirectAfterLogin');
-    console.log('📍 Pending redirect detected:', pendingRedirect);
-    console.log('📍 URL redirect:', urlRedirect);
-    console.log('📍 SessionStorage redirect:', sessionStorage.getItem('redirectAfterLogin'));
-    
-    // Clean up URL if we have a redirect parameter
-    if (urlRedirect) {
-        // Remove the redirect parameter from URL without reload
-        const newUrl = window.location.pathname + window.location.hash;
-        window.history.replaceState({}, document.title, newUrl);
-    }
-    
-    // Wait for auth manager to be ready
-    await new Promise(resolve => {
-        let attempts = 0;
-        const maxAttempts = 50;
-        
-        const checkAuth = setInterval(() => {
-            attempts++;
-            if (window.authManager?.isInitialized || attempts >= maxAttempts) {
-                clearInterval(checkAuth);
-                resolve();
-            }
-        }, 100);
-    });
-    
-    updateLoadingScreen(50, 'Setting up app...');
-    
-    // Show the app container for everyone
-    document.getElementById('appContainer').style.display = 'flex';
-    
-    // Check authentication status
-    const isAuthenticated = window.authManager?.isAuthenticated();
-    console.log('🔐 User authenticated:', isAuthenticated);
-    
-    // Update UI based on auth state
-    updateUIForAuthState(isAuthenticated);
-    
-    // Initialize app navigation with public assets
-    updateLoadingScreen(70, 'Loading sections...');
-    
-    if (window.AppNavigation) {
-        await new Promise(resolve => {
-            setTimeout(() => {
-                // Pass the pending redirect to init if we have one and user is authenticated
-                const initialSection = (isAuthenticated && pendingRedirect && ['generate', 'assets', 'account', 'about'].includes(pendingRedirect)) 
-                    ? pendingRedirect 
-                    : null;
-                    
-                if (initialSection) {
-                    console.log('🎯 Initializing navigation with redirect section:', initialSection);
-                    localStorage.removeItem('dalma_redirectAfterLogin');
-                }
-                
-                window.AppNavigation.init(initialSection);
-                resolve();
-            }, 300);
-        });
-    }
-    
-    // If we're loading the home section (default), wait for 3D model
-    if (!pendingRedirect || pendingRedirect === 'home') {
-        updateLoadingScreen(80, 'Loading 3D environment...');
-        
-        // Wait for 3D model to load
-        await waitFor3DModel();
-        
-        updateLoadingScreen(95, 'Finalizing...');
-    } else {
-        updateLoadingScreen(90, 'Preparing content...');
-    }
-    
-    // Setup restricted navigation - ONLY generate section requires auth
-    setupRestrictedNavigation(isAuthenticated);
-    
-    // Setup account button handler
-    setupAccountButton();
-    
-    // Handle pending redirect if authenticated
-    if (isAuthenticated && pendingRedirect && ['generate', 'assets', 'account', 'about'].includes(pendingRedirect)) {
-        console.log('🚀 Processing pending redirect to:', pendingRedirect);
-        sessionStorage.removeItem('redirectAfterLogin');
-        
-        // Wait a bit longer to ensure everything is ready
-        setTimeout(() => {
-            if (window.AppNavigation) {
-                console.log('🎯 Navigating to section:', pendingRedirect);
-                window.AppNavigation.navigateToSection(pendingRedirect);
-            }
-        }, 1000);
-    }
-    
-    updateLoadingScreen(100, 'Ready!');
-    
-    // Hide loading screen and mark as initialized
-    setTimeout(() => {
-        hideLoadingScreen();
-        appInitialized = true; // Set flag here to prevent re-initialization
-    }, 500); // Reduced from 1000ms since we're actually waiting for content
-}
-
-// Add this new function to wait for 3D model
-async function waitFor3DModel() {
-    return new Promise((resolve) => {
-        let checkAttempts = 0;
-        const maxAttempts = 50; // 5 seconds max wait
-        
-        const checkModelLoaded = () => {
-            checkAttempts++;
-            
-            // Check if Mobile3D is initialized and model is loaded
-            if (window.Mobile3D && window.Mobile3D.scene && window.Mobile3D.scene()) {
-                const scene = window.Mobile3D.scene();
-                if (scene.dogModel) {
-                    console.log('✅ 3D model loaded successfully');
-                    resolve();
+                if (!window.authManager?.isAuthenticated()) {
+                    console.log('⌛ User not authenticated, skipping sync');
                     return;
                 }
-            }
-            
-            // If home section hero3d exists but model isn't ready, keep waiting
-            const hero3d = document.getElementById('appHero3d');
-            if (hero3d && hero3d.querySelector('canvas')) {
-                // Canvas exists, check if model is in scene
-                if (checkAttempts < maxAttempts) {
-                    setTimeout(checkModelLoaded, 100);
-                } else {
-                    console.log('⚠️ 3D model load timeout, proceeding anyway');
-                    resolve();
+                
+                try {
+                    const response = await window.makeAuthenticatedRequest(
+                        `${window.enhancedMonetization?.getApiBaseUrl() || '/api'}/payment/user-tokens`,
+                        { method: 'GET' }
+                    );
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const tokens = data.tokens || 1;
+                        
+                        console.log('✅ Backend tokens:', tokens);
+                        
+                        // Update all token systems
+                        if (window.enhancedMonetization) {
+                            window.enhancedMonetization.userTokens = tokens;
+                            window.enhancedMonetization.forceUpdateAllTokenDisplays();
+                        }
+                        
+                        if (window.authManager) {
+                            if (window.authManager.user) window.authManager.user.tokens = tokens;
+                            if (window.authManager.currentUser) window.authManager.currentUser.tokens = tokens;
+                        }
+                        
+                        // Update UI displays
+                        const headerCredits = document.getElementById('creditsCount');
+                        if (headerCredits) headerCredits.textContent = tokens;
+                        
+                        const accountCredits = document.getElementById('accountCreditsCount');
+                        if (accountCredits) accountCredits.textContent = tokens;
+                        
+                        console.log('✅ All displays updated to:', tokens);
+                    }
+                } catch (error) {
+                    console.error('Token sync error:', error);
                 }
-            } else if (checkAttempts < maxAttempts) {
-                // No canvas yet, keep waiting
-                setTimeout(checkModelLoaded, 100);
-            } else {
-                console.log('⚠️ 3D initialization timeout, proceeding anyway');
-                resolve();
             }
         };
-        
-        // Start checking
-        checkModelLoaded();
-    });
-}
-    
-   // Setup navigation with restrictions - UPDATED: Remove assets from restricted sections
-    function setupRestrictedNavigation(isAuthenticated) {
-        // Sections that require authentication - ONLY generate section now
-        const restrictedSections = ['generate']; // Removed 'assets' - now completely public
-        
-        // Override navigation for restricted sections
-        const originalNavigate = window.AppNavigation.navigateToSection;
-        window.AppNavigation.navigateToSection = function(sectionName) {
-            if (!window.authManager?.isAuthenticated() && restrictedSections.includes(sectionName)) {
-                console.log('🔐 Section requires authentication:', sectionName);
-                sessionStorage.setItem('redirectAfterLogin', sectionName);
-                console.log('📍 Stored section redirect:', sessionStorage.getItem('redirectAfterLogin'));
-                window.authManager.showLoginModal();
-                return;
-            }
+
+        // Application State
+        let appInitialized = false;
+        let loadingProgress = 0;
+
+        // Update UI based on authentication state
+        function updateUIForAuthState(isAuthenticated) {
+            const creditsContainer = document.getElementById('creditsContainer');
+            const buyCreditsBtn = document.getElementById('buyCreditsBtn');
+            const accountBtn = document.getElementById('accountBtn');
+            const accountBtnText = accountBtn?.querySelector('.account-btn-text');
             
-            // Account section special handling
-            if (sectionName === 'account' && !window.authManager?.isAuthenticated()) {
-                sessionStorage.setItem('redirectAfterLogin', 'account');
-                window.authManager.showLoginModal();
-                return;
-            }
-            
-            originalNavigate.call(this, sectionName);
-        };
-    }
-    
-    // Setup account button
-    function setupAccountButton() {
-        const accountBtn = document.getElementById('accountBtn');
-        if (accountBtn) {
-            accountBtn.addEventListener('click', () => {
-                if (window.authManager?.isAuthenticated()) {
-                    window.AppNavigation.navigateToSection('account');
-                } else {
-                    window.authManager.showLoginModal();
-                }
-            });
-        }
-        
-        // Buy credits button
-        const buyCreditsBtn = document.getElementById('buyCreditsBtn');
-        if (buyCreditsBtn) {
-            buyCreditsBtn.addEventListener('click', () => {
+            if (isAuthenticated) {
+                if (creditsContainer) creditsContainer.style.display = 'flex';
+                if (buyCreditsBtn) buyCreditsBtn.style.display = 'block';
+                if (accountBtnText) accountBtnText.textContent = 'Account';
+                
                 if (window.MobileMonetization) {
-                    window.MobileMonetization.showPricingModal();
+                    const creditsCount = document.getElementById('creditsCount');
+                    if (creditsCount) {
+                        creditsCount.textContent = window.MobileMonetization.getUserCredits();
+                    }
+                }
+            } else {
+                if (creditsContainer) creditsContainer.style.display = 'none';
+                if (buyCreditsBtn) buyCreditsBtn.style.display = 'none';
+                if (accountBtnText) accountBtnText.textContent = 'Login';
+            }
+        }
+
+        // Loading screen progress updater
+        function updateLoadingScreen(progress, text) {
+            const progressBar = document.getElementById('loadingProgressBar');
+            const loadingText = document.getElementById('loadingText');
+            
+            if (progressBar) {
+                progressBar.style.width = `${progress}%`;
+            }
+            
+            if (loadingText) {
+                loadingText.textContent = text;
+            }
+            
+            loadingProgress = progress;
+        }
+
+        // Hide loading screen with animation
+        function hideLoadingScreen() {
+            const loadingScreen = document.getElementById('appLoadingScreen');
+            if (loadingScreen) {
+                loadingScreen.classList.add('hidden');
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 800);
+            }
+        }
+
+        // Wait for 3D model to load
+        async function waitFor3DModel() {
+            return new Promise((resolve) => {
+                let checkAttempts = 0;
+                const maxAttempts = 50;
+                
+                const checkModelLoaded = () => {
+                    checkAttempts++;
+                    
+                    if (window.Mobile3D && window.Mobile3D.scene && window.Mobile3D.scene()) {
+                        const scene = window.Mobile3D.scene();
+                        if (scene.dogModel) {
+                            console.log('✅ 3D model loaded successfully');
+                            resolve();
+                            return;
+                        }
+                    }
+                    
+                    const hero3d = document.getElementById('appHero3d');
+                    if (hero3d && hero3d.querySelector('canvas')) {
+                        if (checkAttempts < maxAttempts) {
+                            setTimeout(checkModelLoaded, 100);
+                        } else {
+                            console.log('⚠️ 3D model load timeout, proceeding anyway');
+                            resolve();
+                        }
+                    } else if (checkAttempts < maxAttempts) {
+                        setTimeout(checkModelLoaded, 100);
+                    } else {
+                        console.log('⚠️ 3D initialization timeout, proceeding anyway');
+                        resolve();
+                    }
+                };
+                
+                checkModelLoaded();
+            });
+        }
+
+        // Initialize token system
+        async function initializeTokenSystem() {
+            console.log('🚀 Initializing token sync system...');
+            
+            await new Promise((resolve) => {
+                if (window.authManager?.isInitialized) {
+                    resolve();
+                } else {
+                    const checkInterval = setInterval(() => {
+                        if (window.authManager?.isInitialized) {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }
+                    }, 100);
+                    
+                    setTimeout(() => {
+                        clearInterval(checkInterval);
+                        resolve();
+                    }, 5000);
+                }
+            });
+            
+            if (window.EnhancedMonetization) {
+                const monetization = window.EnhancedMonetization.init();
+                window.enhancedMonetization = monetization;
+                
+                if (window.authManager?.isAuthenticated()) {
+                    console.log('🔄 User authenticated, syncing tokens...');
+                    
+                    try {
+                        const response = await window.makeAuthenticatedRequest(
+                            `${monetization.getApiBaseUrl()}/payment/user-tokens`,
+                            { method: 'GET' }
+                        );
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            const tokens = data.tokens || 1;
+                            
+                            monetization.userTokens = tokens;
+                            monetization.userId = data.id;
+                            monetization.isAdmin = data.isAdmin || false;
+                            
+                            if (window.authManager.user) {
+                                window.authManager.user.tokens = tokens;
+                            }
+                            if (window.authManager.currentUser) {
+                                window.authManager.currentUser.tokens = tokens;
+                            }
+                            
+                            monetization.forceUpdateAllTokenDisplays();
+                            console.log('✅ Token sync complete. Current balance:', tokens);
+                        }
+                    } catch (error) {
+                        console.error('Error syncing tokens:', error);
+                    }
+                }
+                
+                monetization.startPeriodicSync();
+            }
+            
+            window.addEventListener('authStateChange', async (event) => {
+                if (event.detail.authenticated && window.enhancedMonetization) {
+                    setTimeout(() => {
+                        window.enhancedMonetization.syncTokensFromBackend();
+                    }, 500);
                 }
             });
         }
-    }
-    
-    // Global loadSection function for compatibility
-    window.loadSection = function(sectionName) {
-        if (window.AppNavigation) {
-            window.AppNavigation.navigateToSection(sectionName);
-        } else {
-            console.error('❌ AppNavigation not available');
-        }
-    };
-    
-    // Initialize when DOM is ready - UPDATED WITH FIX
-    document.addEventListener('DOMContentLoaded', function() {
-        // Check if app is already initialized to prevent double initialization
-        if (appInitialized) {
-            console.log('📱 App already initialized, skipping loading screen');
+
+        // Main application initialization
+        async function initializeApp() {
+            if (appInitialized) {
+                console.log('⚠️ App already initialized, skipping re-initialization');
+                return;
+            }
             
-            // Just ensure the app container is visible
-            const appContainer = document.getElementById('appContainer');
-            const loadingScreen = document.getElementById('appLoadingScreen');
+            console.log('🚀 Initializing application...');
+            updateLoadingScreen(20, 'Loading interface...');
             
-            if (appContainer) appContainer.style.display = 'flex';
-            if (loadingScreen) loadingScreen.style.display = 'none';
-            
-            // Handle any pending redirects without loading screen
             const urlParams = new URLSearchParams(window.location.search);
             const urlRedirect = urlParams.get('redirect');
-            if (urlRedirect && window.AppNavigation && ['generate', 'assets', 'account', 'about'].includes(urlRedirect)) {
-                // Clean up URL
+            const pendingRedirect = urlRedirect || sessionStorage.getItem('redirectAfterLogin');
+            
+            console.log('🔍 Pending redirect detected:', pendingRedirect);
+            
+            if (urlRedirect) {
                 const newUrl = window.location.pathname + window.location.hash;
                 window.history.replaceState({}, document.title, newUrl);
-                
-                // Navigate directly
-                setTimeout(() => {
-                    window.AppNavigation.navigateToSection(urlRedirect);
-                }, 100);
             }
-            return;
-        }
-        
-        console.log('📱 DOM loaded, showing loading screen...');
-        
-        // Show loading screen immediately
-        updateLoadingScreen(10, 'Loading application...');
-        
-        // Start initialization after brief delay
-        setTimeout(initializeApp, 300);
-    });
-   
-    // Listen for auth state changes
-    window.addEventListener('authStateChange', function(event) {
-        console.log('🔄 Auth state changed, updating UI...', event.detail);
-        const isAuthenticated = window.authManager?.isAuthenticated();
-        updateUIForAuthState(isAuthenticated);
-        setupRestrictedNavigation(isAuthenticated);
-        
-        // Handle redirect after login - only if app is already initialized
-        if (isAuthenticated && appInitialized) {
-            const redirect = sessionStorage.getItem('redirectAfterLogin');
-            console.log('🎯 Post-auth redirect check:', redirect);
-            if (redirect) {
+            
+            await new Promise(resolve => {
+                let attempts = 0;
+                const maxAttempts = 50;
+                
+                const checkAuth = setInterval(() => {
+                    attempts++;
+                    if (window.authManager?.isInitialized || attempts >= maxAttempts) {
+                        clearInterval(checkAuth);
+                        resolve();
+                    }
+                }, 100);
+            });
+            
+            updateLoadingScreen(50, 'Setting up app...');
+            
+            document.getElementById('appContainer').style.display = 'flex';
+            
+            const isAuthenticated = window.authManager?.isAuthenticated();
+            console.log('🔍 User authenticated:', isAuthenticated);
+            
+            updateUIForAuthState(isAuthenticated);
+            
+            updateLoadingScreen(70, 'Loading sections...');
+            
+            if (window.AppNavigation) {
+                await new Promise(resolve => {
+                    setTimeout(() => {
+                        const initialSection = (isAuthenticated && pendingRedirect && 
+                            ['generate', 'assets', 'account', 'about'].includes(pendingRedirect)) 
+                            ? pendingRedirect 
+                            : null;
+                            
+                        if (initialSection) {
+                            console.log('🎯 Initializing navigation with redirect section:', initialSection);
+                            localStorage.removeItem('dalma_redirectAfterLogin');
+                        }
+                        
+                        window.AppNavigation.init(initialSection);
+                        resolve();
+                    }, 300);
+                });
+            }
+            
+            if (!pendingRedirect || pendingRedirect === 'home') {
+                updateLoadingScreen(80, 'Loading 3D environment...');
+                await waitFor3DModel();
+                updateLoadingScreen(95, 'Finalizing...');
+            } else {
+                updateLoadingScreen(90, 'Preparing content...');
+            }
+            
+            setupRestrictedNavigation(isAuthenticated);
+            setupAccountButton();
+            
+            if (isAuthenticated && pendingRedirect && ['generate', 'assets', 'account', 'about'].includes(pendingRedirect)) {
+                console.log('🚀 Processing pending redirect to:', pendingRedirect);
                 sessionStorage.removeItem('redirectAfterLogin');
-                if (['generate', 'assets', 'account', 'about'].includes(redirect)) {
-                    console.log('🚀 Navigating to section:', redirect);
+                
+                setTimeout(() => {
+                    if (window.AppNavigation) {
+                        console.log('🎯 Navigating to section:', pendingRedirect);
+                        window.AppNavigation.navigateToSection(pendingRedirect);
+                    }
+                }, 1000);
+            }
+            
+            updateLoadingScreen(100, 'Ready!');
+            
+            setTimeout(() => {
+                hideLoadingScreen();
+                appInitialized = true;
+            }, 500);
+        }
+
+        // Setup navigation restrictions
+        function setupRestrictedNavigation(isAuthenticated) {
+            const restrictedSections = ['generate'];
+            
+            const originalNavigate = window.AppNavigation.navigateToSection;
+            window.AppNavigation.navigateToSection = function(sectionName) {
+                if (!window.authManager?.isAuthenticated() && restrictedSections.includes(sectionName)) {
+                    console.log('🔐 Section requires authentication:', sectionName);
+                    sessionStorage.setItem('redirectAfterLogin', sectionName);
+                    window.authManager.showLoginModal();
+                    return;
+                }
+                
+                if (sectionName === 'account' && !window.authManager?.isAuthenticated()) {
+                    sessionStorage.setItem('redirectAfterLogin', 'account');
+                    window.authManager.showLoginModal();
+                    return;
+                }
+                
+                originalNavigate.call(this, sectionName);
+            };
+        }
+
+        // Setup account button handlers
+        function setupAccountButton() {
+            const accountBtn = document.getElementById('accountBtn');
+            if (accountBtn) {
+                accountBtn.addEventListener('click', () => {
+                    if (window.authManager?.isAuthenticated()) {
+                        window.AppNavigation.navigateToSection('account');
+                    } else {
+                        window.authManager.showLoginModal();
+                    }
+                });
+            }
+            
+            const buyCreditsBtn = document.getElementById('buyCreditsBtn');
+            if (buyCreditsBtn) {
+                buyCreditsBtn.addEventListener('click', () => {
+                    if (window.MobileMonetization) {
+                        window.MobileMonetization.showPricingModal();
+                    }
+                });
+            }
+        }
+
+        // Global section loader for compatibility
+        window.loadSection = function(sectionName) {
+            if (window.AppNavigation) {
+                window.AppNavigation.navigateToSection(sectionName);
+            } else {
+                console.error('❌ AppNavigation not available');
+            }
+        };
+
+        // Monitor 3D rendering performance
+        document.addEventListener('DOMContentLoaded', function() {
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        const homeSection = document.getElementById('homeSection');
+                        if (homeSection) {
+                            const isActive = homeSection.classList.contains('active');
+                            
+                            if (window.animationFrame) {
+                                if (!isActive) {
+                                    cancelAnimationFrame(window.animationFrame);
+                                    window.animationFrame = null;
+                                    console.log('🛑 Stopped 3D rendering');
+                                }
+                            }
+                            
+                            if (window.Mobile3D) {
+                                if (isActive) {
+                                    window.Mobile3D.resume && window.Mobile3D.resume();
+                                } else {
+                                    window.Mobile3D.pause && window.Mobile3D.pause();
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.app-section').forEach(section => {
+                observer.observe(section, { attributes: true });
+            });
+        });
+
+        // Initialize application on DOM ready
+        document.addEventListener('DOMContentLoaded', function() {
+            if (appInitialized) {
+                console.log('📱 App already initialized, skipping loading screen');
+                
+                const appContainer = document.getElementById('appContainer');
+                const loadingScreen = document.getElementById('appLoadingScreen');
+                
+                if (appContainer) appContainer.style.display = 'flex';
+                if (loadingScreen) loadingScreen.style.display = 'none';
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlRedirect = urlParams.get('redirect');
+                if (urlRedirect && window.AppNavigation && ['generate', 'assets', 'account', 'about'].includes(urlRedirect)) {
+                    const newUrl = window.location.pathname + window.location.hash;
+                    window.history.replaceState({}, document.title, newUrl);
+                    
+                    setTimeout(() => {
+                        window.AppNavigation.navigateToSection(urlRedirect);
+                    }, 100);
+                }
+                return;
+            }
+            
+            console.log('📱 DOM loaded, showing loading screen...');
+            updateLoadingScreen(10, 'Loading application...');
+            setTimeout(initializeApp, 300);
+        });
+
+        // Initialize token system on DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeTokenSystem);
+        } else {
+            initializeTokenSystem();
+        }
+
+        // Token sync on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                window.TokenSyncManager.syncTokens();
+            }, 1500);
+        });
+
+        // Handle authentication state changes
+        window.addEventListener('authStateChange', function(event) {
+            console.log('🔄 Auth state changed, updating UI...', event.detail);
+            const isAuthenticated = window.authManager?.isAuthenticated();
+            updateUIForAuthState(isAuthenticated);
+            setupRestrictedNavigation(isAuthenticated);
+            
+            if (isAuthenticated && appInitialized) {
+                const redirect = sessionStorage.getItem('redirectAfterLogin');
+                console.log('🎯 Post-auth redirect check:', redirect);
+                if (redirect) {
+                    sessionStorage.removeItem('redirectAfterLogin');
+                    if (['generate', 'assets', 'account', 'about'].includes(redirect)) {
+                        console.log('🚀 Navigating to section:', redirect);
+                        setTimeout(() => {
+                            if (window.AppNavigation) {
+                                window.AppNavigation.navigateToSection(redirect);
+                            }
+                        }, 500);
+                    }
+                }
+                
+                setTimeout(() => {
+                    window.TokenSyncManager.syncTokens();
+                }, 500);
+            }
+        });
+
+        // Handle auth manager ready event
+        window.addEventListener('authManagerReady', function(event) {
+            console.log('🔐 Auth manager ready event:', event.detail);
+            if (event.detail.authenticated && appInitialized) {
+                const redirect = sessionStorage.getItem('redirectAfterLogin');
+                if (redirect && ['generate', 'assets', 'account', 'about'].includes(redirect)) {
+                    console.log('🚀 Auth ready - navigating to:', redirect);
+                    sessionStorage.removeItem('redirectAfterLogin');
                     setTimeout(() => {
                         if (window.AppNavigation) {
                             window.AppNavigation.navigateToSection(redirect);
                         }
-                    }, 500);
+                    }, 800);
                 }
             }
-        }
-    });
-    
-    // Also check for redirect when app initializes
-    window.addEventListener('authManagerReady', function(event) {
-        console.log('🔐 Auth manager ready event:', event.detail);
-        if (event.detail.authenticated && appInitialized) {
-            const redirect = sessionStorage.getItem('redirectAfterLogin');
-            if (redirect && ['generate', 'assets', 'account', 'about'].includes(redirect)) {
-                console.log('🚀 Auth ready - navigating to:', redirect);
-                sessionStorage.removeItem('redirectAfterLogin');
-                setTimeout(() => {
-                    if (window.AppNavigation) {
-                        window.AppNavigation.navigateToSection(redirect);
-                    }
-                }, 800);
+        });
+
+        // Sync tokens when app becomes visible
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && window.authManager?.isAuthenticated()) {
+                console.log('📱 App became visible, syncing tokens...');
+                window.enhancedMonetization?.syncTokensFromBackend();
+                window.TokenSyncManager.syncTokens();
             }
-        }
-    });
+        });
 
-    // Disable homepage.js navigation updates since we're using mobile navigation
-    window.disableHomepageNav = true;
-
-    // Handle window resize
-    window.addEventListener('resize', function() {
-        if (window.camera && window.renderer) {
-            const container = window.renderer.domElement.parentElement;
-            if (container && container.offsetWidth > 0) {
-                window.camera.aspect = container.offsetWidth / container.offsetHeight;
-                window.camera.updateProjectionMatrix();
-                window.renderer.setSize(container.offsetWidth, container.offsetHeight);
+        // Handle window resize for 3D rendering
+        window.addEventListener('resize', function() {
+            if (window.camera && window.renderer) {
+                const container = window.renderer.domElement.parentElement;
+                if (container && container.offsetWidth > 0) {
+                    window.camera.aspect = container.offsetWidth / container.offsetHeight;
+                    window.camera.updateProjectionMatrix();
+                    window.renderer.setSize(container.offsetWidth, container.offsetHeight);
+                }
             }
-        }
-    });
+        });
 
-    // Debug functions for development
-    window.debugAppNavigation = () => window.AppNavigation;
-    window.debugAssetsData = () => window.AppNavigation?.assetsData;
-    window.debugLoadAssets = () => window.AppNavigation?.loadAllAssets();
-    window.debugReloadAssets = () => window.AppNavigation?.reloadSection('assets');
-    window.debugLikedAssets = () => window.AppNavigation?.likedAssetsData;
-    window.debugShowLikedModels = () => window.AppNavigation?.showLikedModels();
-    
-    console.log('🎯 Mobile app with public assets gallery initialized');
-    window.TokenSyncManager = {
-    syncTokens: async function() {
-        console.log('🔄 Starting token sync...');
-        
-        if (!window.authManager?.isAuthenticated()) {
-            console.log('❌ User not authenticated, skipping sync');
-            return;
-        }
-        
-        try {
-            // Get fresh data from backend
-            const response = await window.makeAuthenticatedRequest(
-                `${window.enhancedMonetization?.getApiBaseUrl() || '/api'}/payment/user-tokens`,
-                { method: 'GET' }
-            );
+        // Disable homepage.js navigation updates
+        window.disableHomepageNav = true;
+
+        // Debug utilities for development
+        window.debugAppNavigation = () => window.AppNavigation;
+        window.debugAssetsData = () => window.AppNavigation?.assetsData;
+        window.debugLoadAssets = () => window.AppNavigation?.loadAllAssets();
+        window.debugReloadAssets = () => window.AppNavigation?.reloadSection('assets');
+        window.debugLikedAssets = () => window.AppNavigation?.likedAssetsData;
+        window.debugShowLikedModels = () => window.AppNavigation?.showLikedModels();
+        window.debugTokens = () => {
+            console.log('💰 Token Debug Info:');
+            console.log('- Enhanced Monetization:', window.enhancedMonetization?.userTokens);
+            console.log('- Auth Manager user:', window.authManager?.user?.tokens);
+            console.log('- Auth Manager current:', window.authManager?.currentUser?.tokens);
+            console.log('- Header display:', document.getElementById('creditsCount')?.textContent);
+            console.log('- Account display:', document.getElementById('accountCreditsCount')?.textContent);
+        };
+
+        // Dynamic styles for hero content and 3D interaction
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            /* Hero content layering */
+            .hero {
+                position: relative;
+                width: 100%;
+                height: 100%;
+            }
             
-            if (response.ok) {
-                const data = await response.json();
-                const tokens = data.tokens || 1;
-                
-                console.log('✅ Backend tokens:', tokens);
-                
-                // Update ALL systems
-                if (window.enhancedMonetization) {
-                    window.enhancedMonetization.userTokens = tokens;
-                    window.enhancedMonetization.forceUpdateAllTokenDisplays();
-                }
-                
-                if (window.authManager) {
-                    if (window.authManager.user) window.authManager.user.tokens = tokens;
-                    if (window.authManager.currentUser) window.authManager.currentUser.tokens = tokens;
-                }
-                
-                // Update header
-                const headerCredits = document.getElementById('creditsCount');
-                if (headerCredits) headerCredits.textContent = tokens;
-                
-                // Update account section
-                const accountCredits = document.getElementById('accountCreditsCount');
-                if (accountCredits) accountCredits.textContent = tokens;
-                
-                console.log('✅ All displays updated to:', tokens);
+            .hero-3d {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 1;
             }
-        } catch (error) {
-            console.error('Token sync error:', error);
-        }
-    }
-};
+            
+            .hero-content {
+                position: relative;
+                z-index: 10;
+                pointer-events: none;
+            }
+            
+            .hero-content * {
+                pointer-events: auto;
+            }
+            
+            .cta-button {
+                position: relative;
+                z-index: 20;
+                pointer-events: auto !important;
+                cursor: pointer !important;
+                touch-action: manipulation;
+            }
+            
+            /* 3D canvas interaction */
+            #appHero3d {
+                position: relative;
+                pointer-events: auto;
+            }
+            
+            #appHero3d canvas {
+                pointer-events: auto !important;
+            }
+            
+            /* Mobile touch improvements */
+            @media (max-width: 768px) {
+                .cta-button {
+                    min-height: 44px;
+                    min-width: 120px;
+                }
+            }
+        `;
+        document.head.appendChild(styleSheet);
 
-// Sync on page load
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        window.TokenSyncManager.syncTokens();
-    }, 1500);
-});
-
-// Sync when auth state changes
-window.addEventListener('authStateChange', (event) => {
-    if (event.detail.authenticated) {
-        setTimeout(() => {
-            window.TokenSyncManager.syncTokens();
-        }, 500);
-    }
-});
-
-// Sync when app becomes visible (mobile)
-document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && window.authManager?.isAuthenticated()) {
-        window.TokenSyncManager.syncTokens();
-    }
-});
-
-// Debug helper
-window.debugTokens = () => {
-    console.log('💰 Token Debug Info:');
-    console.log('- Enhanced Monetization:', window.enhancedMonetization?.userTokens);
-    console.log('- Auth Manager user:', window.authManager?.user?.tokens);
-    console.log('- Auth Manager current:', window.authManager?.currentUser?.tokens);
-    console.log('- Header display:', document.getElementById('creditsCount')?.textContent);
-    console.log('- Account display:', document.getElementById('accountCreditsCount')?.textContent);
-};
-
-
-
-
-
-</script>
-    
+        console.log('🎯 Mobile app initialized with public assets gallery');
+    </script>
 </body>
 </html>

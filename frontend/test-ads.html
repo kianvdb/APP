@@ -3,10 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AdMob integration testing page for mobile ad implementations">
+    <meta name="author" content="Your Company">
     <title>AdMob Test Page</title>
+    
     <style>
+        /* ========================================
+           CSS Reset & Base Styles
+           ======================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             display: flex;
@@ -14,10 +26,12 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            margin: 0;
             padding: 20px;
         }
         
+        /* ========================================
+           Container Styles
+           ======================================== */
         .test-container {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 20px;
@@ -32,8 +46,12 @@
             text-align: center;
             margin-bottom: 30px;
             font-size: 24px;
+            font-weight: 600;
         }
         
+        /* ========================================
+           Button Styles
+           ======================================== */
         .test-button {
             width: 100%;
             padding: 15px 30px;
@@ -46,52 +64,113 @@
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
-        .test-button:hover {
+        .test-button:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 5px 20px rgba(0, 188, 212, 0.4);
         }
         
-        .test-button:disabled {
-            background: #666;
-            cursor: not-allowed;
-            transform: none;
+        .test-button:active:not(:disabled) {
+            transform: translateY(0);
         }
         
+        .test-button:disabled {
+            background: linear-gradient(135deg, #666, #555);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        /* ========================================
+           Status Display Styles
+           ======================================== */
         .status {
             margin: 20px 0;
             padding: 15px;
-            background: rgba(0, 0, 0, 0.2);
             border-radius: 10px;
             text-align: center;
             font-size: 14px;
+            transition: all 0.3s ease;
         }
         
-        .success {
+        .status.success {
             background: rgba(76, 175, 80, 0.3);
             border: 1px solid #4CAF50;
         }
         
-        .error {
+        .status.error {
             background: rgba(244, 67, 54, 0.3);
             border: 1px solid #f44336;
         }
         
-        .info {
+        .status.info {
             background: rgba(33, 150, 243, 0.3);
             border: 1px solid #2196F3;
         }
         
+        .status.warning {
+            background: rgba(255, 152, 0, 0.3);
+            border: 1px solid #ff9800;
+        }
+        
+        /* ========================================
+           Log Area Styles
+           ======================================== */
         .log-area {
             margin-top: 20px;
             padding: 15px;
             background: rgba(0, 0, 0, 0.3);
             border-radius: 10px;
-            font-family: monospace;
+            font-family: 'Courier New', Courier, monospace;
             font-size: 12px;
             max-height: 200px;
             overflow-y: auto;
+            line-height: 1.5;
+        }
+        
+        .log-area::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .log-area::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        .log-area::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+        
+        .log-entry {
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        /* ========================================
+           Responsive Design
+           ======================================== */
+        @media (max-width: 480px) {
+            .test-container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+            
+            .test-button {
+                font-size: 14px;
+                padding: 12px 20px;
+            }
         }
     </style>
 </head>
@@ -99,104 +178,129 @@
     <div class="test-container">
         <h1>🎯 AdMob Test Page</h1>
         
+        <!-- Status Display Area -->
         <div id="status" class="status info">
             Ready to test AdMob integration
         </div>
         
-        <button id="checkAdBtn" class="test-button" onclick="checkAdAvailability()">
+        <!-- Test Button Controls -->
+        <button id="checkAdBtn" class="test-button" onclick="AdTestManager.checkAdAvailability()">
             📱 Check Ad Availability
         </button>
         
-        <button id="testAdBtn" class="test-button" onclick="showTestAd()">
+        <button id="testAdBtn" class="test-button" onclick="AdTestManager.showRewardedAd()">
             🎬 Show Test Rewarded Ad
         </button>
         
-        <button id="testInterstitialBtn" class="test-button" onclick="showInterstitialAd()">
+        <button id="testInterstitialBtn" class="test-button" onclick="AdTestManager.showInterstitialAd()">
             📺 Show Interstitial Ad
         </button>
         
-        <button id="testFallbackBtn" class="test-button" onclick="showFallbackAd()">
+        <button id="testUnityBtn" class="test-button" onclick="AdTestManager.showUnityAd()">
+            🎮 Test Unity Rewarded Ad
+        </button>
+
+        <button id="testAdMobOnlyBtn" class="test-button" onclick="AdTestManager.showAdMobOnly()">
+            💰 Test AdMob Only
+        </button>
+        
+        <button id="testFallbackBtn" class="test-button" onclick="AdTestManager.showFallbackAd()">
             ⏱️ Test Fallback Ad (Web)
         </button>
-        <!-- Add this button after the AdMob test button -->
-<button id="testUnityBtn" class="test-button" onclick="showUnityAd()">
-    🎮 Test Unity Rewarded Ad
-</button>
-
-<button id="testAdMobOnlyBtn" class="test-button" onclick="showAdMobOnly()">
-    💰 Test AdMob Only
-</button>
-
-
         
+        <!-- Console Log Display -->
         <div id="logArea" class="log-area">
-            <div>Console logs will appear here...</div>
+            <div class="log-entry">Console logs will appear here...</div>
         </div>
     </div>
     
-
     <script>
-        // Log function to show messages on screen
-        function log(message, type = 'info') {
-            const logArea = document.getElementById('logArea');
-            const time = new Date().toLocaleTimeString();
-            const logEntry = document.createElement('div');
-            logEntry.innerHTML = `[${time}] ${message}`;
-            logArea.appendChild(logEntry);
-            logArea.scrollTop = logArea.scrollHeight;
+        /**
+         * AdTestManager - Main controller for ad testing functionality
+         * Handles all ad network integrations and testing utilities
+         */
+        const AdTestManager = (function() {
+            'use strict';
             
-            // Also log to console
-            console.log(message);
-        }
-        
-        // Update status display
-        function updateStatus(message, type = 'info') {
-            const status = document.getElementById('status');
-            status.textContent = message;
-            status.className = `status ${type}`;
-            log(message, type);
-        }
-        
-        // Check if AdMob is available
-        function checkAdAvailability() {
-            log('Checking AdMob availability...');
+            /* ========================================
+               Private Variables
+               ======================================== */
+            const config = {
+                fallbackAdDuration: 5,  // seconds
+                autoCheckDelay: 1000,   // milliseconds
+                buttonResetDelay: 2000  // milliseconds
+            };
             
-            // Check for Android WebView
-            if (window.AndroidAds) {
-                log('✅ AndroidAds interface found!');
+            /* ========================================
+               Utility Functions
+               ======================================== */
+            
+            /**
+             * Logs messages to both console and on-screen log area
+             * @param {string} message - Message to log
+             * @param {string} type - Type of log (info, error, success, warning)
+             */
+            function log(message, type = 'info') {
+                const logArea = document.getElementById('logArea');
+                const time = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
                 
-                // Check if ad is ready
-                if (window.AndroidAds.isReady && window.AndroidAds.isReady()) {
-                    updateStatus('✅ Ad is loaded and ready to show!', 'success');
-                } else {
-                    updateStatus('⏳ Ad is not ready yet. Loading...', 'info');
-                    
-                    // Try to trigger ad loading
-                    if (window.AndroidAds.loadAd) {
-                        window.AndroidAds.loadAd();
-                        log('Requested ad loading...');
-                    }
-                }
-            } else {
-                log('❌ AndroidAds interface not found');
-                updateStatus('❌ Not running in Android WebView', 'error');
+                logEntry.className = 'log-entry';
+                logEntry.innerHTML = `[${time}] ${message}`;
+                logArea.appendChild(logEntry);
                 
-                // Check if we're in a browser
-                if (window.location.protocol.startsWith('http')) {
-                    log('Running in browser - native ads not available');
+                // Auto-scroll to latest log
+                logArea.scrollTop = logArea.scrollHeight;
+                
+                // Console logging with appropriate method
+                switch(type) {
+                    case 'error':
+                        console.error(message);
+                        break;
+                    case 'warning':
+                        console.warn(message);
+                        break;
+                    default:
+                        console.log(message);
                 }
             }
-        }
-        
-        
-        // Show test rewarded ad
-        function showTestAd() {
-            updateStatus('Attempting to show rewarded ad...', 'info');
             
-            if (window.AndroidAds && window.AndroidAds.showRewardedAd) {
-                log('Calling AndroidAds.showRewardedAd()...');
-                
-                // Set up callbacks
+            /**
+             * Updates the status display with a message and style
+             * @param {string} message - Status message to display
+             * @param {string} type - Status type (info, success, error, warning)
+             */
+            function updateStatus(message, type = 'info') {
+                const status = document.getElementById('status');
+                status.textContent = message;
+                status.className = `status ${type}`;
+                log(message, type);
+            }
+            
+            /**
+             * Checks if the Android WebView interface is available
+             * @returns {boolean} True if AndroidAds interface exists
+             */
+            function isAndroidEnvironment() {
+                return typeof window.AndroidAds !== 'undefined';
+            }
+            
+            /**
+             * Checks if running in a web browser
+             * @returns {boolean} True if running in browser
+             */
+            function isBrowserEnvironment() {
+                return window.location.protocol.startsWith('http');
+            }
+            
+            /* ========================================
+               Ad Callback Handlers
+               ======================================== */
+            
+            /**
+             * Sets up global callback handlers for Android ad events
+             */
+            function setupAdCallbacks() {
                 window.AdManagerAndroidCallbacks = {
                     onAdCompleted: function() {
                         updateStatus('🎉 Ad completed! Reward earned!', 'success');
@@ -204,98 +308,198 @@
                     },
                     onAdFailed: function(error) {
                         updateStatus(`❌ Ad failed: ${error}`, 'error');
-                        log(`Ad error: ${error}`);
+                        log(`Ad error: ${error}`, 'error');
                     },
                     onAdLoaded: function() {
                         log('Ad loaded successfully');
+                        updateStatus('✅ Ad loaded and ready', 'success');
+                    },
+                    onAdClosed: function() {
+                        log('Ad closed by user');
                     }
                 };
-                
-                // Show the ad
-                window.AndroidAds.showRewardedAd();
-            } else {
-                updateStatus('❌ AdMob not available in this environment', 'error');
-                log('AndroidAds interface not available');
-                
-                // Show fallback for testing
-                showFallbackAd();
             }
-        }
-        
-        // Show interstitial ad
-        function showInterstitialAd() {
-            updateStatus('Attempting to show interstitial ad...', 'info');
             
-            if (window.AndroidAds && window.AndroidAds.showInterstitialAd) {
-                log('Calling AndroidAds.showInterstitialAd()...');
-                window.AndroidAds.showInterstitialAd();
-            } else {
-                updateStatus('❌ Interstitial not available', 'error');
-            }
-        }
-        function showUnityAd() {
-    updateStatus('Attempting to show Unity ad...', 'info');
-    
-    if (window.AndroidAds && window.AndroidAds.isUnityReady()) {
-        log('Unity Ad is ready, showing...');
-        window.AndroidAds.showUnityAdOnly();
-    } else {
-        updateStatus('❌ Unity Ad not available', 'error');
-        log('Unity Ad not ready');
-    }
-}
-
-function showAdMobOnly() {
-    updateStatus('Attempting to show AdMob ad only...', 'info');
-    
-    if (window.AndroidAds && window.AndroidAds.isAdMobReady()) {
-        log('AdMob Ad is ready, showing...');
-        window.AndroidAds.showAdMobAdOnly();
-    } else {
-        updateStatus('❌ AdMob Ad not available', 'error');
-        log('AdMob Ad not ready');
-    }
-}
-        
-        // Fallback web ad (always works)
-        function showFallbackAd() {
-            updateStatus('Showing fallback timer ad...', 'info');
+            /* ========================================
+               Public API Methods
+               ======================================== */
             
-            let timeLeft = 5;
-            const btn = document.getElementById('testFallbackBtn');
-            btn.disabled = true;
-            
-            const timer = setInterval(() => {
-                if (timeLeft > 0) {
-                    btn.textContent = `⏱️ Wait ${timeLeft}s...`;
-                    timeLeft--;
-                } else {
-                    clearInterval(timer);
-                    btn.textContent = '✅ Ad Complete!';
-                    btn.disabled = false;
-                    updateStatus('✅ Fallback ad completed!', 'success');
+            /**
+             * Checks availability of ad networks
+             */
+            function checkAdAvailability() {
+                log('Checking AdMob availability...');
+                
+                if (isAndroidEnvironment()) {
+                    log('✅ AndroidAds interface found!');
                     
-                    setTimeout(() => {
-                        btn.textContent = '⏱️ Test Fallback Ad (Web)';
-                    }, 2000);
+                    // Check AdMob readiness
+                    if (window.AndroidAds.isReady && window.AndroidAds.isReady()) {
+                        updateStatus('✅ Ad is loaded and ready to show!', 'success');
+                    } else {
+                        updateStatus('⏳ Ad is not ready yet. Loading...', 'info');
+                        
+                        // Request ad loading
+                        if (window.AndroidAds.loadAd) {
+                            window.AndroidAds.loadAd();
+                            log('Requested ad loading...');
+                        }
+                    }
+                    
+                    // Check Unity readiness
+                    if (window.AndroidAds.isUnityReady && window.AndroidAds.isUnityReady()) {
+                        log('✅ Unity Ads also available');
+                    }
+                } else {
+                    log('❌ AndroidAds interface not found', 'error');
+                    updateStatus('❌ Not running in Android WebView', 'error');
+                    
+                    if (isBrowserEnvironment()) {
+                        log('Running in browser - native ads not available', 'warning');
+                    }
                 }
-            }, 1000);
-        }
-        
-        // Initialize on load
-        window.addEventListener('load', () => {
-            log('Page loaded');
-            log(`User Agent: ${navigator.userAgent}`);
-            log(`Platform: ${navigator.platform}`);
+            }
             
-            // Auto-check availability
-            setTimeout(checkAdAvailability, 1000);
-        });
+            /**
+             * Shows a rewarded video ad
+             */
+            function showRewardedAd() {
+                updateStatus('Attempting to show rewarded ad...', 'info');
+                
+                if (isAndroidEnvironment() && window.AndroidAds.showRewardedAd) {
+                    log('Calling AndroidAds.showRewardedAd()...');
+                    setupAdCallbacks();
+                    window.AndroidAds.showRewardedAd();
+                } else {
+                    updateStatus('❌ AdMob not available in this environment', 'error');
+                    log('AndroidAds interface not available', 'error');
+                    
+                    // Offer fallback option
+                    if (confirm('Native ads not available. Show web fallback instead?')) {
+                        showFallbackAd();
+                    }
+                }
+            }
+            
+            /**
+             * Shows an interstitial ad
+             */
+            function showInterstitialAd() {
+                updateStatus('Attempting to show interstitial ad...', 'info');
+                
+                if (isAndroidEnvironment() && window.AndroidAds.showInterstitialAd) {
+                    log('Calling AndroidAds.showInterstitialAd()...');
+                    setupAdCallbacks();
+                    window.AndroidAds.showInterstitialAd();
+                } else {
+                    updateStatus('❌ Interstitial not available', 'error');
+                    log('Interstitial ad not available in this environment', 'error');
+                }
+            }
+            
+            /**
+             * Shows Unity Ads rewarded video
+             */
+            function showUnityAd() {
+                updateStatus('Attempting to show Unity ad...', 'info');
+                
+                if (isAndroidEnvironment()) {
+                    if (window.AndroidAds.isUnityReady && window.AndroidAds.isUnityReady()) {
+                        log('Unity Ad is ready, showing...');
+                        window.AndroidAds.showUnityAdOnly();
+                    } else {
+                        updateStatus('❌ Unity Ad not ready', 'error');
+                        log('Unity Ad not loaded or not available', 'error');
+                    }
+                } else {
+                    updateStatus('❌ Unity Ads not available in browser', 'error');
+                }
+            }
+            
+            /**
+             * Shows AdMob ad exclusively
+             */
+            function showAdMobOnly() {
+                updateStatus('Attempting to show AdMob ad only...', 'info');
+                
+                if (isAndroidEnvironment()) {
+                    if (window.AndroidAds.isAdMobReady && window.AndroidAds.isAdMobReady()) {
+                        log('AdMob Ad is ready, showing...');
+                        window.AndroidAds.showAdMobAdOnly();
+                    } else {
+                        updateStatus('❌ AdMob Ad not ready', 'error');
+                        log('AdMob Ad not loaded', 'error');
+                    }
+                } else {
+                    updateStatus('❌ AdMob not available in browser', 'error');
+                }
+            }
+            
+            /**
+             * Shows a simulated fallback ad for testing
+             * Works in any environment (browser or WebView)
+             */
+            function showFallbackAd() {
+                updateStatus('Showing fallback timer ad...', 'info');
+                
+                let timeLeft = config.fallbackAdDuration;
+                const btn = document.getElementById('testFallbackBtn');
+                const originalText = btn.textContent;
+                btn.disabled = true;
+                
+                const timer = setInterval(() => {
+                    if (timeLeft > 0) {
+                        btn.textContent = `⏱️ Wait ${timeLeft}s...`;
+                        timeLeft--;
+                    } else {
+                        clearInterval(timer);
+                        btn.textContent = '✅ Ad Complete!';
+                        btn.disabled = false;
+                        updateStatus('✅ Fallback ad completed!', 'success');
+                        
+                        // Reset button text after delay
+                        setTimeout(() => {
+                            btn.textContent = originalText;
+                        }, config.buttonResetDelay);
+                    }
+                }, 1000);
+            }
+            
+            /**
+             * Initializes the ad test manager
+             */
+            function init() {
+                log('AdTestManager initialized');
+                log(`User Agent: ${navigator.userAgent}`);
+                log(`Platform: ${navigator.platform}`);
+                
+                // Auto-check ad availability after delay
+                setTimeout(checkAdAvailability, config.autoCheckDelay);
+                
+                // Set up message listener for WebView communication
+                window.addEventListener('message', (event) => {
+                    log(`Received message: ${JSON.stringify(event.data)}`);
+                });
+            }
+            
+            /* ========================================
+               Public API
+               ======================================== */
+            return {
+                init,
+                checkAdAvailability,
+                showRewardedAd,
+                showInterstitialAd,
+                showUnityAd,
+                showAdMobOnly,
+                showFallbackAd
+            };
+        })();
         
-        // Listen for Android callbacks
-        window.addEventListener('message', (event) => {
-            log(`Received message: ${event.data}`);
-        });
+        /* ========================================
+           Initialize on Page Load
+           ======================================== */
+        document.addEventListener('DOMContentLoaded', AdTestManager.init);
     </script>
 </body>
 </html>

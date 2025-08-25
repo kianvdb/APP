@@ -1,16 +1,17 @@
-// enhanced-monetization.js - Complete Token Management & Pricing System
-// Replace the existing monetization.js with this enhanced version
+/**
+ * Enhanced Monetization System
+ * Manages token-based pricing, payments, and user credit balance
+ */
 
 class EnhancedMonetization {
     constructor() {
-        // Token management
+        // User token management
         this.userTokens = 0;
         this.userId = null;
         this.isAdmin = false;
         
-        // OPTIMIZED PRICING TIERS
-        // Based on €0.18 cost per generation
-        // Target profit margin: 70-85%
+        // Pricing configuration with optimized tiers
+        // Based on €0.18 cost per generation with 70-85% profit margin
         this.pricingTiers = [
             {
                 id: 'starter',
@@ -61,151 +62,166 @@ class EnhancedMonetization {
         // Transaction history
         this.transactions = [];
         
-        // Initialize
+        // Payment processing
+        this.stripe = null;
+        this.currentPayment = null;
+        this.currentTier = null;
+        
+        // Initialize system
         this.init();
     }
 
+    /**
+     * Initialize the monetization system
+     */
     async init() {
-    console.log('💎 Enhanced Monetization System Initializing...');
-    
-    // Load user data
-    await this.loadUserData();
-    
-    // Check admin status
-    this.checkAdminStatus();
-    
-    // Setup UI
-    this.setupPricingModal();
-    this.updateTokensDisplay();
-    this.setupEventListeners();
-    
-    // CRITICAL: Setup token listeners
-    this.setupTokenListeners();
-    
-    // Initialize payment provider
-    this.initializePaymentProvider();
-    
-    console.log('✅ Monetization ready');
-}
+        console.log('💎 Enhanced Monetization System Initializing...');
+        
+        await this.loadUserData();
+        this.checkAdminStatus();
+        this.setupPricingModal();
+        this.updateTokensDisplay();
+        this.setupEventListeners();
+        this.setupTokenListeners();
+        this.initializePaymentProvider();
+        this.startPeriodicSync();
+        
+        console.log('✅ Monetization ready');
+    }
 
-   async fetchUserData() {
-    // Check authentication  
-    if (!window.authManager?.isAuthenticated()) {
+    /**
+     * Fetch user data from authentication system
+     */
+    async fetchUserData() {
+        if (!window.authManager?.isAuthenticated()) {
+            return null;
+        }
+
+        try {
+            // Try auth manager first for cached data
+            const currentUser = window.authManager?.getUser();
+            if (currentUser) {
+                console.log('💰 Loading tokens from auth manager:', currentUser.tokens);
+                return {
+                    id: currentUser.id,
+                    tokens: currentUser.tokens || 1,
+                    role: currentUser.isAdmin ? 'admin' : 'user',
+                    transactions: currentUser.transactions || []
+                };
+            }
+            
+            // Fallback to API call
+            const response = await window.makeAuthenticatedRequest(
+                `${this.getApiBaseUrl()}/auth/me`,
+                { method: 'GET' }
+            );
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('💰 Loaded tokens from API:', data.user.tokens);
+                
+                // Sync with auth manager
+                if (window.authManager && window.authManager.user) {
+                    window.authManager.user.tokens = data.user.tokens || 1;
+                    window.authManager.currentUser.tokens = data.user.tokens || 1;
+                }
+                
+                return {
+                    id: data.user.id,
+                    tokens: data.user.tokens || 1,
+                    role: data.user.isAdmin ? 'admin' : 'user',
+                    transactions: data.user.transactions || []
+                };
+            }
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+        }
         return null;
     }
 
-    try {
-        // Get user data from auth manager first
-        const currentUser = window.authManager?.getUser();
-        if (currentUser) {
-            console.log('💰 Loading tokens from auth manager:', currentUser.tokens);
-            return {
-                id: currentUser.id,
-                tokens: currentUser.tokens || 1,  // Default to 1 if undefined
-                role: currentUser.isAdmin ? 'admin' : 'user',
-                transactions: currentUser.transactions || []
-            };
-        }
-        
-        // Fallback to API call if needed
-        const response = await window.makeAuthenticatedRequest(
-            `${this.getApiBaseUrl()}/auth/me`,
-            { method: 'GET' }
-        );
-        
-        if (response.ok) {
-            const data = await response.json();
-            console.log('💰 Loaded tokens from API:', data.user.tokens);
-            
-            // CRITICAL: Update auth manager with fresh data
-            if (window.authManager && window.authManager.user) {
-                window.authManager.user.tokens = data.user.tokens || 1;
-                window.authManager.currentUser.tokens = data.user.tokens || 1;
+    /**
+     * Load user data and update UI
+     */
+    async loadUserData() {
+        try {
+            const userData = await this.fetchUserData();
+            if (userData) {
+                this.userId = userData.id;
+                this.userTokens = userData.tokens || 1;
+                this.isAdmin = userData.role === 'admin';
+                this.transactions = userData.transactions || [];
+                
+                console.log('📊 Tokens loaded:', this.userTokens);
+                this.updateTokensDisplay();
+                
+                // Sync with app navigation
+                if (window.AppNavigation?.updateAccountStats) {
+                    window.AppNavigation.updateAccountStats(userData);
+                }
+            } else {
+                this.loadLocalTokens();
             }
-            
-            return {
-                id: data.user.id,
-                tokens: data.user.tokens || 1,
-                role: data.user.isAdmin ? 'admin' : 'user',
-                transactions: data.user.transactions || []
-            };
-        }
-    } catch (error) {
-        console.error('Error fetching user data:', error);
-    }
-    return null;
-}
-// Update the loadUserData method:
-async loadUserData() {
-    try {
-        // Check if user is authenticated
-        const userData = await this.fetchUserData();
-        if (userData) {
-            this.userId = userData.id;
-            this.userTokens = userData.tokens || 1;  // Default to 1 if undefined
-            this.isAdmin = userData.role === 'admin';
-            this.transactions = userData.transactions || [];
-            
-            console.log('📊 Tokens loaded:', this.userTokens);
-            
-            // Update displays immediately after loading
-            this.updateTokensDisplay();
-            
-            // Also update in AppNavigation if it exists
-            if (window.AppNavigation && window.AppNavigation.updateAccountStats) {
-                window.AppNavigation.updateAccountStats(userData);
-            }
-        } else {
-            // Load from local storage for non-authenticated users
+        } catch (error) {
+            console.error('Error loading user data:', error);
             this.loadLocalTokens();
         }
-    } catch (error) {
-        console.error('Error loading user data:', error);
-        this.loadLocalTokens();
     }
-}
+
+    /**
+     * Load tokens from local storage for non-authenticated users
+     */
     loadLocalTokens() {
         const savedTokens = localStorage.getItem('dalma_user_tokens');
         if (savedTokens !== null) {
             this.userTokens = parseInt(savedTokens, 10);
         } else {
-            // First time user gets 1 free token
+            // First time users get 1 free token
             this.userTokens = 1;
             this.saveLocalTokens();
         }
     }
 
+    /**
+     * Save tokens to local storage
+     */
     saveLocalTokens() {
         localStorage.setItem('dalma_user_tokens', this.userTokens.toString());
     }
 
+    /**
+     * Check if current user has admin privileges
+     */
     checkAdminStatus() {
-        // Check if user is admin based on email or special flag
         const adminEmails = ['admin@threely.com', 'threely.service@gmail.com'];
         const userEmail = window.authManager?.currentUser?.email;
         
         if (adminEmails.includes(userEmail)) {
             this.isAdmin = true;
-            this.userTokens = 999999; // Unlimited tokens for admin
+            this.userTokens = 999999;
             console.log('👑 Admin mode activated - Unlimited tokens');
         }
     }
 
+    /**
+     * Create and inject pricing modal into DOM
+     */
     setupPricingModal() {
         // Remove existing modal if present
         const existingModal = document.querySelector('.enhanced-pricing-modal');
         if (existingModal) existingModal.remove();
 
-        // Create enhanced modal
+        // Create new modal
         const modal = document.createElement('div');
         modal.className = 'enhanced-pricing-modal';
         modal.innerHTML = this.generatePricingModalHTML();
         document.body.appendChild(modal);
 
-        // Add styles
         this.injectStyles();
     }
 
+    /**
+     * Generate HTML for pricing modal
+     */
     generatePricingModalHTML() {
         return `
             <div class="pricing-modal-overlay"></div>
@@ -291,6 +307,9 @@ async loadUserData() {
         `;
     }
 
+    /**
+     * Generate individual tier card HTML
+     */
     generateTierCard(tier) {
         const isPopular = tier.popular;
         const perTokenPrice = (tier.price / tier.tokens).toFixed(2);
@@ -332,6 +351,9 @@ async loadUserData() {
         `;
     }
 
+    /**
+     * Setup all event listeners for modal interactions
+     */
     setupEventListeners() {
         // Buy tokens button in header
         const buyBtn = document.getElementById('buyCreditsBtn');
@@ -339,7 +361,7 @@ async loadUserData() {
             buyBtn.addEventListener('click', () => this.showPricingModal());
         }
 
-        // Modal close button
+        // Modal close handlers
         document.addEventListener('click', (e) => {
             if (e.target.id === 'pricingCloseBtn' || e.target.classList.contains('pricing-modal-overlay')) {
                 this.hidePricingModal();
@@ -364,6 +386,32 @@ async loadUserData() {
         });
     }
 
+    /**
+     * Setup listeners for token update events
+     */
+    setupTokenListeners() {
+        // Listen for custom token update events
+        window.addEventListener('tokensUpdated', (event) => {
+            if (event.detail.tokens !== undefined && event.detail.tokens !== this.userTokens) {
+                this.userTokens = event.detail.tokens;
+                this.forceUpdateAllTokenDisplays();
+            }
+        });
+        
+        // Listen for auth state changes
+        window.addEventListener('authStateChange', (event) => {
+            if (event.detail.authenticated && event.detail.user && event.detail.user.tokens !== undefined) {
+                this.userTokens = event.detail.user.tokens;
+                this.userId = event.detail.user.id;
+                this.isAdmin = event.detail.user.isAdmin;
+                this.forceUpdateAllTokenDisplays();
+            }
+        });
+    }
+
+    /**
+     * Show pricing modal
+     */
     showPricingModal() {
         const modal = document.querySelector('.enhanced-pricing-modal');
         if (modal) {
@@ -372,6 +420,9 @@ async loadUserData() {
         }
     }
 
+    /**
+     * Hide pricing modal
+     */
     hidePricingModal() {
         const modal = document.querySelector('.enhanced-pricing-modal');
         if (modal) {
@@ -380,6 +431,9 @@ async loadUserData() {
         }
     }
 
+    /**
+     * Handle tier selection
+     */
     async selectTier(tierId) {
         const tier = this.pricingTiers.find(t => t.id === tierId);
         if (!tier) return;
@@ -399,12 +453,12 @@ async loadUserData() {
         await this.processPurchase(tier, paymentMethod);
     }
 
+    /**
+     * Process purchase with selected tier and payment method
+     */
     async processPurchase(tier, paymentMethod) {
         try {
-            // Store current tier for later use
             this.currentTier = tier;
-            
-            // Show loading state
             this.showPurchaseLoading(tier);
 
             // Create payment intent on backend
@@ -421,19 +475,15 @@ async loadUserData() {
             if (!response.ok) throw new Error('Failed to create payment intent');
 
             const { clientSecret, amount, tokens } = await response.json();
-            
-            // Store for confirmation
             this.currentPayment = { clientSecret, amount, tokens };
 
             // Handle payment based on method
             if (paymentMethod === 'card') {
                 await this.showCardInput();
             } else if (paymentMethod === 'paypal') {
-                // PayPal coming soon
                 this.hidePricingModal();
                 this.showComingSoon('PayPal');
             } else if (paymentMethod === 'googlepay') {
-                // Google Pay works through Stripe
                 await this.showCardInput();
             }
 
@@ -443,6 +493,9 @@ async loadUserData() {
         }
     }
 
+    /**
+     * Show card input form for Stripe payment
+     */
     async showCardInput() {
         // Hide loading overlay
         const loadingOverlay = document.querySelector('.purchase-loading-overlay');
@@ -456,23 +509,17 @@ async loadUserData() {
         const cardSection = document.getElementById('cardInputSection');
         cardSection.style.display = 'block';
         
-        // Update the card section title to English
-        const cardTitle = cardSection.querySelector('h3');
-        if (cardTitle) {
-            cardTitle.textContent = 'Enter Card Details';
-        }
-        
-        // Initialize Stripe Elements if not already done
+        // Initialize Stripe Elements
         if (!this.stripe) {
             this.stripe = await window.loadStripe();
         }
         
-        // Force English locale for Stripe Elements
+        // Configure Stripe Elements with English locale
         const elements = this.stripe.elements({
-            locale: 'en'  // Force English language
+            locale: 'en'
         });
         
-        // Create separate elements for better control
+        // Element styling
         const elementStyles = {
             base: {
                 color: '#ffffff',
@@ -493,7 +540,7 @@ async loadUserData() {
             }
         };
         
-        // Clear the card element container and create structured form
+        // Create structured card form
         const cardElementDiv = document.getElementById('card-element');
         cardElementDiv.innerHTML = `
             <div style="display: flex; flex-direction: column; gap: 12px;">
@@ -514,7 +561,7 @@ async loadUserData() {
             </div>
         `;
         
-        // Create individual Stripe elements (without postal code)
+        // Create individual Stripe elements
         this.cardNumber = elements.create('cardNumber', {
             style: elementStyles,
             placeholder: 'Card Number'
@@ -528,7 +575,7 @@ async loadUserData() {
             placeholder: 'CVC'
         });
         
-        // Mount the elements
+        // Mount elements
         this.cardNumber.mount('#cardNumber');
         this.cardExpiry.mount('#cardExpiry');
         this.cardCvc.mount('#cardCvc');
@@ -547,7 +594,7 @@ async loadUserData() {
             if (event.error) {
                 let errorMessage = event.error.message;
                 
-                // Translate Dutch errors
+                // Translate common error messages
                 const translations = {
                     'Het nummer van je kaart is onvolledig.': 'Your card number is incomplete.',
                     'De vervaldatum van je kaart is onvolledig.': 'Your card\'s expiration date is incomplete.',
@@ -588,7 +635,7 @@ async loadUserData() {
             }
         };
         
-        // Add change listeners to Stripe elements
+        // Add change listeners
         this.cardNumber.on('change', handleCardChange('cardNumber'));
         this.cardExpiry.on('change', handleCardChange('cardExpiry'));
         this.cardCvc.on('change', handleCardChange('cardCvc'));
@@ -619,116 +666,272 @@ async loadUserData() {
         confirmBtn.onclick = () => this.confirmCardPayment();
     }
 
-    // FIX for enhanced-monetization.js - Update the confirmCardPayment method
+    /**
+     * Confirm and process card payment
+     */
+    async confirmCardPayment() {
+        const confirmBtn = document.getElementById('confirm-payment-btn');
+        const cardErrors = document.getElementById('card-errors');
+        
+        if (confirmBtn.disabled) {
+            cardErrors.textContent = 'Please complete all card fields';
+            return;
+        }
+        
+        const postalCode = document.getElementById('postalCode').value;
+        
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<span style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 0.5rem;"></span>Processing...';
+        
+        try {
+            cardErrors.textContent = '';
+            cardErrors.style.display = 'none';
+            
+            // Create payment method
+            const { error: methodError, paymentMethod } = await this.stripe.createPaymentMethod({
+                type: 'card',
+                card: this.cardNumber,
+                billing_details: {
+                    email: window.authManager?.currentUser?.email || 'user@example.com',
+                    address: {
+                        postal_code: postalCode
+                    }
+                }
+            });
+            
+            if (methodError) {
+                throw methodError;
+            }
+            
+            // Confirm payment
+            const { error, paymentIntent } = await this.stripe.confirmCardPayment(
+                this.currentPayment.clientSecret,
+                {
+                    payment_method: paymentMethod.id
+                }
+            );
+            
+            if (error) {
+                throw new Error(error.message);
+            } else if (paymentIntent.status === 'succeeded') {
+                console.log('✅ Payment succeeded:', paymentIntent.id);
+                
+                // Update tokens immediately
+                const oldBalance = this.userTokens;
+                const purchasedTokens = this.currentTier.tokens;
+                this.userTokens = oldBalance + purchasedTokens;
+                
+                console.log(`💰 Tokens updated: ${oldBalance} + ${purchasedTokens} = ${this.userTokens}`);
+                
+                // Sync with auth manager
+                if (window.authManager) {
+                    if (window.authManager.user) {
+                        window.authManager.user.tokens = this.userTokens;
+                    }
+                    if (window.authManager.currentUser) {
+                        window.authManager.currentUser.tokens = this.userTokens;
+                    }
+                }
+                
+                // Update all displays
+                this.forceUpdateAllTokenDisplays();
+                
+                // Show success modal
+                this.showPurchaseSuccess(this.currentTier);
+                
+                // Clean up
+                this.hidePricingModal();
+                this.resetCardForm();
+                this.currentPayment = null;
+                this.currentTier = null;
+                
+                // Verify with backend
+                setTimeout(() => this.verifyPaymentAndUpdateTokens(paymentIntent.id), 500);
+            }
+        } catch (error) {
+            console.error('Payment confirmation error:', error);
+            cardErrors.textContent = error.message || 'Payment failed. Please try again.';
+            cardErrors.style.display = 'block';
+            cardErrors.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } finally {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Complete Payment';
+        }
+    }
 
-async confirmCardPayment() {
-    const confirmBtn = document.getElementById('confirm-payment-btn');
-    const cardErrors = document.getElementById('card-errors');
-    
-    if (confirmBtn.disabled) {
-        cardErrors.textContent = 'Please complete all card fields';
-        return;
-    }
-    
-    const postalCode = document.getElementById('postalCode').value;
-    
-    confirmBtn.disabled = true;
-    confirmBtn.innerHTML = '<span style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 0.5rem;"></span>Processing...';
-    
-    try {
-        cardErrors.textContent = '';
-        cardErrors.style.display = 'none';
-        
-        const { error: methodError, paymentMethod } = await this.stripe.createPaymentMethod({
-            type: 'card',
-            card: this.cardNumber,
-            billing_details: {
-                email: window.authManager?.currentUser?.email || 'user@example.com',
-                address: {
-                    postal_code: postalCode
+    /**
+     * Sync tokens from backend
+     */
+    async syncTokensFromBackend() {
+        try {
+            console.log('🔍 Syncing tokens from backend...');
+            
+            const response = await window.makeAuthenticatedRequest(
+                `${this.getApiBaseUrl()}/payment/user-tokens`,
+                { method: 'GET' }
+            );
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('📦 Backend response:', data);
+                
+                this.userTokens = data.tokens || 1;
+                this.userId = data.id;
+                this.isAdmin = data.isAdmin || false;
+                
+                console.log('🔄 Synced tokens from backend:', this.userTokens);
+                
+                // Update auth manager
+                if (window.authManager) {
+                    if (window.authManager.user) {
+                        window.authManager.user.tokens = this.userTokens;
+                    }
+                    if (window.authManager.currentUser) {
+                        window.authManager.currentUser.tokens = this.userTokens;
+                    }
                 }
+                
+                this.forceUpdateAllTokenDisplays();
+                return this.userTokens;
+            } else {
+                console.error('❌ Failed to sync tokens, response not ok:', response.status);
             }
-        });
+        } catch (error) {
+            console.error('❌ Error syncing tokens from backend:', error);
+        }
+        return this.userTokens;
+    }
+
+    /**
+     * Start periodic token synchronization
+     */
+    startPeriodicSync() {
+        // Sync every 30 seconds if authenticated
+        setInterval(() => {
+            if (window.authManager?.isAuthenticated()) {
+                this.syncTokensFromBackend();
+            }
+        }, 30000);
+    }
+
+    /**
+     * Force update all token displays in the UI
+     */
+    forceUpdateAllTokenDisplays() {
+        console.log('🔄 Force updating all token displays to:', this.userTokens);
         
-        if (methodError) {
-            throw methodError;
+        // Update header display
+        const creditsCount = document.getElementById('creditsCount');
+        if (creditsCount) {
+            creditsCount.textContent = this.isAdmin ? '∞' : this.userTokens;
+            console.log('✅ Updated header credits to:', this.userTokens);
+        }
+
+        // Update account section credits
+        const accountCredits = document.getElementById('accountCreditsCount');
+        if (accountCredits) {
+            accountCredits.textContent = this.isAdmin ? '∞' : this.userTokens;
+            console.log('✅ Updated account credits to:', this.userTokens);
         }
         
-        const { error, paymentIntent } = await this.stripe.confirmCardPayment(
-            this.currentPayment.clientSecret,
-            {
-                payment_method: paymentMethod.id
-            }
-        );
-        
-        if (error) {
-            throw new Error(error.message);
-        } else if (paymentIntent.status === 'succeeded') {
-            console.log('✅ Payment succeeded:', paymentIntent.id);
-            
-            // Update tokens immediately
-            const oldBalance = this.userTokens;
-            const purchasedTokens = this.currentTier.tokens;
-            this.userTokens = oldBalance + purchasedTokens;
-            
-            console.log(`💰 Tokens updated: ${oldBalance} + ${purchasedTokens} = ${this.userTokens}`);
-            
-            // CRITICAL: Update auth manager IMMEDIATELY
-            if (window.authManager) {
-                if (window.authManager.user) {
-                    window.authManager.user.tokens = this.userTokens;
-                }
-                if (window.authManager.currentUser) {
-                    window.authManager.currentUser.tokens = this.userTokens;
-                }
-            }
-            
-            // Force update ALL displays
-            this.forceUpdateAllTokenDisplays();
-            
-            // Show success modal
-            this.showPurchaseSuccess(this.currentTier);
-            
-            // Hide modal and reset form
-            this.hidePricingModal();
-            this.resetCardForm();
-            
-            // Clear current payment data
-            this.currentPayment = null;
-            this.currentTier = null;
-            
-            // Verify with backend after a delay
-            setTimeout(() => this.verifyPaymentAndUpdateTokens(paymentIntent.id), 500);
+        // Update alternative selector for account section
+        const accountCreditsAlt = document.querySelector('#accountSection .stat-card div[style*="font-size: 2rem"]');
+        if (accountCreditsAlt && accountCreditsAlt.id === 'accountCreditsCount') {
+            accountCreditsAlt.textContent = this.isAdmin ? '∞' : this.userTokens;
         }
-    } catch (error) {
-        console.error('Payment confirmation error:', error);
-        cardErrors.textContent = error.message || 'Payment failed. Please try again.';
-        cardErrors.style.display = 'block';
-        cardErrors.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } finally {
-        confirmBtn.disabled = false;
-        confirmBtn.textContent = 'Complete Payment';
+
+        // Update modal balance if open
+        const balanceAmount = document.querySelector('.balance-amount');
+        if (balanceAmount) {
+            balanceAmount.textContent = `${this.isAdmin ? '∞' : this.userTokens} tokens`;
+            console.log('✅ Updated modal balance to:', this.userTokens);
+        }
+        
+        // Update current balance in Buy Tokens modal
+        const currentBalance = document.querySelector('.current-balance .balance-amount');
+        if (currentBalance) {
+            currentBalance.textContent = `${this.isAdmin ? '∞' : this.userTokens} tokens`;
+        }
+
+        // Update visual state
+        this.updateCreditsVisualState();
+        
+        // Save to local storage
+        if (!this.isAdmin) {
+            this.saveLocalTokens();
+        }
+        
+        // Sync with auth manager
+        if (window.authManager) {
+            if (window.authManager.user) {
+                window.authManager.user.tokens = this.userTokens;
+            }
+            if (window.authManager.currentUser) {
+                window.authManager.currentUser.tokens = this.userTokens;
+            }
+            console.log('✅ Updated auth manager tokens:', this.userTokens);
+        }
+        
+        // Update AppNavigation if available
+        if (window.AppNavigation) {
+            const updatedUser = {
+                tokens: this.userTokens,
+                isAdmin: this.isAdmin,
+                email: window.authManager?.currentUser?.email || 'User'
+            };
+            
+            if (window.AppNavigation.updateAccountStats) {
+                window.AppNavigation.updateAccountStats(updatedUser);
+                console.log('✅ Force updated AppNavigation with tokens:', this.userTokens);
+            }
+            
+            // Update account credits directly
+            const accountCreditsInNav = document.querySelector('#accountCreditsCount');
+            if (accountCreditsInNav) {
+                accountCreditsInNav.textContent = this.isAdmin ? '∞' : this.userTokens;
+            }
+        }
+        
+        // Dispatch custom event for other listeners
+        window.dispatchEvent(new CustomEvent('tokensUpdated', {
+            detail: { tokens: this.userTokens }
+        }));
     }
-}
-// In enhanced-monitization.js, update syncTokensFromBackend:
-async syncTokensFromBackend() {
-    try {
-        console.log('🔍 Syncing tokens from backend...');
-        
-        const response = await window.makeAuthenticatedRequest(
-            `${this.getApiBaseUrl()}/payment/user-tokens`,
-            { method: 'GET' }
-        );
-        
-        if (response.ok) {
-            const data = await response.json();
-            console.log('📦 Backend response:', data);
+
+    /**
+     * Verify payment with backend and update tokens
+     */
+    async verifyPaymentAndUpdateTokens(paymentIntentId) {
+        try {
+            console.log('🔍 Verifying payment with backend:', paymentIntentId);
+            console.log('📦 Sending tokens:', this.currentTier?.tokens);
             
-            this.userTokens = data.tokens || 1;
-            this.userId = data.id;
-            this.isAdmin = data.isAdmin || false;
+            const response = await window.makeAuthenticatedRequest(
+                `${this.getApiBaseUrl()}/payment/confirm-payment`,
+                {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        paymentIntentId: paymentIntentId,
+                        tokens: this.currentTier?.tokens || this.currentPayment?.tokens
+                    })
+                }
+            );
             
-            console.log('🔄 Synced tokens from backend:', this.userTokens);
+            console.log('📦 Backend response status:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ Backend error response:', errorText);
+                throw new Error('Failed to verify payment');
+            }
+            
+            const result = await response.json();
+            console.log('✅ Backend confirmed payment:', result);
+            
+            // Update local tokens with backend value
+            this.userTokens = result.newBalance || result.tokens || this.userTokens;
+            
+            console.log('🔄 Backend confirmed tokens:', this.userTokens);
             
             // Update auth manager
             if (window.authManager) {
@@ -740,214 +943,48 @@ async syncTokensFromBackend() {
                 }
             }
             
-            // Force update all displays
+            // Force update all UI elements
             this.forceUpdateAllTokenDisplays();
             
-            return this.userTokens;
-        } else {
-            console.error('❌ Failed to sync tokens, response not ok:', response.status);
-        }
-    } catch (error) {
-        console.error('❌ Error syncing tokens from backend:', error);
-    }
-    return this.userTokens;
-}
-
-// FIX 5: Add periodic sync (call this in init)
-startPeriodicSync() {
-    // Sync every 30 seconds if authenticated
-    setInterval(() => {
-        if (window.authManager?.isAuthenticated()) {
-            this.syncTokensFromBackend();
-        }
-    }, 30000);
-}
-
-forceUpdateAllTokenDisplays() {
-    console.log('🔄 Force updating all token displays to:', this.userTokens);
-    
-    // Update header display
-    const creditsCount = document.getElementById('creditsCount');
-    if (creditsCount) {
-        creditsCount.textContent = this.isAdmin ? '∞' : this.userTokens;
-        console.log('✅ Updated header credits to:', this.userTokens);
-    }
-
-    // Update account section credits with multiple selectors
-    const accountCredits = document.getElementById('accountCreditsCount');
-    if (accountCredits) {
-        accountCredits.textContent = this.isAdmin ? '∞' : this.userTokens;
-        console.log('✅ Updated account credits to:', this.userTokens);
-    }
-    
-    // Also try alternative selector for account section
-    const accountCreditsAlt = document.querySelector('#accountSection .stat-card div[style*="font-size: 2rem"]');
-    if (accountCreditsAlt && accountCreditsAlt.id === 'accountCreditsCount') {
-        accountCreditsAlt.textContent = this.isAdmin ? '∞' : this.userTokens;
-    }
-
-    // Update modal balance if it's open
-    const balanceAmount = document.querySelector('.balance-amount');
-    if (balanceAmount) {
-        balanceAmount.textContent = `${this.isAdmin ? '∞' : this.userTokens} tokens`;
-        console.log('✅ Updated modal balance to:', this.userTokens);
-    }
-    
-    // Update current balance in the Buy Tokens modal
-    const currentBalance = document.querySelector('.current-balance .balance-amount');
-    if (currentBalance) {
-        currentBalance.textContent = `${this.isAdmin ? '∞' : this.userTokens} tokens`;
-    }
-
-    // Update visual state
-    this.updateCreditsVisualState();
-    
-    // Save to local storage
-    if (!this.isAdmin) {
-        this.saveLocalTokens();
-    }
-    
-    // CRITICAL: Sync with auth manager
-    if (window.authManager) {
-        if (window.authManager.user) {
-            window.authManager.user.tokens = this.userTokens;
-        }
-        if (window.authManager.currentUser) {
-            window.authManager.currentUser.tokens = this.userTokens;
-        }
-        console.log('✅ Updated auth manager tokens:', this.userTokens);
-    }
-    
-    // CRITICAL: Force update AppNavigation
-    if (window.AppNavigation) {
-        // Call updateAccountStats with updated user data
-        const updatedUser = {
-            tokens: this.userTokens,
-            isAdmin: this.isAdmin,
-            email: window.authManager?.currentUser?.email || 'User'
-        };
-        
-        if (window.AppNavigation.updateAccountStats) {
-            window.AppNavigation.updateAccountStats(updatedUser);
-            console.log('✅ Force updated AppNavigation with tokens:', this.userTokens);
-        }
-        
-        // Also update the account credits directly
-        const accountCreditsInNav = document.querySelector('#accountCreditsCount');
-        if (accountCreditsInNav) {
-            accountCreditsInNav.textContent = this.isAdmin ? '∞' : this.userTokens;
-        }
-    }
-    
-    // Dispatch custom event for any other listeners
-    window.dispatchEvent(new CustomEvent('tokensUpdated', {
-        detail: { tokens: this.userTokens }
-    }));
-}
-
-async verifyPaymentAndUpdateTokens(paymentIntentId) {
-    try {
-        console.log('🔍 Verifying payment with backend:', paymentIntentId);
-        console.log('🔍 Sending tokens:', this.currentTier?.tokens);
-        
-        const response = await window.makeAuthenticatedRequest(
-            `${this.getApiBaseUrl()}/payment/confirm-payment`,
-            {
-                method: 'POST',
-                body: JSON.stringify({
-                    paymentIntentId: paymentIntentId,
-                    tokens: this.currentTier?.tokens || this.currentPayment?.tokens
-                })
-            }
-        );
-        
-        console.log('📦 Backend response status:', response.status);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Backend error response:', errorText);
-            throw new Error('Failed to verify payment');
-        }
-        
-        const result = await response.json();
-        console.log('✅ Backend confirmed payment:', result);
-        
-        // Update local tokens with backend value
-        this.userTokens = result.newBalance || result.tokens || this.userTokens;
-        
-        console.log('🔄 Backend confirmed tokens:', this.userTokens);
-        
-        // Update auth manager
-        if (window.authManager) {
-            if (window.authManager.user) {
-                window.authManager.user.tokens = this.userTokens;
-            }
-            if (window.authManager.currentUser) {
-                window.authManager.currentUser.tokens = this.userTokens;
-            }
-        }
-        
-        // Force update all UI elements with backend-confirmed value
-        this.forceUpdateAllTokenDisplays();
-        
-        // Clear current payment data
-        this.currentPayment = null;
-        this.currentTier = null;
-        
-    } catch (error) {
-        console.error('Error verifying payment:', error);
-        // Still update the display with local calculation
-        this.forceUpdateAllTokenDisplays();
-        
-        // Refresh token balance after a delay (webhook processing)
-        setTimeout(() => this.refreshTokenBalance(), 2000);
-    }
-}
-// UPDATE the refreshTokenBalance method
-async refreshTokenBalance() {
-    try {
-        const response = await window.makeAuthenticatedRequest(
-            `${this.getApiBaseUrl()}/auth/me`  // Use /auth/me to get full user data
-        );
-        
-        if (response.ok) {
-            const data = await response.json();
-            this.userTokens = data.user.tokens || this.userTokens;
+            // Clear payment data
+            this.currentPayment = null;
+            this.currentTier = null;
             
-            console.log('🔄 Refreshed token balance from backend:', this.userTokens);
+        } catch (error) {
+            console.error('Error verifying payment:', error);
+            // Still update display with local calculation
+            this.forceUpdateAllTokenDisplays();
             
-            // Force update all displays
-            this.forceUpdateAllTokenDisplays();
+            // Refresh token balance after delay (webhook processing)
+            setTimeout(() => this.refreshTokenBalance(), 2000);
         }
-    } catch (error) {
-        console.error('Error refreshing token balance:', error);
     }
-}
 
-// ALSO ADD this listener to handle token updates from other sources
-// Add this in the constructor or init method of EnhancedMonetization class:
-setupTokenListeners() {
-    // Listen for custom token update events
-    window.addEventListener('tokensUpdated', (event) => {
-        if (event.detail.tokens !== undefined && event.detail.tokens !== this.userTokens) {
-            this.userTokens = event.detail.tokens;
-            this.forceUpdateAllTokenDisplays();
+    /**
+     * Refresh token balance from backend
+     */
+    async refreshTokenBalance() {
+        try {
+            const response = await window.makeAuthenticatedRequest(
+                `${this.getApiBaseUrl()}/auth/me`
+            );
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.userTokens = data.user.tokens || this.userTokens;
+                
+                console.log('🔄 Refreshed token balance from backend:', this.userTokens);
+                this.forceUpdateAllTokenDisplays();
+            }
+        } catch (error) {
+            console.error('Error refreshing token balance:', error);
         }
-    });
-    
-    // Listen for auth state changes
-    window.addEventListener('authStateChange', (event) => {
-        if (event.detail.authenticated && event.detail.user && event.detail.user.tokens !== undefined) {
-            this.userTokens = event.detail.user.tokens;
-            this.userId = event.detail.user.id;
-            this.isAdmin = event.detail.user.isAdmin;
-            this.forceUpdateAllTokenDisplays();
-        }
-    });
-}
+    }
 
+    /**
+     * Reset card form to initial state
+     */
     resetCardForm() {
-        // Reset card form to initial state
         const cardSection = document.getElementById('cardInputSection');
         if (cardSection) cardSection.style.display = 'none';
         
@@ -957,35 +994,32 @@ setupTokenListeners() {
         if (tiers) tiers.style.display = 'grid';
         if (methods) methods.style.display = 'block';
         
-        // Clear card elements if they exist
-        if (this.cardNumber) {
-            this.cardNumber.clear();
-        }
-        if (this.cardExpiry) {
-            this.cardExpiry.clear();
-        }
-        if (this.cardCvc) {
-            this.cardCvc.clear();
-        }
+        // Clear card elements
+        if (this.cardNumber) this.cardNumber.clear();
+        if (this.cardExpiry) this.cardExpiry.clear();
+        if (this.cardCvc) this.cardCvc.clear();
         
         // Clear postal code input
         const postalInput = document.getElementById('postalCode');
-        if (postalInput) {
-            postalInput.value = '';
-        }
+        if (postalInput) postalInput.value = '';
         
-        // Clear any errors
+        // Clear errors
         const cardErrors = document.getElementById('card-errors');
         if (cardErrors) cardErrors.textContent = '';
     }
 
+    /**
+     * Cancel payment and reset form
+     */
     cancelPayment() {
         this.resetCardForm();
-        // Remove any loading overlays
         const loadingOverlay = document.querySelector('.purchase-loading-overlay');
         if (loadingOverlay) loadingOverlay.remove();
     }
 
+    /**
+     * Save tokens to backend
+     */
     async saveTokensToBackend(tokens) {
         if (!window.authManager?.isAuthenticated()) {
             this.saveLocalTokens();
@@ -1006,6 +1040,9 @@ setupTokenListeners() {
         }
     }
 
+    /**
+     * Update token displays
+     */
     updateTokensDisplay() {
         console.log('💰 Updating token display to:', this.userTokens);
         
@@ -1013,43 +1050,41 @@ setupTokenListeners() {
         const creditsCount = document.getElementById('creditsCount');
         if (creditsCount) {
             creditsCount.textContent = this.isAdmin ? '∞' : this.userTokens;
-            console.log('✅ Updated header credits to:', this.userTokens);
         }
 
-        // Update account section credits
+        // Update account section
         const accountCredits = document.getElementById('accountCreditsCount');
         if (accountCredits) {
             accountCredits.textContent = this.isAdmin ? '∞' : this.userTokens;
-            console.log('✅ Updated account credits to:', this.userTokens);
         }
 
-        // Update modal balance if it's open
+        // Update modal balance
         const balanceAmount = document.querySelector('.balance-amount');
         if (balanceAmount) {
             balanceAmount.textContent = `${this.isAdmin ? '∞' : this.userTokens} tokens`;
-            console.log('✅ Updated modal balance to:', this.userTokens);
         }
         
-        // Update current balance in the Buy Tokens modal
+        // Update current balance
         const currentBalance = document.querySelector('.current-balance .balance-amount');
         if (currentBalance) {
             currentBalance.textContent = `${this.isAdmin ? '∞' : this.userTokens} tokens`;
         }
 
-        // Update visual state
         this.updateCreditsVisualState();
         
-        // Save to local storage
         if (!this.isAdmin) {
             this.saveLocalTokens();
         }
         
-        // Also update app navigation if it exists
-        if (window.AppNavigation && window.AppNavigation.updateAccountStats) {
+        // Update app navigation
+        if (window.AppNavigation?.updateAccountStats) {
             window.AppNavigation.updateAccountStats();
         }
     }
 
+    /**
+     * Update visual state of credits container
+     */
     updateCreditsVisualState() {
         const creditsContainer = document.getElementById('creditsContainer');
         if (!creditsContainer) return;
@@ -1065,9 +1100,11 @@ setupTokenListeners() {
         }
     }
 
-    // Token consumption methods
+    /**
+     * Consume a token for generation
+     */
     consumeToken() {
-        if (this.isAdmin) return true; // Admin has unlimited tokens
+        if (this.isAdmin) return true;
         
         if (this.userTokens > 0) {
             this.userTokens--;
@@ -1076,20 +1113,27 @@ setupTokenListeners() {
             return true;
         }
         
-        // Show insufficient tokens modal
         this.showInsufficientTokensModal();
         return false;
     }
 
+    /**
+     * Check if user has tokens
+     */
     hasTokens() {
         return this.isAdmin || this.userTokens > 0;
     }
 
+    /**
+     * Get current token balance
+     */
     getTokenBalance() {
         return this.isAdmin ? Infinity : this.userTokens;
     }
 
-    // UI feedback methods
+    /**
+     * Show purchase loading overlay
+     */
     showPurchaseLoading(tier) {
         const modal = document.querySelector('.pricing-modal-content');
         if (!modal) return;
@@ -1107,8 +1151,10 @@ setupTokenListeners() {
         modal.appendChild(loadingOverlay);
     }
 
+    /**
+     * Show purchase success modal
+     */
     showPurchaseSuccess(tier) {
-        // Remove any existing success modal
         const existingModal = document.querySelector('.purchase-success-modal');
         if (existingModal) existingModal.remove();
         
@@ -1141,6 +1187,9 @@ setupTokenListeners() {
         }, 5000);
     }
 
+    /**
+     * Show purchase error modal
+     */
     showPurchaseError(message) {
         const errorModal = document.createElement('div');
         errorModal.className = 'purchase-error-modal';
@@ -1161,6 +1210,9 @@ setupTokenListeners() {
         }, 100);
     }
 
+    /**
+     * Show insufficient tokens modal
+     */
     showInsufficientTokensModal() {
         const modal = document.createElement('div');
         modal.className = 'insufficient-tokens-modal';
@@ -1181,6 +1233,9 @@ setupTokenListeners() {
         document.body.appendChild(modal);
     }
 
+    /**
+     * Show coming soon modal for unavailable payment methods
+     */
     showComingSoon(paymentMethod) {
         const modal = document.createElement('div');
         modal.className = 'coming-soon-modal';
@@ -1203,52 +1258,48 @@ setupTokenListeners() {
         document.body.appendChild(modal);
     }
 
-    // Payment provider initialization
+    /**
+     * Initialize payment providers
+     */
     initializePaymentProvider() {
-        // Initialize Stripe with English locale
+        // Initialize Stripe
         if (window.Stripe) {
             this.stripe = window.Stripe(this.getStripePublicKey(), {
-                locale: 'en'  // Force English locale
+                locale: 'en'
             });
         } else {
-            // Load Stripe dynamically if not already loaded
+            // Load Stripe dynamically
             const script = document.createElement('script');
             script.src = 'https://js.stripe.com/v3/';
             script.onload = () => {
                 this.stripe = window.Stripe(this.getStripePublicKey(), {
-                    locale: 'en'  // Force English locale
+                    locale: 'en'
                 });
             };
             document.head.appendChild(script);
         }
-        
-        // Initialize PayPal
-        if (window.paypal) {
-            // PayPal SDK initialization
-        }
-        
-        // Initialize Google Pay
-        if (window.google && window.google.payments) {
-            // Google Pay initialization
-        }
     }
 
+    /**
+     * Get Stripe public key based on environment
+     */
     getStripePublicKey() {
-        // Use test key for development, production key for live
         const isDev = window.location.hostname === 'localhost' || window.location.hostname === '10.0.2.2';
-        
-        // IMPORTANT: Replace with your actual Stripe keys
-        // Get your test key from: https://dashboard.stripe.com/test/apikeys
         return isDev 
-            ? 'pk_test_51RywsWRvMEG1D62RhurF4sS9iF8QQlnNxYlvwCiQvboIBNa1Ka50YW4imWLe4ac0DQ9iRjS9Koq1npM3U80PULBJ00AXgPrL4Y' // Replace with your actual test key
-            : 'pk_live_YOUR_ACTUAL_LIVE_KEY'; // Replace with your actual live key
+            ? 'pk_test_51RywsWRvMEG1D62RhurF4sS9iF8QQlnNxYlvwCiQvboIBNa1Ka50YW4imWLe4ac0DQ9iRjS9Koq1npM3U80PULBJ00AXgPrL4Y'
+            : 'pk_live_YOUR_ACTUAL_LIVE_KEY';
     }
 
+    /**
+     * Get API base URL
+     */
     getApiBaseUrl() {
         return window.APP_CONFIG?.API_BASE_URL || 'http://localhost:3000/api';
     }
 
-    // Inject enhanced styles
+    /**
+     * Inject CSS styles for monetization UI
+     */
     injectStyles() {
         const styleId = 'enhanced-monetization-styles';
         if (document.getElementById(styleId)) return;
@@ -1417,6 +1468,7 @@ setupTokenListeners() {
                 font-weight: 600;
             }
 
+            /* Other tier card styles */
             .tier-header {
                 margin-bottom: 1rem;
             }
@@ -1886,7 +1938,9 @@ setupTokenListeners() {
     }
 }
 
-// Initialize the monetization system
+/**
+ * Singleton wrapper for EnhancedMonetization
+ */
 window.EnhancedMonetization = {
     instance: null,
     init() {
@@ -1897,13 +1951,15 @@ window.EnhancedMonetization = {
     }
 };
 
-// Auto-initialize when DOM is ready
+/**
+ * Auto-initialize when DOM is ready
+ */
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        // Initialize and make globally accessible
+        // Initialize monetization system
         window.enhancedMonetization = window.EnhancedMonetization.init();
         
-        // Listen for auth state changes to sync tokens
+        // Listen for auth state changes
         window.addEventListener('authStateChange', (event) => {
             if (event.detail.authenticated && event.detail.user) {
                 window.enhancedMonetization.userTokens = event.detail.user.tokens || 1;
@@ -1915,10 +1971,10 @@ if (document.readyState === 'loading') {
         });
     });
 } else {
-    // Initialize and make globally accessible
+    // Initialize immediately if DOM is already loaded
     window.enhancedMonetization = window.EnhancedMonetization.init();
     
-    // Listen for auth state changes to sync tokens
+    // Listen for auth state changes
     window.addEventListener('authStateChange', (event) => {
         if (event.detail.authenticated && event.detail.user) {
             window.enhancedMonetization.userTokens = event.detail.user.tokens || 1;
@@ -1930,7 +1986,65 @@ if (document.readyState === 'loading') {
     });
 }
 
-// Export for module usage
+/**
+ * Export for module systems
+ */
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = EnhancedMonetization;
+}
+
+   
+/**
+ * Singleton wrapper for EnhancedMonetization
+ */
+window.EnhancedMonetization = {
+    instance: null,
+    init() {
+        if (!this.instance) {
+            this.instance = new EnhancedMonetization();
+        }
+        return this.instance;
+    }
+};
+
+/**
+ * Auto-initialize when DOM is ready
+ */
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialize monetization system
+        window.enhancedMonetization = window.EnhancedMonetization.init();
+        
+        // Listen for auth state changes
+        window.addEventListener('authStateChange', (event) => {
+            if (event.detail.authenticated && event.detail.user) {
+                window.enhancedMonetization.userTokens = event.detail.user.tokens || 1;
+                window.enhancedMonetization.userId = event.detail.user.id;
+                window.enhancedMonetization.isAdmin = event.detail.user.isAdmin;
+                window.enhancedMonetization.updateTokensDisplay();
+                console.log('💰 Auth state changed, tokens synced:', event.detail.user.tokens);
+            }
+        });
+    });
+} else {
+    // Initialize immediately if DOM is already loaded
+    window.enhancedMonetization = window.EnhancedMonetization.init();
+    
+    // Listen for auth state changes
+    window.addEventListener('authStateChange', (event) => {
+        if (event.detail.authenticated && event.detail.user) {
+            window.enhancedMonetization.userTokens = event.detail.user.tokens || 1;
+            window.enhancedMonetization.userId = event.detail.user.id;
+            window.enhancedMonetization.isAdmin = event.detail.user.isAdmin;
+            window.enhancedMonetization.updateTokensDisplay();
+            console.log('💰 Auth state changed, tokens synced:', event.detail.user.tokens);
+        }
+    });
+}
+
+/**
+ * Export for module systems
+ */
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = EnhancedMonetization;
 }

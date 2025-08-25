@@ -1,16 +1,19 @@
-// backend/routes/payment.js - Stripe Payment Routes with Optimized Pricing
-// Cost per generation: €0.18
-// Target profit margin: 70-85%
+/**
+ * Payment Routes
+ * Handles Stripe payment processing and token management
+ * Cost per generation: €0.18 | Target profit margin: 70-85%
+ */
 
 const express = require('express');
 const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { authenticateToken } = require('../middleware/auth');
 
-// OPTIMIZED PRICING STRATEGY
-// Based on €0.18 cost per generation
+/**
+ * Pricing Configuration
+ * Optimized tiers based on €0.18 cost per generation
+ */
 const PRICING_TIERS = {
     'starter': {
         tokens: 3,
@@ -42,13 +45,19 @@ const PRICING_TIERS = {
     }
 };
 
-// Admin emails get unlimited tokens
+/**
+ * Admin email addresses
+ * These users receive unlimited tokens
+ */
 const ADMIN_EMAILS = [
     'threely.service@gmail.com',
     'admin@threely.com'
 ];
 
-// Middleware to verify authentication
+/**
+ * Authentication middleware
+ * Verifies JWT token and attaches user to request
+ */
 const authenticateUser = async (req, res, next) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -63,10 +72,10 @@ const authenticateUser = async (req, res, next) => {
             return res.status(401).json({ error: 'User not found' });
         }
         
-        // Check if admin
+        // Check admin status
         if (ADMIN_EMAILS.includes(user.email)) {
             user.isAdmin = true;
-            user.tokens = 999999; // Unlimited display
+            user.tokens = 999999; // Unlimited tokens display
         }
         
         req.user = user;
@@ -76,7 +85,10 @@ const authenticateUser = async (req, res, next) => {
     }
 };
 
-// Get user token balance and pricing tiers
+/**
+ * GET /api/payment/user-tokens
+ * Get user's token balance and pricing information
+ */
 router.get('/user-tokens', authenticateUser, async (req, res) => {
     try {
         res.json({
@@ -86,7 +98,7 @@ router.get('/user-tokens', authenticateUser, async (req, res) => {
             isAdmin: req.user.isAdmin || false,
             role: req.user.role || 'user',
             transactions: req.user.transactions || [],
-            pricingTiers: PRICING_TIERS // Send pricing to frontend
+            pricingTiers: PRICING_TIERS
         });
     } catch (error) {
         console.error('Error fetching user tokens:', error);
@@ -94,7 +106,10 @@ router.get('/user-tokens', authenticateUser, async (req, res) => {
     }
 });
 
-// Create Stripe payment intent
+/**
+ * POST /api/payment/create-payment-intent
+ * Create Stripe payment intent for token purchase
+ */
 router.post('/create-payment-intent', authenticateUser, async (req, res) => {
     try {
         const { tierId } = req.body;
@@ -106,7 +121,7 @@ router.post('/create-payment-intent', authenticateUser, async (req, res) => {
         
         const tier = PRICING_TIERS[tierId];
         
-        // Create payment intent with Stripe
+        // Create Stripe payment intent
         const paymentIntent = await stripe.paymentIntents.create({
             amount: Math.round(tier.price * 100), // Convert to cents
             currency: 'eur',
@@ -121,7 +136,6 @@ router.post('/create-payment-intent', authenticateUser, async (req, res) => {
             }
         });
         
-        // Log for analytics
         console.log(`Payment intent created: ${req.user.email} - ${tierId} - €${tier.price}`);
         
         res.json({
@@ -136,7 +150,10 @@ router.post('/create-payment-intent', authenticateUser, async (req, res) => {
     }
 });
 
-// Stripe webhook endpoint
+/**
+ * POST /api/payment/stripe-webhook
+ * Handle Stripe webhook events
+ */
 router.post('/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     const sig = req.headers['stripe-signature'];
     let event;
@@ -162,14 +179,14 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), async 
             const tierId = paymentIntent.metadata.tierId;
             const amount = paymentIntent.amount / 100;
             
-            // Find user and update tokens
+            // Find and update user
             const user = await User.findById(userId);
             if (!user) {
                 console.error('User not found for payment:', userId);
                 return res.status(404).json({ error: 'User not found' });
             }
             
-            // Check if payment already processed (idempotency)
+            // Check for duplicate processing
             const existingTransaction = user.transactions?.find(
                 t => t.stripePaymentIntentId === paymentIntent.id
             );
@@ -182,11 +199,11 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), async 
             // Update user tokens
             user.tokens = (user.tokens || 0) + tokens;
             
-            // Calculate profit for analytics
+            // Calculate profit
             const tier = PRICING_TIERS[tierId];
             const profit = tier ? tier.profit : amount - (tokens * 0.18);
             
-            // Add transaction record
+            // Record transaction
             const transaction = {
                 id: `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 date: new Date(),
@@ -205,14 +222,11 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), async 
             }
             user.transactions.push(transaction);
             
-            // Update total spent
+            // Update spending statistics
             user.totalSpent = (user.totalSpent || 0) + amount;
             user.lastTokenPurchase = new Date();
             
             await user.save();
-            
-            // Send confirmation email (implement your email service)
-            // await sendPurchaseConfirmationEmail(user.email, transaction);
             
             console.log(`✅ Tokens added: ${tokens} to user ${user.email} (Profit: €${profit.toFixed(2)})`);
             
@@ -235,6 +249,10 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), async 
     res.json({ received: true });
 });
 
+/**
+ * POST /api/payment/confirm-payment
+ * Confirm payment and update user tokens
+ */
 router.post('/confirm-payment', authenticateUser, async (req, res) => {
     try {
         const { paymentIntentId, tokens: requestedTokens } = req.body;
@@ -246,7 +264,7 @@ router.post('/confirm-payment', authenticateUser, async (req, res) => {
             userId
         });
 
-        // Retrieve the payment intent from Stripe
+        // Retrieve payment intent from Stripe
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
         console.log('✅ Payment intent retrieved:', paymentIntent.status);
 
@@ -257,7 +275,7 @@ router.post('/confirm-payment', authenticateUser, async (req, res) => {
             });
         }
 
-        // Get tier info from metadata
+        // Extract token information
         const tierId = paymentIntent.metadata.tierId;
         const metadataTokens = parseInt(paymentIntent.metadata.tokens);
         const finalTokens = requestedTokens || metadataTokens;
@@ -268,7 +286,7 @@ router.post('/confirm-payment', authenticateUser, async (req, res) => {
             finalTokens
         });
 
-        // Find user - try with the new model first
+        // Find and update user
         let user;
         try {
             user = await User.findById(userId);
@@ -277,7 +295,7 @@ router.post('/confirm-payment', authenticateUser, async (req, res) => {
             }
         } catch (modelError) {
             console.error('Model error, using direct MongoDB:', modelError.message);
-            // Fall back to direct MongoDB if model fails
+            // Fallback to direct MongoDB query
             const mongoose = require('mongoose');
             const db = mongoose.connection.db;
             const collection = db.collection('users');
@@ -288,13 +306,13 @@ router.post('/confirm-payment', authenticateUser, async (req, res) => {
             }
         }
 
-        // Calculate profit (82% after Stripe's ~3% + $0.30 fee)
-        const amount = paymentIntent.amount / 100; // Convert from cents
+        // Calculate profit after Stripe fees
+        const amount = paymentIntent.amount / 100;
         const stripeFee = (amount * 0.029) + 0.30;
         const netAmount = amount - stripeFee;
         const profit = Math.round(netAmount * 0.82 * 100) / 100;
 
-        // Create transaction object
+        // Create transaction record
         const transaction = {
             id: `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             date: new Date(),
@@ -308,10 +326,10 @@ router.post('/confirm-payment', authenticateUser, async (req, res) => {
             paymentMethod: paymentIntent.payment_method_types[0] || 'card'
         };
 
-        // Try to save with Mongoose first
+        // Update user with Mongoose or direct MongoDB
         let updateSuccess = false;
         try {
-            if (user.save) { // It's a Mongoose document
+            if (user.save) { // Mongoose document
                 user.transactions = user.transactions || [];
                 user.transactions.push(transaction);
                 user.tokens = (user.tokens || 0) + finalTokens;
@@ -325,7 +343,7 @@ router.post('/confirm-payment', authenticateUser, async (req, res) => {
             console.error('Mongoose save failed:', saveError.message);
         }
 
-        // If Mongoose failed, use direct MongoDB update
+        // Fallback to direct MongoDB update
         if (!updateSuccess) {
             const mongoose = require('mongoose');
             const db = mongoose.connection.db;
@@ -377,10 +395,13 @@ router.post('/confirm-payment', authenticateUser, async (req, res) => {
     }
 });
 
-// Consume tokens (when generating a model)
+/**
+ * POST /api/payment/consume-token
+ * Consume a token for model generation
+ */
 router.post('/consume-token', authenticateUser, async (req, res) => {
     try {
-        // Admins have unlimited tokens
+        // Admin users have unlimited tokens
         if (req.user.isAdmin) {
             return res.json({ 
                 success: true, 
@@ -389,7 +410,7 @@ router.post('/consume-token', authenticateUser, async (req, res) => {
             });
         }
         
-        // Check if user has tokens
+        // Check token availability
         if (!req.user.tokens || req.user.tokens <= 0) {
             return res.status(402).json({ 
                 error: 'Insufficient tokens',
@@ -397,7 +418,7 @@ router.post('/consume-token', authenticateUser, async (req, res) => {
             });
         }
         
-        // Atomic operation to consume token
+        // Atomic token consumption
         const user = await User.findByIdAndUpdate(
             req.user._id,
             { 
@@ -424,7 +445,10 @@ router.post('/consume-token', authenticateUser, async (req, res) => {
     }
 });
 
-// Get transaction history
+/**
+ * GET /api/payment/transactions
+ * Get user's transaction history
+ */
 router.get('/transactions', authenticateUser, async (req, res) => {
     try {
         const user = await User.findById(req.user._id).select('transactions totalSpent');
@@ -444,10 +468,17 @@ router.get('/transactions', authenticateUser, async (req, res) => {
     }
 });
 
-// ADMIN ROUTES
+/**
+ * Admin Routes
+ */
+
+/**
+ * POST /api/payment/admin/grant-tokens
+ * Grant tokens to a user (admin only)
+ */
 router.post('/admin/grant-tokens', authenticateUser, async (req, res) => {
     try {
-        // Check if user is admin
+        // Verify admin privileges
         if (!ADMIN_EMAILS.includes(req.user.email)) {
             return res.status(403).json({ error: 'Unauthorized - Admin only' });
         }
@@ -459,8 +490,10 @@ router.post('/admin/grant-tokens', authenticateUser, async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
         
+        // Grant tokens
         targetUser.tokens = (targetUser.tokens || 0) + tokens;
         
+        // Record grant transaction
         targetUser.transactions.push({
             id: `grant_${Date.now()}`,
             date: new Date(),
@@ -486,14 +519,17 @@ router.post('/admin/grant-tokens', authenticateUser, async (req, res) => {
     }
 });
 
-// Get analytics (admin only)
+/**
+ * GET /api/payment/admin/analytics
+ * Get revenue analytics (admin only)
+ */
 router.get('/admin/analytics', authenticateUser, async (req, res) => {
     try {
         if (!ADMIN_EMAILS.includes(req.user.email)) {
             return res.status(403).json({ error: 'Unauthorized - Admin only' });
         }
         
-        // Get revenue analytics
+        // Gather analytics data
         const users = await User.find({});
         
         const analytics = {
@@ -508,6 +544,7 @@ router.get('/admin/analytics', authenticateUser, async (req, res) => {
             conversionRate: 0
         };
         
+        // Calculate averages
         analytics.averageSpendPerUser = analytics.payingUsers > 0 
             ? (analytics.totalRevenue / analytics.payingUsers).toFixed(2)
             : 0;
@@ -519,7 +556,7 @@ router.get('/admin/analytics', authenticateUser, async (req, res) => {
         // Calculate costs and profit
         const totalGenerations = analytics.totalTokensSold;
         const totalCosts = totalGenerations * 0.18;
-        const stripeFees = analytics.totalRevenue * 0.029; // 2.9% Stripe fee
+        const stripeFees = analytics.totalRevenue * 0.029;
         const netProfit = analytics.totalRevenue - totalCosts - stripeFees;
         
         analytics.costs = {
@@ -542,31 +579,37 @@ router.get('/admin/analytics', authenticateUser, async (req, res) => {
     }
 });
 
-// PLACEHOLDER ROUTES FOR FUTURE PAYMENT PROVIDERS
+/**
+ * Future Payment Provider Placeholders
+ */
 
-// PayPal placeholder
+/**
+ * POST /api/payment/paypal/create-order
+ * PayPal integration placeholder
+ */
 router.post('/paypal/create-order', authenticateUser, async (req, res) => {
-    // TODO: Implement PayPal order creation
     res.status(501).json({ 
         error: 'PayPal integration coming soon',
         message: 'Please use Stripe for now'
     });
 });
 
-// Google Pay placeholder (uses Stripe Payment Request API)
+/**
+ * POST /api/payment/googlepay/process
+ * Google Pay integration (via Stripe)
+ */
 router.post('/googlepay/process', authenticateUser, async (req, res) => {
-    // Google Pay works through Stripe Payment Request API
-    // Same as card payments but with Google Pay UI
     res.json({
         message: 'Use Stripe Payment Intent with Google Pay',
         useStripe: true
     });
 });
 
-// Apple Pay placeholder (uses Stripe Payment Request API)
+/**
+ * POST /api/payment/applepay/process
+ * Apple Pay integration (via Stripe)
+ */
 router.post('/applepay/process', authenticateUser, async (req, res) => {
-    // Apple Pay works through Stripe Payment Request API
-    // Same as card payments but with Apple Pay UI
     res.json({
         message: 'Use Stripe Payment Intent with Apple Pay',
         useStripe: true
