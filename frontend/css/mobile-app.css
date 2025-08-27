@@ -543,7 +543,7 @@ button, .button, .btn {
     overflow: hidden;
     position: relative;
     background: #0a0a0a;
-     padding-bottom: 100px;
+     padding-bottom: 80px;
 }
 
 .account-section::-webkit-scrollbar,

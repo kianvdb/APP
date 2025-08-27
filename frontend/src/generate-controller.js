@@ -40,9 +40,7 @@ class GenerateController {
         const imageInputNew = document.getElementById('imageInput');
         
      uploadAreaNew.addEventListener('click', async (e) => {
-    // Don't trigger if clicking on change button
     if (!e.target.closest('.change-image-btn')) {
-        // Check if on mobile and Camera plugin is available
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
             try {
                 const { Camera } = Capacitor.Plugins;
@@ -51,24 +49,26 @@ class GenerateController {
                     quality: 90,
                     allowEditing: false,
                     resultType: 'dataUrl',
-                    source: 'prompt'  // Shows camera AND gallery options
+                    source: 'prompt'
                 });
                 
-                // Convert dataUrl to File object
-                const response = await fetch(image.dataUrl);
-                const blob = await response.blob();
-                const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
-                
-                this.handleImageUpload(file);
+                // Only process if image was actually taken/selected
+                if (image && image.dataUrl) {
+                    const response = await fetch(image.dataUrl);
+                    const blob = await response.blob();
+                    const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
+                    this.handleImageUpload(file);
+                }
                 
             } catch (error) {
-                console.error('Camera error:', error);
-                // Fallback to file input if Camera plugin fails
-                imageInputNew.value = '';
-                imageInputNew.click();
+                // User cancelled or error occurred
+                if (error.message && error.message.includes('cancelled')) {
+                    console.log('User cancelled image selection');
+                } else {
+                    console.error('Camera error:', error);
+                }
             }
         } else {
-            // Desktop - use regular file input
             imageInputNew.value = '';
             imageInputNew.click();
         }
@@ -1395,7 +1395,7 @@ async downloadModel(format) {
         // Check platform
         if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
             // Mobile app - save to Documents/Threely/
-            const { Filesystem, Directory } = window.Capacitor.Plugins;
+            const { Filesystem, Directory } = Capacitor.Plugins;
             
             const reader = new FileReader();
             reader.readAsDataURL(blob);

@@ -2689,19 +2689,19 @@ class AppNavigation {
      * Generates stats cards for account
      * @returns {string} HTML content
      */
-    generateStatsCards() {
-        return `
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 2rem 0;">
-                <!-- Credits Card -->
-                <button onclick="window.MobileMonetization.showPricingModal()" style="background: linear-gradient(135deg, rgba(0,188,212,0.1), rgba(0,188,212,0.05)); border: 1px solid rgba(0,188,212,0.3); border-radius: 16px; padding: 1.5rem; text-align: center; position: relative; overflow: hidden; animation: cardSlideUp 0.5s ease-out; cursor: pointer; transition: all 0.3s ease;">
-                    <div style="position: absolute; top: -20px; right: -20px; width: 60px; height: 60px; background: rgba(0,188,212,0.1); border-radius: 50%; filter: blur(20px);"></div>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2" style="margin-bottom: 0.5rem;">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <path d="M12 6v6l4 2"></path>
-                    </svg>
-                    <div style="font-family: 'Sora', sans-serif; font-size: 2rem; color: #00bcd4; margin-bottom: 0.3rem; font-weight: 700;" id="accountCreditsCount">0</div>
-                    <div style="color: rgba(255,255,255,0.8); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Credits</div>
-                </button>
+ generateStatsCards() {
+    return `
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 2rem 0;">
+            <!-- Credits Card -->
+            <button onclick="window.enhancedMonetization.showPricingModal()" style="background: linear-gradient(135deg, rgba(0,188,212,0.1), rgba(0,188,212,0.05)); border: 1px solid rgba(0,188,212,0.3); border-radius: 16px; padding: 1.5rem; text-align: center; position: relative; overflow: hidden; animation: cardSlideUp 0.5s ease-out; cursor: pointer; transition: all 0.3s ease;">
+                <div style="position: absolute; top: -20px; right: -20px; width: 60px; height: 60px; background: rgba(0,188,212,0.1); border-radius: 50%; filter: blur(20px);"></div>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2" style="margin-bottom: 0.5rem;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 6v6l4 2"></path>
+                </svg>
+                <div style="font-family: 'Sora', sans-serif; font-size: 2rem; color: #00bcd4; margin-bottom: 0.3rem; font-weight: 700;" id="accountCreditsCount">0</div>
+                <div style="color: rgba(255,255,255,0.8); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Credits</div>
+            </button>
                 
                 <!-- Liked Models Card -->
                 <button onclick="window.AppNavigation.showLikedModels()" style="background: linear-gradient(135deg, rgba(0,188,212,0.1), rgba(0,188,212,0.05)); border: 1px solid rgba(0,188,212,0.3); border-radius: 16px; padding: 1.5rem; text-align: center; position: relative; overflow: hidden; animation: cardSlideUp 0.5s ease-out 0.1s; animation-fill-mode: both; cursor: pointer; transition: all 0.3s ease;">

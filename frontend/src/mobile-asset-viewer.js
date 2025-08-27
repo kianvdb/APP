@@ -1398,7 +1398,7 @@ async downloadAsset(format) {
         // Mobile vs Web download handling (rest of your existing code)
         if (this.isPlatform('mobile-app')) {
             // Mobile download code...
-            const { Filesystem, Directory } = window.Capacitor.Plugins;
+           const { Filesystem, Directory } = Capacitor.Plugins;
             
             const reader = new FileReader();
             reader.readAsDataURL(blob);
