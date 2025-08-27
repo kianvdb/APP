@@ -1441,6 +1441,8 @@ router.get('/:id/formats', optionalAuthMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Failed to get available formats' });
   }
 });
+
+
 router.get('/:id/download', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
@@ -1642,6 +1644,15 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
     
     const contentType = contentTypes[format] || 'application/octet-stream';
     console.log('📄 Content type for', format + ':', contentType);
+
+    if (downloadUrl && downloadUrl.includes('cloudinary.com')) {
+    // Add fl_attachment flag to enable public download without authentication
+    if (downloadUrl.includes('/upload/')) {
+        const parts = downloadUrl.split('/upload/');
+        downloadUrl = parts[0] + '/upload/fl_attachment/' + parts[1];
+        console.log('✅ Added fl_attachment flag to Cloudinary URL');
+    }
+}
     
     // IMPORTANT: Return JSON response instead of redirecting
     const responseData = {
