@@ -2082,15 +2082,27 @@ button, .button, .btn {
     inset: 0;
     background: rgba(0, 0, 0, 0.95);
     backdrop-filter: blur(20px);
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
-    z-index: 10000;
+    z-index: 50000 !important;
     padding: 1rem;
-    animation: modalFadeIn 0.3s ease;
+}
+
+.download-modal.active {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.download-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: transparent;
 }
 
 .download-modal-content {
+    position: relative;
     background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
     border: 1px solid rgba(0, 188, 212, 0.3);
     border-radius: 20px;
@@ -2098,7 +2110,9 @@ button, .button, .btn {
     max-width: 500px;
     width: 100%;
     box-shadow: 0 20px 60px rgba(0, 188, 212, 0.3);
-    animation: modalSlideIn 0.4s ease;
+    z-index: 50001 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 @keyframes modalSlideIn {
@@ -2453,6 +2467,7 @@ button, .button, .btn {
     border-radius: 50%;
     animation: spin 1s linear infinite;
     box-shadow: 0 0 20px rgba(0, 188, 212, 0.3);
+    
 }
 
 .asset-info-overlay {
@@ -3890,4 +3905,66 @@ button {
     .asset-viewer-actions-bottom {
         padding-bottom: calc(1rem + env(safe-area-inset-bottom));
     }
+}
+.download-progress-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    backdrop-filter: blur(10px);
+}
+
+.download-progress-modal {
+    background: #1a1a1a;
+    border-radius: 16px;
+    padding: 2rem;
+    min-width: 280px;
+    text-align: center;
+    border: 1px solid rgba(0, 188, 212, 0.3);
+}
+
+.download-progress-spinner {
+    width: 50px;
+    height: 50px;
+    margin: 0 auto 1rem;
+    border: 3px solid rgba(0, 188, 212, 0.2);
+    border-top-color: #00bcd4;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.download-progress-text {
+    color: #fff;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+.download-progress-bar {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    height: 6px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.download-progress-fill {
+    background: linear-gradient(90deg, #00bcd4, #00e5ff);
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.download-progress-percent {
+    color: #00bcd4;
+    font-size: 0.875rem;
+    font-weight: 600;
 }

@@ -1256,37 +1256,109 @@ frameModel() {
 }
 async handleDownload() {
     console.log('Download button clicked');
-    console.log('Auth manager available:', !!window.authManager);
     
     const isAuthenticated = await this.checkAuthentication();
     console.log('Is authenticated:', isAuthenticated);
     
     if (!isAuthenticated) {
-        console.log('Not authenticated, should show login modal');
         if (window.authManager) {
-            console.log('Showing auth manager login modal');
             window.authManager.showLoginModal();
         } else {
-            console.log('No auth manager, showing feedback');
             this.showFeedback('Please log in to download models', 'error');
         }
         return;
     }
     
-    // Show format modal directly
-    const modal = document.getElementById('downloadFormatModal');
-    if (modal) {
-        modal.style.display = 'flex';
-        modal.style.opacity = '1';
-        modal.style.visibility = 'visible';
-        modal.classList.add('active');
-        
-        const modalContent = modal.querySelector('.download-modal-content');
-        if (modalContent) {
-            modalContent.style.opacity = '1';
-            modalContent.style.visibility = 'visible';
-        }
+    // Remove any existing modals first
+    const existingModal = document.getElementById('downloadFormatModal');
+    if (existingModal) {
+        existingModal.remove();
     }
+    
+    // Create fresh modal with proper structure
+    const modalDiv = document.createElement('div');
+    modalDiv.className = 'download-modal active';
+    modalDiv.id = 'downloadFormatModal';
+    modalDiv.innerHTML = `
+        <div class="download-modal-overlay" id="downloadModalOverlay"></div>
+        <div class="download-modal-content">
+            <div class="download-modal-header">
+                <h3>Select Format</h3>
+                <button class="close-btn" id="closeDownloadModal">&times;</button>
+            </div>
+            <div class="download-formats-grid">
+                <button class="format-btn" data-format="glb">
+                    <div class="format-icon">📦</div>
+                    <div class="format-name">GLB</div>
+                    <div class="format-desc">Universal 3D format</div>
+                </button>
+                <button class="format-btn" data-format="fbx">
+                    <div class="format-icon">🎮</div>
+                    <div class="format-name">FBX</div>
+                    <div class="format-desc">Game engines</div>
+                </button>
+                <button class="format-btn" data-format="obj">
+                    <div class="format-icon">🎨</div>
+                    <div class="format-name">OBJ</div>
+                    <div class="format-desc">3D software</div>
+                </button>
+                <button class="format-btn" data-format="usdz">
+                    <div class="format-icon">🍎</div>
+                    <div class="format-name">USDZ</div>
+                    <div class="format-desc">Apple AR</div>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Add to body
+    document.body.appendChild(modalDiv);
+    
+    // Force display with important
+    modalDiv.setAttribute('style', 
+        'display: flex !important; ' +
+        'opacity: 1 !important; ' +
+        'visibility: visible !important; ' +
+        'z-index: 50000 !important;'
+    );
+    
+    // Setup event listeners
+    const setupModalListeners = () => {
+        // Format buttons
+        modalDiv.querySelectorAll('.format-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const format = e.currentTarget.dataset.format;
+                this.downloadAsset(format);
+            };
+        });
+        
+        // Close button
+        const closeBtn = modalDiv.querySelector('#closeDownloadModal');
+        if (closeBtn) {
+            closeBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.closeDownloadModal();
+            };
+        }
+        
+        // Overlay close
+        const overlay = modalDiv.querySelector('#downloadModalOverlay');
+        if (overlay) {
+            overlay.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.closeDownloadModal();
+            };
+        }
+    };
+    
+    // Setup listeners immediately
+    setupModalListeners();
+    
+    console.log('Modal created and displayed with z-index: 50000');
 }
 async downloadAsset(format) {
     console.log('Downloading format:', format);
@@ -1301,9 +1373,10 @@ async downloadAsset(format) {
         return;
     }
     
+    // Show initial progress
+    this.showProgressFeedback('Preparing download...', 0);
+    
     try {
-        this.showFeedback('Preparing download...', 'info');
-        
         const apiUrl = this.getApiBaseUrl();
         const authToken = localStorage.getItem('authToken');
         
@@ -1321,7 +1394,9 @@ async downloadAsset(format) {
         
         console.log(`Fetching from: ${downloadUrl}`);
         
-        // First, try to fetch the resource
+        // Update progress
+        this.showProgressFeedback('Connecting to server...', 20);
+        
         let response;
         try {
             response = await fetch(downloadUrl, {
@@ -1331,13 +1406,13 @@ async downloadAsset(format) {
             });
         } catch (fetchError) {
             console.error('Failed to fetch from server:', fetchError);
+            this.hideProgressFeedback();
             throw new Error(`Server request failed: ${fetchError.message}`);
         }
 
         if (!response.ok) {
-            // Handle 404 specifically
+            this.hideProgressFeedback();
             if (response.status === 404) {
-                // Try to get error details
                 let errorMessage = `${format.toUpperCase()} format not available`;
                 try {
                     const errorData = await response.json();
@@ -1346,33 +1421,34 @@ async downloadAsset(format) {
                     } else if (errorData.error) {
                         errorMessage = errorData.error;
                     }
-                } catch (e) {
-                    // Couldn't parse error response
-                }
+                } catch (e) {}
                 throw new Error(errorMessage);
             }
             throw new Error(`Download failed (${response.status})`);
         }
 
-        // Check Content-Type to determine response format
+        // Update progress
+        this.showProgressFeedback('Downloading model...', 40);
+
         const contentType = response.headers.get('content-type');
         console.log('Response Content-Type:', contentType);
         
         let blob;
         
         if (contentType && contentType.includes('application/json')) {
-            // Server returned JSON with download URL
             console.log('Server returned JSON response');
             const data = await response.json();
             
             const fileUrl = data.downloadUrl;
             if (!fileUrl) {
+                this.hideProgressFeedback();
                 throw new Error('No download URL in response');
             }
             
             console.log(`Got download URL: ${fileUrl}`);
             
-            // Fetch the actual file
+            this.showProgressFeedback('Fetching model file...', 60);
+            
             const fileResponse = await fetch(fileUrl, {
                 method: 'GET',
                 mode: 'cors',
@@ -1380,25 +1456,25 @@ async downloadAsset(format) {
             });
             
             if (!fileResponse.ok) {
+                this.hideProgressFeedback();
                 throw new Error(`File download failed: ${fileResponse.status}`);
             }
             
             blob = await fileResponse.blob();
-            
         } else {
-            // Server returned the file directly (for Cloudinary proxy)
             console.log('Server returned file directly');
             blob = await response.blob();
         }
         
+        this.showProgressFeedback('Processing file...', 80);
         console.log(`Downloaded ${format} (${(blob.size / 1024 / 1024).toFixed(2)} MB)`);
         
         const fileName = `${this.currentAsset.name || 'model'}.${format}`;
         
-        // Mobile vs Web download handling (rest of your existing code)
         if (this.isPlatform('mobile-app')) {
-            // Mobile download code...
-           const { Filesystem } = Capacitor.Plugins;
+            this.showProgressFeedback('Saving to device...', 90);
+            
+            const { Filesystem } = Capacitor.Plugins;
             
             const reader = new FileReader();
             reader.readAsDataURL(blob);
@@ -1414,10 +1490,12 @@ async downloadAsset(format) {
                     recursive: true
                 });
                 
-                this.showFeedback(`Saved to Documents/Threely/${fullFileName}`, 'success', 4000);
+                this.hideProgressFeedback();
+                this.showFeedback(`✅ Saved to Documents/Threely/${fullFileName}`, 'success', 4000);
             };
         } else {
-            // Web download code...
+            this.showProgressFeedback('Starting download...', 90);
+            
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -1427,12 +1505,42 @@ async downloadAsset(format) {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             
-            this.showFeedback(`${format.toUpperCase()} downloaded!`, 'success');
+            this.hideProgressFeedback();
+            this.showFeedback(`✅ ${format.toUpperCase()} downloaded!`, 'success');
         }
         
     } catch (error) {
         console.error('Download error:', error);
+        this.hideProgressFeedback();
         this.showFeedback(error.message || 'Download failed', 'error');
+    }
+}
+
+// Add progress feedback methods
+showProgressFeedback(message, percent) {
+    // Remove existing progress if any
+    this.hideProgressFeedback();
+    
+    const progressDiv = document.createElement('div');
+    progressDiv.id = 'downloadProgress';
+    progressDiv.className = 'download-progress-overlay';
+    progressDiv.innerHTML = `
+        <div class="download-progress-modal">
+            <div class="download-progress-spinner"></div>
+            <div class="download-progress-text">${message}</div>
+            <div class="download-progress-bar">
+                <div class="download-progress-fill" style="width: ${percent}%"></div>
+            </div>
+            <div class="download-progress-percent">${percent}%</div>
+        </div>
+    `;
+    document.body.appendChild(progressDiv);
+}
+
+hideProgressFeedback() {
+    const progressDiv = document.getElementById('downloadProgress');
+    if (progressDiv) {
+        progressDiv.remove();
     }
 }
 
@@ -1617,43 +1725,122 @@ const downloadPromises = formats.map(async (format) => {
     }
 }
 
-async openEmailWithAttachment(zipBlob, fileName, modelName) {
+async openEmailWithAttachment() {
     try {
-        // Check if running in Capacitor environment
-      if (this.isPlatform('mobile-app')) {
-            // Mobile: Use Capacitor Share plugin
-            const { Filesystem, Directory, Share } = window.Capacitor.Plugins;
+        // Show initial progress
+        this.showProgressFeedback('Preparing export...', 0);
+        
+        const modelName = this.currentAsset.name || 'model';
+        const availableFormats = this.availableFormats || ['glb'];
+        
+        this.showProgressFeedback('Loading JSZip...', 10);
+        
+        // Ensure JSZip is loaded
+        if (typeof JSZip === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+            document.head.appendChild(script);
+            await new Promise(resolve => script.onload = resolve);
+        }
+        
+        const zip = new JSZip();
+        const modelFolder = zip.folder(modelName);
+        
+        const apiUrl = this.getApiBaseUrl();
+        const authToken = localStorage.getItem('authToken');
+        const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+        
+        let downloadedCount = 0;
+        const totalFormats = availableFormats.length;
+        
+        // Download all available formats
+        const downloadPromises = availableFormats.map(async (format, index) => {
+            try {
+                const progressPerFormat = 60 / totalFormats;
+                const baseProgress = 20 + (index * progressPerFormat);
+                
+                this.showProgressFeedback(`Downloading ${format.toUpperCase()}...`, Math.round(baseProgress));
+                
+                let downloadUrl;
+                if (this.currentAsset.meshyTaskId) {
+                    downloadUrl = `${apiUrl}/assets/meshy/${this.currentAsset.meshyTaskId}/download?format=${format}`;
+                } else {
+                    downloadUrl = `${apiUrl}/assets/${this.currentAssetId}/download?format=${format}`;
+                }
+                
+                const response = await fetch(downloadUrl, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: headers
+                });
+                
+                if (response.ok) {
+                    let blob;
+                    const contentType = response.headers.get('content-type');
+                    
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await response.json();
+                        const fileResponse = await fetch(data.downloadUrl, {
+                            method: 'GET',
+                            mode: 'cors',
+                            credentials: data.isCloudinary ? 'omit' : 'include'
+                        });
+                        blob = await fileResponse.blob();
+                    } else {
+                        blob = await response.blob();
+                    }
+                    
+                    modelFolder.file(`${modelName}.${format}`, blob);
+                    downloadedCount++;
+                    
+                    const progress = 20 + ((downloadedCount / totalFormats) * 60);
+                    this.showProgressFeedback(`Downloaded ${downloadedCount}/${totalFormats} formats...`, Math.round(progress));
+                    
+                    return true;
+                }
+            } catch (error) {
+                console.warn(`Failed to add ${format}:`, error);
+                return false;
+            }
+        });
+        
+        await Promise.all(downloadPromises);
+        
+        this.showProgressFeedback('Creating ZIP file...', 85);
+        
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const fileName = `${modelName}_threely_export.zip`;
+        
+        if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+            this.showProgressFeedback('Preparing to share...', 95);
             
-            // Convert blob to base64
+            const { Filesystem, Share } = Capacitor.Plugins;
+            
             const reader = new FileReader();
             reader.readAsDataURL(zipBlob);
             reader.onloadend = async () => {
                 const base64String = reader.result.split(',')[1];
                 
-                // Save temporarily
                 const result = await Filesystem.writeFile({
                     path: fileName,
                     data: base64String,
-                    directory: Directory.Cache
+                    directory: 'Cache'
                 });
                 
-                // Use Capacitor Share plugin
+                this.hideProgressFeedback();
+                
                 await Share.share({
                     title: `3D Model Export: ${modelName}`,
-                    text: `Here's your 3D model "${modelName}" exported from Threely app. The ZIP file contains multiple formats (GLB, FBX, OBJ, USDZ).`,
+                    text: `Check out my 3D model "${modelName}" exported from Threely app.`,
                     url: result.uri,
                     dialogTitle: 'Share your 3D model'
                 });
                 
-                this.showFeedback('Opening share options...', 'success');
+                this.showFeedback('✅ Ready to share!', 'success');
             };
-            
         } else {
-            // Web: Create mailto link and download file
-            const emailSubject = encodeURIComponent(`3D Model Export: ${modelName}`);
-            const emailBody = encodeURIComponent(`Hi,\n\nI'm sharing my 3D model "${modelName}" exported from Threely app.\n\nThe attached ZIP file contains the model in multiple formats:\n- GLB: Universal 3D format\n- FBX: Game engine format\n- OBJ: 3D software format\n- USDZ: Apple AR format\n\nBest regards`);
+            this.showProgressFeedback('Starting download...', 95);
             
-            // Create a download link for the user to save the file first
             const url = window.URL.createObjectURL(zipBlob);
             const a = document.createElement('a');
             a.href = url;
@@ -1663,17 +1850,25 @@ async openEmailWithAttachment(zipBlob, fileName, modelName) {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             
-            // Then open email client
+            this.hideProgressFeedback();
+            
             setTimeout(() => {
+                const emailSubject = encodeURIComponent(`3D Model Export: ${modelName}`);
+                const emailBody = encodeURIComponent(
+                    `Hi,\n\nI'm sharing my 3D model "${modelName}" exported from Threely app.\n\n` +
+                    `The attached ZIP file contains the model in multiple formats.\n\n` +
+                    `Best regards`
+                );
                 window.location.href = `mailto:?subject=${emailSubject}&body=${emailBody}`;
             }, 1000);
             
-            this.showFeedback('File downloaded. Email client will open shortly.', 'success', 4000);
+            this.showFeedback('✅ File downloaded. Opening email...', 'success', 4000);
         }
         
     } catch (error) {
-        console.error('Email share error:', error);
-        this.showFeedback('Could not open share options', 'error');
+        console.error('Export error:', error);
+        this.hideProgressFeedback();
+        this.showFeedback('Export failed. Please try again.', 'error');
     }
 }
 

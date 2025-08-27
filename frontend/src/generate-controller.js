@@ -1336,14 +1336,15 @@ show3DErrorState() {
 
 async handleDownload() {
     const downloadModal = document.createElement('div');
-    downloadModal.className = 'download-modal';
+    downloadModal.className = 'download-modal active';
     downloadModal.innerHTML = `
+        <div class="download-modal-overlay"></div>
         <div class="download-modal-content">
-            <div class="download-header">
+            <div class="download-modal-header">
                 <h3>Download 3D Model</h3>
                 <button class="close-btn" onclick="this.closest('.download-modal').remove()">×</button>
             </div>
-            <div class="download-formats">
+            <div class="download-formats-grid">
                 ${this.generateState.downloadFormats.map(format => `
                     <button class="format-btn" data-format="${format}">
                         <div class="format-icon">${this.getFormatIcon(format)}</div>
@@ -1357,6 +1358,11 @@ async handleDownload() {
     
     document.body.appendChild(downloadModal);
     
+    // Force display
+    downloadModal.style.display = 'flex';
+    downloadModal.style.opacity = '1';
+    downloadModal.style.visibility = 'visible';
+    
     // Add click handlers
     downloadModal.querySelectorAll('.format-btn').forEach(btn => {
         btn.addEventListener('click', () => this.downloadModel(btn.dataset.format));
@@ -1364,7 +1370,7 @@ async handleDownload() {
     
     // Close on backdrop click
     downloadModal.addEventListener('click', (e) => {
-        if (e.target === downloadModal) {
+        if (e.target === downloadModal || e.target.classList.contains('download-modal-overlay')) {
             downloadModal.remove();
         }
     });
@@ -1372,11 +1378,16 @@ async handleDownload() {
 
 async downloadModel(format) {
     try {
-        this.showFeedback(`Preparing ${format.toUpperCase()} download...`, 'info');
+        // Close modal first
+        document.querySelector('.download-modal')?.remove();
+        
+        // Show progress
+        this.showProgressFeedback('Preparing download...', 0);
         
         const downloadUrl = `${this.apiBaseUrl}/proxyModel/${this.generateState.taskId}?format=${format}`;
         
-        // Fetch the file first
+        this.showProgressFeedback('Connecting to server...', 20);
+        
         const response = await fetch(downloadUrl, {
             method: 'GET',
             credentials: 'include',
@@ -1386,15 +1397,20 @@ async downloadModel(format) {
         });
         
         if (!response.ok) {
+            this.hideProgressFeedback();
             throw new Error(`Download failed: ${response.status}`);
         }
+        
+        this.showProgressFeedback(`Downloading ${format.toUpperCase()} model...`, 50);
         
         const blob = await response.blob();
         const fileName = `Generated_${Date.now()}.${format}`;
         
-        // Check platform
+        console.log(`Downloaded ${format} (${(blob.size / 1024 / 1024).toFixed(2)} MB)`);
+        
         if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-            // Mobile app - save to Documents/Threely/
+            this.showProgressFeedback('Saving to device...', 80);
+            
             const { Filesystem } = Capacitor.Plugins;
             
             const reader = new FileReader();
@@ -1406,15 +1422,16 @@ async downloadModel(format) {
                     path: `Threely/${fileName}`,
                     data: base64String,
                     directory: 'Documents',
-                    recursive: true  // Creates Threely folder if needed
+                    recursive: true
                 });
                 
                 console.log('✅ File saved to:', result.uri);
-                document.querySelector('.download-modal')?.remove();
-                this.showFeedback(`Saved to Documents/Threely/${fileName}`, 'success', 4000);
+                this.hideProgressFeedback();
+                this.showFeedback(`✅ Saved to Documents/Threely/${fileName}`, 'success', 4000);
             };
         } else {
-            // Web browser - regular download
+            this.showProgressFeedback('Starting download...', 90);
+            
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -1424,12 +1441,13 @@ async downloadModel(format) {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             
-            document.querySelector('.download-modal')?.remove();
-            this.showFeedback('Download started!', 'success');
+            this.hideProgressFeedback();
+            this.showFeedback(`✅ ${format.toUpperCase()} downloaded!`, 'success');
         }
         
     } catch (error) {
         console.error('Download error:', error);
+        this.hideProgressFeedback();
         this.showFeedback('Download failed. Please try again.', 'error');
     }
 }
@@ -1456,11 +1474,11 @@ getFormatDescription(format) {
 
 async handleExport() {
     try {
-        this.showFeedback('Creating export package...', 'info');
+        // Show initial progress
+        this.showProgressFeedback('Preparing export...', 0);
         
-        // Check if JSZip is available
         if (typeof JSZip === 'undefined') {
-            // Try to load it dynamically
+            this.showProgressFeedback('Loading export tools...', 10);
             const script = document.createElement('script');
             script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
             document.head.appendChild(script);
@@ -1471,11 +1489,16 @@ async handleExport() {
         const modelName = `Generated_${new Date().toISOString().split('T')[0]}`;
         const modelFolder = zip.folder(modelName);
         
-        // Get all format blobs
         const formats = this.generateState.downloadFormats || ['glb', 'fbx', 'obj', 'usdz'];
+        let downloadedCount = 0;
         
-        const downloadPromises = formats.map(async (format) => {
+        this.showProgressFeedback('Downloading formats...', 20);
+        
+        const downloadPromises = formats.map(async (format, index) => {
             try {
+                const progress = 20 + ((index / formats.length) * 50);
+                this.showProgressFeedback(`Downloading ${format.toUpperCase()}...`, Math.round(progress));
+                
                 const modelUrl = `${this.apiBaseUrl}/proxyModel/${this.generateState.taskId}?format=${format}`;
                 const response = await fetch(modelUrl, {
                     method: 'GET',
@@ -1488,7 +1511,10 @@ async handleExport() {
                 if (response.ok) {
                     const blob = await response.blob();
                     modelFolder.file(`${modelName}.${format}`, blob);
-                    console.log(`Added ${format} to zip`);
+                    downloadedCount++;
+                    
+                    const newProgress = 20 + ((downloadedCount / formats.length) * 50);
+                    this.showProgressFeedback(`Downloaded ${downloadedCount}/${formats.length} formats...`, Math.round(newProgress));
                     return true;
                 }
             } catch (error) {
@@ -1499,28 +1525,34 @@ async handleExport() {
         
         await Promise.all(downloadPromises);
         
-        // Generate the zip
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        this.showProgressFeedback('Creating ZIP package...', 75);
+        
+        const zipBlob = await zip.generateAsync({ 
+            type: 'blob',
+            compression: 'DEFLATE',
+            compressionOptions: { level: 6 }
+        });
+        
         const zipFileName = `${modelName}_threely_export.zip`;
         
-        // Check platform
         if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-            // Mobile: Use native share
-            const { Filesystem, Directory, Share } = window.Capacitor.Plugins;
+            this.showProgressFeedback('Preparing to share...', 90);
+            
+            const { Filesystem, Share } = window.Capacitor.Plugins;
             
             const reader = new FileReader();
             reader.readAsDataURL(zipBlob);
             reader.onloadend = async () => {
                 const base64String = reader.result.split(',')[1];
                 
-                // Save to cache temporarily
                 const result = await Filesystem.writeFile({
                     path: zipFileName,
                     data: base64String,
-                    directory: Directory.Cache
+                    directory: 'Cache'
                 });
                 
-                // Open native share sheet
+                this.hideProgressFeedback();
+                
                 await Share.share({
                     title: `3D Model Export: ${modelName}`,
                     text: `Here's my 3D model generated with Threely app. The ZIP contains multiple formats (GLB, FBX, OBJ, USDZ).`,
@@ -1528,11 +1560,12 @@ async handleExport() {
                     dialogTitle: 'Share your 3D model'
                 });
                 
-                this.showFeedback('Opening share options...', 'success');
+                this.showFeedback('✅ Ready to share!', 'success');
             };
             
         } else {
-            // Web: Download ZIP and open email
+            this.showProgressFeedback('Starting download...', 90);
+            
             const url = window.URL.createObjectURL(zipBlob);
             const a = document.createElement('a');
             a.href = url;
@@ -1542,7 +1575,8 @@ async handleExport() {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             
-            // Open email client
+            this.hideProgressFeedback();
+            
             setTimeout(() => {
                 const emailSubject = encodeURIComponent(`3D Model Export: ${modelName}`);
                 const emailBody = encodeURIComponent(
@@ -1557,14 +1591,43 @@ async handleExport() {
                 window.location.href = `mailto:?subject=${emailSubject}&body=${emailBody}`;
             }, 1000);
             
-            this.showFeedback('File downloaded. Email client will open.', 'success', 4000);
+            this.showFeedback('✅ File downloaded. Opening email...', 'success', 4000);
         }
         
     } catch (error) {
         console.error('Export error:', error);
+        this.hideProgressFeedback();
         this.showFeedback('Export failed. Please try again.', 'error');
     }
 }
+
+// Add progress feedback methods to GenerateController class
+showProgressFeedback(message, percent) {
+    this.hideProgressFeedback();
+    
+    const progressDiv = document.createElement('div');
+    progressDiv.id = 'downloadProgress';
+    progressDiv.className = 'download-progress-overlay';
+    progressDiv.innerHTML = `
+        <div class="download-progress-modal">
+            <div class="download-progress-spinner"></div>
+            <div class="download-progress-text">${message}</div>
+            <div class="download-progress-bar">
+                <div class="download-progress-fill" style="width: ${percent}%"></div>
+            </div>
+            <div class="download-progress-percent">${percent}%</div>
+        </div>
+    `;
+    document.body.appendChild(progressDiv);
+}
+
+hideProgressFeedback() {
+    const progressDiv = document.getElementById('downloadProgress');
+    if (progressDiv) {
+        progressDiv.remove();
+    }
+}
+
 async handleRigAnimate() {
     console.log('🦴 Rig & Animate');
     this.showFeedback('Rigging & Animation feature coming soon!', 'info');

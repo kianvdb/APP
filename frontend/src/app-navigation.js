@@ -1558,18 +1558,17 @@ if (sectionName === 'account') {
     /**
      * Shows loading state for assets
      */
-    showAssetsLoading() {
-        const grid = document.getElementById('mobileAssetsGrid');
-        if (grid) {
-            grid.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem;">
-                    <div style="width: 50px; height: 50px; border: 3px solid rgba(0, 188, 212, 0.2); border-top: 3px solid #00bcd4; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
-                    <p style="color: #00bcd4; font-family: 'Sora', sans-serif;">Loading assets...</p>
-                </div>
-            `;
-        }
+showAssetsLoading() {
+    const grid = document.getElementById('mobileAssetsGrid');
+    if (grid) {
+        grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 7rem 1rem;">
+                <div style="width: 50px; height: 50px; border: 3px solid rgba(0, 188, 212, 0.2); border-top: 3px solid #00bcd4; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+                <p style="color: #00bcd4; font-family: 'Sora', sans-serif;">Loading assets...</p>
+            </div>
+        `;
     }
-
+}
     /**
      * Shows no assets message
      */
