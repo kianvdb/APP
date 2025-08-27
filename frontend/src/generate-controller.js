@@ -1395,7 +1395,7 @@ async downloadModel(format) {
         // Check platform
         if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
             // Mobile app - save to Documents/Threely/
-            const { Filesystem, Directory } = Capacitor.Plugins;
+            const { Filesystem } = Capacitor.Plugins;
             
             const reader = new FileReader();
             reader.readAsDataURL(blob);
@@ -1405,7 +1405,7 @@ async downloadModel(format) {
                 const result = await Filesystem.writeFile({
                     path: `Threely/${fileName}`,
                     data: base64String,
-                    directory: Directory.Documents,
+                    directory: 'Documents',
                     recursive: true  // Creates Threely folder if needed
                 });
                 

@@ -131,17 +131,30 @@ class AppNavigation {
      * Resets the account section to main view
      */
     resetAccountSection() {
-        const mainView = document.getElementById('accountMainView');
-        const likedView = document.getElementById('likedModelsView');
-        if (mainView) mainView.style.display = 'block';
-        if (likedView) likedView.style.display = 'none';
+    // Find the main account content container
+    const accountSection = document.getElementById('accountSection');
+    if (accountSection) {
+        // Reset to main view
+        const accountContent = accountSection.querySelector('.account-content');
+        const likedModelsView = document.getElementById('likedModelsView');
+        
+        if (accountContent) {
+            accountContent.style.display = 'block';
+        }
+        if (likedModelsView) {
+            likedModelsView.style.display = 'none';
+        }
         
         // Scroll to top
-        const accountSection = document.getElementById('accountSection');
-        if (accountSection) {
-            accountSection.scrollTop = 0;
+        accountSection.scrollTop = 0;
+        
+        // Reset any inner containers
+        const accountContainer = accountSection.querySelector('.account-container');
+        if (accountContainer) {
+            accountContainer.scrollTop = 0;
         }
     }
+}
 
     /**
      * Resets the about section scroll position
@@ -387,6 +400,26 @@ class AppNavigation {
         }, 500);
     }
     
+// Special handling for account section
+if (sectionName === 'account') {
+    const accountContent = sectionElement.querySelector('.account-content');
+    const likedModelsView = document.getElementById('likedModelsView');
+    
+    if (accountContent && likedModelsView) {
+        // Always show main account view when navigating to account
+        accountContent.style.display = 'block';
+        likedModelsView.style.display = 'none';
+    }
+    
+    // Reset account container scroll
+    const accountContainer = sectionElement.querySelector('.account-container');
+    if (accountContainer) {
+        accountContainer.scrollTop = 0;
+    }
+
+}
+
+
     // Start animations for other sections
     if (sectionName !== 'about') {
         setTimeout(() => {

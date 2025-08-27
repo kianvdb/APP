@@ -1398,7 +1398,7 @@ async downloadAsset(format) {
         // Mobile vs Web download handling (rest of your existing code)
         if (this.isPlatform('mobile-app')) {
             // Mobile download code...
-           const { Filesystem, Directory } = Capacitor.Plugins;
+           const { Filesystem } = Capacitor.Plugins;
             
             const reader = new FileReader();
             reader.readAsDataURL(blob);
@@ -1410,7 +1410,7 @@ async downloadAsset(format) {
                 const result = await Filesystem.writeFile({
                     path: `Threely/${fullFileName}`,
                     data: base64String,
-                    directory: Directory.Documents,
+                    directory: 'Documents',
                     recursive: true
                 });
                 
