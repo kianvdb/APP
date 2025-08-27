@@ -39,14 +39,41 @@ class GenerateController {
         const uploadAreaNew = document.getElementById('uploadArea');
         const imageInputNew = document.getElementById('imageInput');
         
-        uploadAreaNew.addEventListener('click', (e) => {
-            // Don't trigger if clicking on change button
-            if (!e.target.closest('.change-image-btn')) {
-                // Reset input before clicking to ensure it works
+     uploadAreaNew.addEventListener('click', async (e) => {
+    // Don't trigger if clicking on change button
+    if (!e.target.closest('.change-image-btn')) {
+        // Check if on mobile and Camera plugin is available
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            try {
+                const { Camera } = Capacitor.Plugins;
+                
+                const image = await Camera.getPhoto({
+                    quality: 90,
+                    allowEditing: false,
+                    resultType: 'dataUrl',
+                    source: 'prompt'  // Shows camera AND gallery options
+                });
+                
+                // Convert dataUrl to File object
+                const response = await fetch(image.dataUrl);
+                const blob = await response.blob();
+                const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
+                
+                this.handleImageUpload(file);
+                
+            } catch (error) {
+                console.error('Camera error:', error);
+                // Fallback to file input if Camera plugin fails
                 imageInputNew.value = '';
                 imageInputNew.click();
             }
-        });
+        } else {
+            // Desktop - use regular file input
+            imageInputNew.value = '';
+            imageInputNew.click();
+        }
+    }
+});
         
         imageInputNew.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -83,13 +110,13 @@ class GenerateController {
             const files = e.dataTransfer.files;
             if (files && files.length > 0) {
                 const file = files[0];
-                const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+                const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
                 if (validTypes.includes(file.type.toLowerCase()) || file.type.startsWith('image/')) {
                     // Reset input and handle upload
                     imageInputNew.value = '';
                     this.handleImageUpload(file);
                 } else {
-                    this.showPremiumError('Please select a valid image file (JPG, PNG, WEBP)');
+                    this.showPremiumError('Please select a valid image file (JPG, JPEG, PNG)');
                 }
             }
         });
@@ -254,7 +281,7 @@ class GenerateController {
     if (favoriteBtn) favoriteBtn.addEventListener('click', () => this.handleSaveToFavorites());
     if (newModelBtn) newModelBtn.addEventListener('click', () => this.resetToForm());
 }
-// REPLACE the setupViewerEventListeners() method in generate-controller.js (around line 280)
+
 
 setupViewerEventListeners() {
     console.log('🎮 Setting up viewer event listeners...');
