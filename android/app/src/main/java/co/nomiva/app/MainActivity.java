@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 
@@ -22,43 +23,40 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 
-// Unity Ads imports - COMMENTED OUT UNTIL LIBRARY IS ADDED
-// import com.unity3d.ads.IUnityAdsInitializationListener;
-// import com.unity3d.ads.IUnityAdsLoadListener;
-// import com.unity3d.ads.IUnityAdsShowListener;
-// import com.unity3d.ads.UnityAds;
-// import com.unity3d.ads.UnityAdsShowOptions;
+import com.unity3d.ads.IUnityAdsInitializationListener;
+import com.unity3d.ads.IUnityAdsLoadListener;
+import com.unity3d.ads.IUnityAdsShowListener;
+import com.unity3d.ads.UnityAds;
+import com.unity3d.ads.UnityAdsShowOptions;
 
-// REMOVED implements IUnityAdsInitializationListener for now
-public class MainActivity extends BridgeActivity {
+public class MainActivity extends BridgeActivity implements IUnityAdsInitializationListener {
 
     private RewardedAd rewardedAd;
     private InterstitialAd interstitialAd;
 
     // TEST MODE CONFIGURATION
-    private final boolean TEST_MODE = false; // Set to false to load normal app
+    private final boolean TEST_MODE = false;
 
-    // UNITY ADS IDs - WILL BE USED WHEN UNITY ADS IS ADDED
-    private final String UNITY_GAME_ID = "5928380"; // Your Unity Game ID (get from Unity Dashboard)
-    private final String UNITY_PLACEMENT_ID = "Rewarded_Android"; // Default Unity placement
-    private final boolean UNITY_TEST_MODE = true; // Set to false for production
+    // UNITY ADS IDs
+    private final String UNITY_GAME_ID = "5928380";
+    private final String UNITY_PLACEMENT_ID = "Rewarded_Android";
+    private final boolean UNITY_TEST_MODE = true;
     private boolean unityAdsReady = false;
 
-    // ADMOB AD IDs - Your actual IDs from AdMob Console
+    // ADMOB AD IDs
     private final String ADMOB_APP_ID = "ca-app-pub-3520802292477979~1613948420";
     private final String REWARDED_AD_ID = "ca-app-pub-3520802292477979/3274498542";
     private final String INTERSTITIAL_AD_ID = "ca-app-pub-XXXXXXXXXXXXXXXX/WWWWWWWWWW";
 
-    // TEST AD IDs (Google's official test IDs)
+    // TEST AD IDs
     private final String TEST_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917";
     private final String TEST_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712";
 
     // CONFIGURATION
-    private final boolean USE_TEST_ADS = true; // Set to false when publishing to Play Store
-    private final boolean ENABLE_INTERSTITIAL = false; // Set to true if you want interstitial ads
-    private final boolean ENABLE_UNITY_ADS = false; // DISABLED UNTIL LIBRARY IS ADDED
+    private final boolean USE_TEST_ADS = true;
+    private final boolean ENABLE_INTERSTITIAL = false;
+    private final boolean ENABLE_UNITY_ADS = true;
 
-    // Use test or production IDs based on configuration
     private String admobRewardedAdId;
     private String admobInterstitialAdId;
 
@@ -66,22 +64,16 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Set which ad IDs to use
         admobRewardedAdId = USE_TEST_ADS ? TEST_REWARDED_ID : REWARDED_AD_ID;
         admobInterstitialAdId = USE_TEST_ADS ? TEST_INTERSTITIAL_ID : INTERSTITIAL_AD_ID;
 
-        // Lock to portrait mode
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-
-        // Setup status bar
         setupStatusBar();
 
-        // Initialize Unity Ads FIRST (highest priority) - COMMENTED OUT
-        /* if (ENABLE_UNITY_ADS) {
+        if (ENABLE_UNITY_ADS) {
             initializeUnityAds();
-        } */
+        }
 
-        // Initialize AdMob
         MobileAds.initialize(this, initializationStatus -> {
             Log.d("AdMob", "AdMob initialized. Using " + (USE_TEST_ADS ? "TEST" : "PRODUCTION") + " ads");
             loadRewardedAd();
@@ -90,20 +82,17 @@ public class MainActivity extends BridgeActivity {
             }
         });
 
-        // LOAD TEST PAGE IF IN TEST MODE
         if (TEST_MODE) {
             loadTestPage();
         }
     }
 
-    // Initialize Unity Ads - COMMENTED OUT UNTIL LIBRARY IS ADDED
-    /* private void initializeUnityAds() {
+    private void initializeUnityAds() {
         UnityAds.initialize(getApplicationContext(), UNITY_GAME_ID, UNITY_TEST_MODE, this);
         Log.d("UnityAds", "Initializing Unity Ads with Game ID: " + UNITY_GAME_ID);
-    } */
+    }
 
-    // Unity Ads Initialization Callbacks - COMMENTED OUT
-    /* @Override
+    @Override
     public void onInitializationComplete() {
         Log.d("UnityAds", "Unity Ads initialization complete");
         loadUnityAd();
@@ -113,17 +102,14 @@ public class MainActivity extends BridgeActivity {
     public void onInitializationFailed(UnityAds.UnityAdsInitializationError error, String message) {
         Log.e("UnityAds", "Unity Ads initialization failed: " + error + " - " + message);
         unityAdsReady = false;
-    } */
+    }
 
-    // Load Unity Ad - COMMENTED OUT
-    /* private void loadUnityAd() {
+    private void loadUnityAd() {
         UnityAds.load(UNITY_PLACEMENT_ID, new IUnityAdsLoadListener() {
             @Override
             public void onUnityAdsAdLoaded(String placementId) {
                 Log.d("UnityAds", "Unity Ad loaded: " + placementId);
                 unityAdsReady = true;
-
-                // Notify JavaScript
                 getBridge().getWebView().evaluateJavascript(
                         "console.log('🎮 Unity Ad loaded successfully!');",
                         null
@@ -134,23 +120,18 @@ public class MainActivity extends BridgeActivity {
             public void onUnityAdsFailedToLoad(String placementId, UnityAds.UnityAdsLoadError error, String message) {
                 Log.e("UnityAds", "Unity Ad failed to load: " + error + " - " + message);
                 unityAdsReady = false;
-
-                // Try loading again after 30 seconds
                 getBridge().getWebView().postDelayed(() -> loadUnityAd(), 30000);
             }
         });
-    } */
+    }
 
-    // Method to load the test page
     private void loadTestPage() {
-        // Wait for WebView to be ready, then load test page
         getBridge().getWebView().postDelayed(() -> {
             getBridge().getWebView().loadUrl("file:///android_asset/public/test-ads.html");
             Log.d("MainActivity", "Loading test ads page");
         }, 1000);
     }
 
-    // Method to load interstitial ads
     private void loadInterstitialAd() {
         if (!ENABLE_INTERSTITIAL) return;
 
@@ -161,12 +142,11 @@ public class MainActivity extends BridgeActivity {
                 interstitialAd = ad;
                 Log.d("AdMob", "Interstitial ad loaded");
 
-                // Set fullscreen callback
                 interstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
                     @Override
                     public void onAdDismissedFullScreenContent() {
                         Log.d("AdMob", "Interstitial ad dismissed");
-                        loadInterstitialAd(); // Load next ad
+                        loadInterstitialAd();
                     }
 
                     @Override
@@ -182,7 +162,6 @@ public class MainActivity extends BridgeActivity {
             public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
                 Log.e("AdMob", "Interstitial ad failed to load: " + loadAdError.getMessage());
                 interstitialAd = null;
-                // Retry after 60 seconds
                 getBridge().getWebView().postDelayed(() -> loadInterstitialAd(), 60000);
             }
         });
@@ -191,11 +170,8 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onResume() {
         super.onResume();
-
-        // Inject JavaScript interface when WebView is definitely ready
         getBridge().getWebView().addJavascriptInterface(new AdInterface(), "AndroidAds");
 
-        // Test injection with better logging
         getBridge().getWebView().evaluateJavascript(
                 "(function() {" +
                         "  console.log('🔍 Checking for AndroidAds interface...');" +
@@ -204,11 +180,6 @@ public class MainActivity extends BridgeActivity {
                         "      console.log('✅ AndroidAds is available!');" +
                         "      console.log('Testing isReady:', window.AndroidAds.isReady());" +
                         "      console.log('Unity Ads ready:', window.AndroidAds.isUnityReady());" +
-                        "      // Auto-hide status bar if logged in" +
-                        "      if (window.authManager && window.authManager.isAuthenticated()) {" +
-                        "        window.AndroidAds.hideStatusBar();" +
-                        "        document.body.classList.add('status-bar-hidden');" +
-                        "      }" +
                         "    } else {" +
                         "      console.log('❌ AndroidAds not found');" +
                         "    }" +
@@ -219,23 +190,29 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void setupStatusBar() {
-        // Enable edge-to-edge display
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        );
+
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
-        // Hide status bar completely for ALL users (both logged in and out)
         getWindow().setFlags(
                 WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN
         );
 
-        // For newer Android versions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             getWindow().getInsetsController().hide(
-                    android.view.WindowInsets.Type.statusBars()
+                    android.view.WindowInsets.Type.statusBars() |
+                            android.view.WindowInsets.Type.navigationBars()
             );
         }
 
-        // Keep screen on
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
@@ -246,19 +223,16 @@ public class MainActivity extends BridgeActivity {
             @Override
             public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
                 rewardedAd = null;
-                // Log the error for debugging
                 getBridge().getWebView().evaluateJavascript(
                         "console.log('❌ AdMob ad failed to load: " + loadAdError.getMessage() + "');",
                         null
                 );
-                // Retry loading after 30 seconds
                 getBridge().getWebView().postDelayed(() -> loadRewardedAd(), 30000);
             }
 
             @Override
             public void onAdLoaded(@NonNull RewardedAd ad) {
                 rewardedAd = ad;
-                // Log success
                 getBridge().getWebView().evaluateJavascript(
                         "console.log('✅ AdMob ad loaded successfully!');" +
                                 "if(window.AdManagerAndroidCallbacks) { " +
@@ -269,37 +243,29 @@ public class MainActivity extends BridgeActivity {
         });
     }
 
-    // JavaScript Interface for Ads
     public class AdInterface {
 
-        // WATERFALL STRATEGY: Try Unity first, then AdMob
         @JavascriptInterface
         public void showRewardedAd() {
             runOnUiThread(() -> {
-                // Unity Ads disabled for now, go straight to AdMob
-                /* if (ENABLE_UNITY_ADS && unityAdsReady) {
+                if (ENABLE_UNITY_ADS && unityAdsReady) {
                     showUnityRewardedAd();
-                } else */
-                if (rewardedAd != null) {
+                } else if (rewardedAd != null) {
                     showAdMobRewardedAd();
-                }
-                // No ads available
-                else {
+                } else {
                     getBridge().getWebView().evaluateJavascript(
                             "console.log('⚠️ No ads available - showing fallback');" +
                                     "if(window.AdManagerAndroidCallbacks) { " +
                                     "window.AdManagerAndroidCallbacks.onAdFailed('No ads available'); }",
                             null
                     );
-                    // Try loading again
-                    // if (ENABLE_UNITY_ADS) loadUnityAd();
+                    if (ENABLE_UNITY_ADS) loadUnityAd();
                     loadRewardedAd();
                 }
             });
         }
 
-        // Show Unity Rewarded Ad - COMMENTED OUT
-        /* private void showUnityRewardedAd() {
+        private void showUnityRewardedAd() {
             Log.d("UnityAds", "Showing Unity rewarded ad");
 
             UnityAds.show(MainActivity.this, UNITY_PLACEMENT_ID, new UnityAdsShowOptions(), new IUnityAdsShowListener() {
@@ -307,13 +273,9 @@ public class MainActivity extends BridgeActivity {
                 public void onUnityAdsShowFailure(String placementId, UnityAds.UnityAdsShowError error, String message) {
                     Log.e("UnityAds", "Unity Ad show failed: " + error + " - " + message);
                     unityAdsReady = false;
-
-                    // Fallback to AdMob
                     if (rewardedAd != null) {
                         showAdMobRewardedAd();
                     }
-
-                    // Reload Unity ad for next time
                     loadUnityAd();
                 }
 
@@ -332,7 +294,6 @@ public class MainActivity extends BridgeActivity {
                     Log.d("UnityAds", "Unity Ad completed: " + placementId + " - State: " + state);
 
                     if (state == UnityAds.UnityAdsShowCompletionState.COMPLETED) {
-                        // User earned reward
                         getBridge().getWebView().evaluateJavascript(
                                 "console.log('🎮 Unity Ad completed - User earned reward!');" +
                                         "if(window.AdManagerAndroidCallbacks) { " +
@@ -340,7 +301,6 @@ public class MainActivity extends BridgeActivity {
                                 null
                         );
                     } else {
-                        // User skipped
                         getBridge().getWebView().evaluateJavascript(
                                 "console.log('⏭️ Unity Ad skipped');" +
                                         "if(window.AdManagerAndroidCallbacks) { " +
@@ -348,47 +308,32 @@ public class MainActivity extends BridgeActivity {
                                 null
                         );
                     }
-
                     unityAdsReady = false;
-                    // Load next Unity ad
                     loadUnityAd();
                 }
             });
-        } */
+        }
 
-        // Show AdMob Rewarded Ad
         private void showAdMobRewardedAd() {
             rewardedAd.show(MainActivity.this, rewardItem -> {
-                // User earned reward - notify JavaScript
                 getBridge().getWebView().evaluateJavascript(
                         "console.log('💰 AdMob Ad completed - User earned reward!');" +
                                 "if(window.AdManagerAndroidCallbacks) { " +
                                 "window.AdManagerAndroidCallbacks.onAdCompleted(); }",
                         null
                 );
-                // Load next ad
                 loadRewardedAd();
             });
         }
 
         @JavascriptInterface
         public boolean isReady() {
-            // Check if ANY ad is ready (Unity disabled for now)
-            boolean ready = /* (ENABLE_UNITY_ADS && unityAdsReady) || */ (rewardedAd != null);
-            // Log the status
-            runOnUiThread(() -> {
-                getBridge().getWebView().evaluateJavascript(
-                        "console.log('Ad ready status - Unity: disabled, AdMob: " + (rewardedAd != null) + "');",
-                        null
-                );
-            });
-            return ready;
+            return (ENABLE_UNITY_ADS && unityAdsReady) || (rewardedAd != null);
         }
 
         @JavascriptInterface
         public boolean isUnityReady() {
-            // return ENABLE_UNITY_ADS && unityAdsReady;
-            return false; // Unity disabled for now
+            return ENABLE_UNITY_ADS && unityAdsReady;
         }
 
         @JavascriptInterface
@@ -396,22 +341,20 @@ public class MainActivity extends BridgeActivity {
             return rewardedAd != null;
         }
 
-        // Test Unity Ad separately - DISABLED
         @JavascriptInterface
         public void showUnityAdOnly() {
             runOnUiThread(() -> {
-                /* if (ENABLE_UNITY_ADS && unityAdsReady) {
+                if (ENABLE_UNITY_ADS && unityAdsReady) {
                     showUnityRewardedAd();
-                } else { */
-                getBridge().getWebView().evaluateJavascript(
-                        "console.log('❌ Unity Ads disabled temporarily');",
-                        null
-                );
-                // }
+                } else {
+                    getBridge().getWebView().evaluateJavascript(
+                            "console.log('❌ Unity Ads not ready');",
+                            null
+                    );
+                }
             });
         }
 
-        // Test AdMob Ad separately
         @JavascriptInterface
         public void showAdMobAdOnly() {
             runOnUiThread(() -> {
@@ -455,29 +398,14 @@ public class MainActivity extends BridgeActivity {
         @JavascriptInterface
         public void hideStatusBar() {
             runOnUiThread(() -> {
-                // Hide status bar completely
-                getWindow().setFlags(
-                        WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                        WindowManager.LayoutParams.FLAG_FULLSCREEN
-                );
-
-                // For newer Android versions
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    getWindow().getInsetsController().hide(
-                            android.view.WindowInsets.Type.statusBars()
-                    );
-                }
+                setupStatusBar();
             });
         }
 
         @JavascriptInterface
         public void showStatusBar() {
             runOnUiThread(() -> {
-                // Show status bar again
                 getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
-                // Re-apply translucent status bar
-                setupStatusBar();
             });
         }
     }

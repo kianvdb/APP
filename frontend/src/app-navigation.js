@@ -2260,7 +2260,7 @@ class AppNavigation {
                         <div class="control-section image-upload">
                             <label class="control-label">Upload Image</label>
                             <div class="upload-area" id="uploadArea">
-                               <input type="file" id="imageInput" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/*" hidden/>
+                               <input type="file" id="imageInput" accept="image/jpeg,image/jpg,image/png" hidden/>
                                 <div class="upload-placeholder" id="uploadPlaceholder">
                                     <svg class="upload-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
