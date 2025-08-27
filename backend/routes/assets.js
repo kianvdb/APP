@@ -1645,31 +1645,61 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
     const contentType = contentTypes[format] || 'application/octet-stream';
     console.log('📄 Content type for', format + ':', contentType);
 
-    if (downloadUrl && downloadUrl.includes('cloudinary.com')) {
-    // Add fl_attachment flag to enable public download without authentication
+   if (downloadUrl && downloadUrl.includes('cloudinary.com')) {
     if (downloadUrl.includes('/upload/')) {
         const parts = downloadUrl.split('/upload/');
         downloadUrl = parts[0] + '/upload/fl_attachment/' + parts[1];
-        console.log('✅ Added fl_attachment flag to Cloudinary URL');
     }
 }
-    
-    // IMPORTANT: Return JSON response instead of redirecting
-    const responseData = {
-      downloadUrl: downloadUrl,
-      format: format,
-      filename: `${asset.name || 'model'}.${format}`,
-      isCloudinary: downloadUrl.includes('cloudinary.com'),
-      isMeshy: downloadUrl.includes('meshy.ai') || downloadUrl.includes('/api/proxyModel/'),
-      isProxy: downloadUrl.includes('/api/proxyModel/'),
-      contentType: contentType,
-      assetName: asset.name,
-      assetId: asset._id
-    };
-    
-    console.log('📤 Returning JSON response:', responseData);
-    
-    return res.json(responseData);
+
+// REPLACE THE JSON RETURN WITH THIS:
+// Check if it's a Cloudinary URL and proxy it
+if (downloadUrl && downloadUrl.includes('cloudinary.com')) {
+    try {
+        console.log('🔄 Proxying file from Cloudinary...');
+        const axios = require('axios');
+        
+        const response = await axios({
+            method: 'GET',
+            url: downloadUrl,
+            responseType: 'stream',
+            timeout: 30000
+        });
+        
+        // Set headers for file download
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', `attachment; filename="${asset.name || 'model'}.${format}"`);
+        res.setHeader('Cache-Control', 'no-cache');
+        
+        // Stream the file to client
+        response.data.pipe(res);
+        console.log('✅ Streaming file through proxy');
+        return;
+        
+    } catch (proxyError) {
+        console.error('❌ Proxy failed:', proxyError.message);
+        return res.status(404).json({ 
+            error: 'File not found or inaccessible',
+            details: 'The file may have been deleted from storage'
+        });
+    }
+}
+
+// For non-Cloudinary URLs, keep the original JSON response
+const responseData = {
+    downloadUrl: downloadUrl,
+    format: format,
+    filename: `${asset.name || 'model'}.${format}`,
+    isCloudinary: false,  // We handled Cloudinary above
+    isMeshy: downloadUrl.includes('meshy.ai') || downloadUrl.includes('/api/proxyModel/'),
+    isProxy: downloadUrl.includes('/api/proxyModel/'),
+    contentType: contentType,
+    assetName: asset.name,
+    assetId: asset._id
+};
+
+console.log('📤 Returning JSON response:', responseData);
+return res.json(responseData);
     
   } catch (error) {
     console.error('❌ CRITICAL DOWNLOAD ERROR:', error.message);
