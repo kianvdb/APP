@@ -17,7 +17,7 @@
             fov: 75,
             near: 0.1,
             far: 1000,
-            position: { x: 2, y: 5, z: 4 },
+            position: { x: 2, y: 5, z: 3.5 },
             lookAt: { x: 0, y: 2, z: 0 }
         },
         grid: {
@@ -332,7 +332,7 @@
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
             controls.autoRotate = false;
-            controls.target.set(0, -1, 0);
+            controls.target.set(0, -1.8, 0);
             
             // Restrict controls to horizontal rotation only
             controls.enableZoom = false;

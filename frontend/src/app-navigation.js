@@ -2482,7 +2482,7 @@ class AppNavigation {
      */
     loadAssetsContent() {
         return `
-            <div class="assets-mobile-container" style="height: 100%; overflow-y: auto; background: #0a0a0a; padding: 1rem; padding-bottom: 0rem;">
+            <div class="assets-mobile-container" style="height: 100%; overflow-y: auto; background: #0a0a0a; padding: 1rem; padding-bottom: 3rem;">
                 <!-- Header -->
                 <div class="assets-header" style="margin-bottom: 2rem; margin-top: 0.25rem;">
                     <div style="text-align: center; margin-bottom: 0.5rem; width: 100%;">
@@ -2954,25 +2954,25 @@ class AppNavigation {
      * Generates about stats section
      * @returns {string} HTML content
      */
-    generateAboutStats() {
-        return `
-            <!-- Stats -->
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin-bottom: 2rem;">
-                <div class="stat-card" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.3); border-radius: 12px; padding: 1.2rem 0.5rem; text-align: center; backdrop-filter: blur(10px); animation: fadeInUp 0.6s ease-out 0.1s forwards; opacity: 0;">
-                    <div class="stat-number" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: #00bcd4; margin-bottom: 0.3rem;" data-target="50000">0</div>
-                    <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">Models Created</div>
-                </div>
-                <div class="stat-card" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.3); border-radius: 12px; padding: 1.2rem 0.5rem; text-align: center; backdrop-filter: blur(10px); animation: fadeInUp 0.6s ease-out 0.2s forwards; opacity: 0;">
-                    <div class="stat-number" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: #00bcd4; margin-bottom: 0.3rem;" data-target="5">0</div>
-                    <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">Min Generation</div>
-                </div>
-                <div class="stat-card" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.3); border-radius: 12px; padding: 1.2rem 0.5rem; text-align: center; backdrop-filter: blur(10px); animation: fadeInUp 0.6s ease-out 0.3s forwards; opacity: 0;">
-                    <div class="stat-number" style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700; color: #00bcd4; margin-bottom: 0.3rem;" data-target="98">0</div>
-                    <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">% Satisfaction</div>
-                </div>
+  generateAboutStats() {
+    return `
+        <!-- Stats -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin-bottom: 2rem;">
+            <div class="stat-card" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.3); border-radius: 12px; padding: 1.2rem 0.5rem; text-align: center; backdrop-filter: blur(10px); animation: fadeInUp 0.6s ease-out 0.1s forwards; opacity: 0;">
+                <div class="stat-number" style="font-family: 'Sora', monospace; font-size: 1.8rem; font-weight: 700; color: #00bcd4; margin-bottom: 0.3rem; min-width: 60px; display: inline-block;" data-target="50000">50,000</div>
+                <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">Models Created</div>
             </div>
-        `;
-    }
+            <div class="stat-card" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.3); border-radius: 12px; padding: 1.2rem 0.5rem; text-align: center; backdrop-filter: blur(10px); animation: fadeInUp 0.6s ease-out 0.2s forwards; opacity: 0;">
+                <div class="stat-number" style="font-family: 'Sora', monospace; font-size: 1.8rem; font-weight: 700; color: #00bcd4; margin-bottom: 0.3rem; min-width: 30px; display: inline-block;" data-target="5">5</div>
+                <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">Min Generation</div>
+            </div>
+            <div class="stat-card" style="background: rgba(0,188,212,0.1); border: 1px solid rgba(0,188,212,0.3); border-radius: 12px; padding: 1.2rem 0.5rem; text-align: center; backdrop-filter: blur(10px); animation: fadeInUp 0.6s ease-out 0.3s forwards; opacity: 0;">
+                <div class="stat-number" style="font-family: 'Sora', monospace; font-size: 1.8rem; font-weight: 700; color: #00bcd4; margin-bottom: 0.3rem; min-width: 40px; display: inline-block;" data-target="98">98</div>
+                <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">% Satisfaction</div>
+            </div>
+        </div>
+    `;
+}
 
     /**
      * Generates how it works section

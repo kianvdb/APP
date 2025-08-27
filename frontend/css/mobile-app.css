@@ -337,6 +337,7 @@ button, .button, .btn {
     scrollbar-width: none;
     -ms-overflow-style: none;
     -webkit-overflow-scrolling: touch;
+    
 }
 
 .assets-mobile-container::-webkit-scrollbar {
@@ -542,6 +543,7 @@ button, .button, .btn {
     overflow: hidden;
     position: relative;
     background: #0a0a0a;
+     padding-bottom: 100px;
 }
 
 .account-section::-webkit-scrollbar,
@@ -550,11 +552,6 @@ button, .button, .btn {
     display: none;
 }
 
-#accountSection {
-    height: 100%;
-    overflow: hidden;
-    background: #0a0a0a;
-}
 
 #accountSection .section-content {
     height: 100%;
@@ -2462,7 +2459,8 @@ button, .button, .btn {
 .asset-info-overlay {
     position: absolute;
     top: 1rem;
-    left: 1rem;
+    left: 0.5rem;
+    transform: translateX(-50%);
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(0, 188, 212, 0.3);
@@ -2654,21 +2652,7 @@ button, .button, .btn {
     cursor: not-allowed;
 }
 
-#rigBtn::after {
-    content: "SOON";
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background: linear-gradient(135deg, #ff9800, #f57c00);
-    color: white;
-    font-size: 0.6rem;
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    display: block;
-    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.4);
-}
+
 
 /* Download Format Modal */
 .download-format-modal {
@@ -2821,6 +2805,7 @@ button, .button, .btn {
     background: #0a0a0a;
     position: relative;
     max-height: 100vh;
+    padding-bottom: 65px;
 }
 
 .about-container > div:last-child {
