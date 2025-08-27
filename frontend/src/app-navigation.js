@@ -322,57 +322,80 @@ class AppNavigation {
      * @param {boolean} skipAnimation - Whether to skip animation
      */
     async showSection(sectionName, skipAnimation = false) {
-        const sectionElement = document.getElementById(`${sectionName}Section`);
-        
-        if (!sectionElement) {
-            console.error(`❌ Section not found: ${sectionName}`);
-            return;
+    const sectionElement = document.getElementById(`${sectionName}Section`);
+    
+    if (!sectionElement) {
+        console.error(`❌ Section not found: ${sectionName}`);
+        return;
+    }
+
+    // Stop all animations first
+    this.stopAllAnimations();
+
+    // Hide all sections
+    document.querySelectorAll('.app-section').forEach(section => {
+        section.classList.remove('active');
+        section.style.display = 'none';
+    });
+
+    // Load content if not already loaded
+    if (!this.loadedSections.has(sectionName)) {
+        await this.loadSectionContent(sectionName);
+    }
+
+    // Reset scroll position before showing
+    sectionElement.scrollTop = 0;
+
+    // Show new section
+    sectionElement.style.display = 'block';
+    sectionElement.classList.add('active');
+    
+    // Force layout recalculation
+    sectionElement.offsetHeight;
+    
+    // Reset scroll again after display
+    sectionElement.scrollTop = 0;
+    
+    // Special handling for about section
+    if (sectionName === 'about') {
+        const aboutContainer = sectionElement.querySelector('.about-container');
+        if (aboutContainer) {
+            aboutContainer.scrollTop = 0;
+            aboutContainer.style.overflowY = 'auto';
+            aboutContainer.style.height = '100%';
         }
-
-        // Stop all animations first
-        this.stopAllAnimations();
-
-        // Hide all sections
-        document.querySelectorAll('.app-section').forEach(section => {
-            section.classList.remove('active');
-            section.style.display = 'none';
-        });
-
-        // Load content if not already loaded
-        if (!this.loadedSections.has(sectionName)) {
-            await this.loadSectionContent(sectionName);
-        }
-
-        // Reset scroll position before showing
-        sectionElement.scrollTop = 0;
-
-        // Show new section
-        sectionElement.style.display = 'block';
-        sectionElement.classList.add('active');
         
-        // Force layout recalculation
-        sectionElement.offsetHeight;
+        // Debug: Check if particleField exists at different times
+        console.log('Checking for particleField immediately:', !!document.getElementById('particleField'));
         
-        // Reset scroll again after display
-        sectionElement.scrollTop = 0;
+        setTimeout(() => {
+            console.log('Checking for particleField after 100ms:', !!document.getElementById('particleField'));
+        }, 100);
         
-        // Special handling for about section
-        if (sectionName === 'about') {
-            const aboutContainer = sectionElement.querySelector('.about-container');
-            if (aboutContainer) {
-                aboutContainer.scrollTop = 0;
-                aboutContainer.style.overflowY = 'auto';
-                aboutContainer.style.height = '100%';
+        setTimeout(() => {
+            console.log('Checking for particleField after 300ms:', !!document.getElementById('particleField'));
+            this.initializeAbout();
+        }, 300);
+        
+        setTimeout(() => {
+            console.log('Checking for particleField after 500ms:', !!document.getElementById('particleField'));
+            const pf = document.getElementById('particleField');
+            if (pf) {
+                console.log('ParticleField children count:', pf.children.length);
+                console.log('ParticleField HTML:', pf.innerHTML);
             }
-        }
-        
-        // Start animations for active section
+        }, 500);
+    }
+    
+    // Start animations for other sections
+    if (sectionName !== 'about') {
         setTimeout(() => {
             this.startSectionAnimations(sectionName);
         }, 100);
-        
-        console.log(`✅ Section displayed: ${sectionName}`);
     }
+    
+    console.log(`✅ Section displayed: ${sectionName}`);
+}
 
     /**
      * Updates navigation UI to reflect active section
@@ -3345,7 +3368,7 @@ generateAboutStats() {
         
         // Create floating particles
         const particleField = document.getElementById('particleField');
-        if (particleField && !particleField.hasChildNodes()) {
+       if (particleField) {
             particleField.innerHTML = '';
             
             // Add particle animation CSS if not exists

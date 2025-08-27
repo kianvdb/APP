@@ -22,6 +22,17 @@ constructor() {
     console.log('GLTFLoader available:', typeof THREE?.GLTFLoader !== 'undefined' || typeof window.GLTFLoader !== 'undefined');
     console.log('===================================');
 }
+isPlatform(platform) {
+    const isMobileApp = window.Capacitor && 
+                       window.Capacitor.isNativePlatform && 
+                       window.Capacitor.isNativePlatform();
+    
+    switch(platform) {
+        case 'mobile-app': return isMobileApp;
+        case 'web': return !isMobileApp;
+        default: return false;
+    }
+}
 
  initializeViewerHTML() {
     if (this.viewerInitialized) {
@@ -1385,7 +1396,7 @@ async downloadAsset(format) {
         const fileName = `${this.currentAsset.name || 'model'}.${format}`;
         
         // Mobile vs Web download handling (rest of your existing code)
-        if (typeof window.Capacitor !== 'undefined' && window.Capacitor.isNativePlatform()) {
+        if (this.isPlatform('mobile-app')) {
             // Mobile download code...
             const { Filesystem, Directory } = window.Capacitor.Plugins;
             
@@ -1609,7 +1620,7 @@ const downloadPromises = formats.map(async (format) => {
 async openEmailWithAttachment(zipBlob, fileName, modelName) {
     try {
         // Check if running in Capacitor environment
-       if (typeof window.Capacitor !== 'undefined' && window.Capacitor.isNativePlatform()) {
+      if (this.isPlatform('mobile-app')) {
             // Mobile: Use Capacitor Share plugin
             const { Filesystem, Directory, Share } = window.Capacitor.Plugins;
             

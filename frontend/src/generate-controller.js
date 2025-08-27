@@ -1345,97 +1345,64 @@ async handleDownload() {
 
 async downloadModel(format) {
     try {
-        // Show loading state
         this.showFeedback(`Preparing ${format.toUpperCase()} download...`, 'info');
         
-        // Use proxy endpoint for download
         const downloadUrl = `${this.apiBaseUrl}/proxyModel/${this.generateState.taskId}?format=${format}`;
         
-        // Check if running on mobile (Capacitor)
-        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            console.log('📱 Mobile download detected');
+        // Fetch the file first
+        const response = await fetch(downloadUrl, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Download failed: ${response.status}`);
+        }
+        
+        const blob = await response.blob();
+        const fileName = `Generated_${Date.now()}.${format}`;
+        
+        // Check platform
+        if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+            // Mobile app - save to Documents/Threely/
+            const { Filesystem, Directory } = window.Capacitor.Plugins;
             
-            try {
-                // Fetch the file
-                const response = await fetch(downloadUrl, {
-                    method: 'GET',
-                    credentials: 'include',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
-                    }
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = async () => {
+                const base64String = reader.result.split(',')[1];
+                
+                const result = await Filesystem.writeFile({
+                    path: `Threely/${fileName}`,
+                    data: base64String,
+                    directory: Directory.Documents,
+                    recursive: true  // Creates Threely folder if needed
                 });
                 
-                if (!response.ok) {
-                    throw new Error(`Download failed: ${response.status}`);
-                }
-                
-                const blob = await response.blob();
-                
-                // Import Filesystem plugin
-                const { Filesystem, Directory } = Capacitor.Plugins;
-                
-                // Convert blob to base64
-                const reader = new FileReader();
-                reader.readAsDataURL(blob);
-                reader.onloadend = async () => {
-                    const base64String = reader.result.split(',')[1];
-                    
-                    // Generate filename with timestamp
-                    const fileName = `Threely_${Date.now()}.${format}`;
-                    
-                    // Save to Documents directory
-                    const result = await Filesystem.writeFile({
-                        path: fileName,
-                        data: base64String,
-                        directory: Directory.Documents,
-                    });
-                    
-                    console.log('✅ File saved to:', result.uri);
-                    
-                    // Close modal
-                    document.querySelector('.download-modal')?.remove();
-                    
-                    this.showFeedback(`Saved: ${fileName}`, 'success');
-                };
-                
-                reader.onerror = () => {
-                    throw new Error('Failed to read file');
-                };
-                
-            } catch (fsError) {
-                console.error('❌ Mobile download error:', fsError);
-                
-                // Fallback: Try browser download
-                const a = document.createElement('a');
-                a.href = downloadUrl;
-                a.download = `Threely-model.${format}`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                
+                console.log('✅ File saved to:', result.uri);
                 document.querySelector('.download-modal')?.remove();
-                this.showFeedback('Download started...', 'info');
-            }
-            
+                this.showFeedback(`Saved to Documents/Threely/${fileName}`, 'success', 4000);
+            };
         } else {
-            // Web browser - existing code
-            console.log('💻 Web download detected');
-            
+            // Web browser - regular download
+            const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = downloadUrl;
-            a.download = `Threely-model.${format}`;
+            a.href = url;
+            a.download = fileName;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
             
-            // Close modal
             document.querySelector('.download-modal')?.remove();
-            
             this.showFeedback('Download started!', 'success');
         }
         
     } catch (error) {
-        console.error('❌ Download error:', error);
+        console.error('Download error:', error);
         this.showFeedback('Download failed. Please try again.', 'error');
     }
 }
@@ -1461,10 +1428,116 @@ getFormatDescription(format) {
 }
 
 async handleExport() {
-    console.log('📤 Export functionality');
-    this.showFeedback('Export feature coming soon!', 'info');
+    try {
+        this.showFeedback('Creating export package...', 'info');
+        
+        // Check if JSZip is available
+        if (typeof JSZip === 'undefined') {
+            // Try to load it dynamically
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+            document.head.appendChild(script);
+            await new Promise(resolve => script.onload = resolve);
+        }
+        
+        const zip = new JSZip();
+        const modelName = `Generated_${new Date().toISOString().split('T')[0]}`;
+        const modelFolder = zip.folder(modelName);
+        
+        // Get all format blobs
+        const formats = this.generateState.downloadFormats || ['glb', 'fbx', 'obj', 'usdz'];
+        
+        const downloadPromises = formats.map(async (format) => {
+            try {
+                const modelUrl = `${this.apiBaseUrl}/proxyModel/${this.generateState.taskId}?format=${format}`;
+                const response = await fetch(modelUrl, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    modelFolder.file(`${modelName}.${format}`, blob);
+                    console.log(`Added ${format} to zip`);
+                    return true;
+                }
+            } catch (error) {
+                console.warn(`Failed to add ${format}:`, error);
+                return false;
+            }
+        });
+        
+        await Promise.all(downloadPromises);
+        
+        // Generate the zip
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const zipFileName = `${modelName}_threely_export.zip`;
+        
+        // Check platform
+        if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+            // Mobile: Use native share
+            const { Filesystem, Directory, Share } = window.Capacitor.Plugins;
+            
+            const reader = new FileReader();
+            reader.readAsDataURL(zipBlob);
+            reader.onloadend = async () => {
+                const base64String = reader.result.split(',')[1];
+                
+                // Save to cache temporarily
+                const result = await Filesystem.writeFile({
+                    path: zipFileName,
+                    data: base64String,
+                    directory: Directory.Cache
+                });
+                
+                // Open native share sheet
+                await Share.share({
+                    title: `3D Model Export: ${modelName}`,
+                    text: `Here's my 3D model generated with Threely app. The ZIP contains multiple formats (GLB, FBX, OBJ, USDZ).`,
+                    url: result.uri,
+                    dialogTitle: 'Share your 3D model'
+                });
+                
+                this.showFeedback('Opening share options...', 'success');
+            };
+            
+        } else {
+            // Web: Download ZIP and open email
+            const url = window.URL.createObjectURL(zipBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = zipFileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            // Open email client
+            setTimeout(() => {
+                const emailSubject = encodeURIComponent(`3D Model Export: ${modelName}`);
+                const emailBody = encodeURIComponent(
+                    `Hi,\n\nI'm sharing my 3D model "${modelName}" generated with Threely app.\n\n` +
+                    `The attached ZIP file contains the model in multiple formats:\n` +
+                    `- GLB: Universal 3D format\n` +
+                    `- FBX: Game engine format\n` +
+                    `- OBJ: 3D software format\n` +
+                    `- USDZ: Apple AR format\n\n` +
+                    `Best regards`
+                );
+                window.location.href = `mailto:?subject=${emailSubject}&body=${emailBody}`;
+            }, 1000);
+            
+            this.showFeedback('File downloaded. Email client will open.', 'success', 4000);
+        }
+        
+    } catch (error) {
+        console.error('Export error:', error);
+        this.showFeedback('Export failed. Please try again.', 'error');
+    }
 }
-
 async handleRigAnimate() {
     console.log('🦴 Rig & Animate');
     this.showFeedback('Rigging & Animation feature coming soon!', 'info');

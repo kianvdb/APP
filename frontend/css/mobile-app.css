@@ -2852,9 +2852,7 @@ button, .button, .btn {
     animation-play-state: running;
 }
 
-#aboutSection.active .particle {
-    animation-play-state: running;
-}
+
 
 /* Asset Card Enhancements */
 .mobile-asset-card .asset-preview,
@@ -3136,10 +3134,6 @@ body.reduce-animations * {
     transition-duration: 0.01ms;
 }
 
-body.reduce-animations .particle,
-body.reduce-animations .gradient-orb {
-    animation-play-state: paused;
-}
 
 .model-card,
 .btn,
@@ -3147,13 +3141,7 @@ button {
     transition: all 0.3s ease;
 }
 
-.particle {
-    animation-play-state: running;
-}
 
-.about-container:not(.active) .particle {
-    display: none;
-}
 
 /* Stagger Animations */
 .mobile-asset-card:nth-child(1),
