@@ -80,7 +80,7 @@ constructor() {
 
             <!-- Asset Info Overlay (Top Left) -->
           <!-- Asset Info Overlay (Top Left) -->
-<div class="asset-info-overlay" id="assetInfoOverlay" style="display: block; opacity: 1;">
+<div class="asset-info-overlay" id="assetInfoOverlay">
                 <div class="asset-info-content">
                     <h3 class="asset-title" id="assetTitle">Loading...</h3>
                     <div class="asset-details">
@@ -216,11 +216,7 @@ constructor() {
         : `http://${window.location.hostname}:3000/api`;
 }
    showViewer() {
-    const infoOverlay = document.getElementById('assetInfoOverlay');
-if (infoOverlay) {
-    infoOverlay.style.display = 'block';
-    infoOverlay.style.opacity = '1';
-}
+
     const overlay = document.getElementById('mobileAssetViewer');
     if (overlay) {
         // Make sure it's visible
@@ -1102,7 +1098,12 @@ init3DScene() {
             
             // Add to scene
             this.scene.add(this.model);
-            
+            const infoOverlay = document.getElementById('assetInfoOverlay');
+if (infoOverlay) {
+    setTimeout(() => {
+        infoOverlay.classList.add('loaded');
+    }, 100);
+}
             // Hide loading state
             this.hideLoadingState();
             
@@ -1243,17 +1244,32 @@ frameModel() {
     }
 }
 async handleDownload() {
-    console.log('📥 Opening download modal...');
+    console.log('Download button clicked');
+    console.log('Auth manager available:', !!window.authManager);
     
-    // Show format modal directly (you can add auth check back if needed)
+    const isAuthenticated = await this.checkAuthentication();
+    console.log('Is authenticated:', isAuthenticated);
+    
+    if (!isAuthenticated) {
+        console.log('Not authenticated, should show login modal');
+        if (window.authManager) {
+            console.log('Showing auth manager login modal');
+            window.authManager.showLoginModal();
+        } else {
+            console.log('No auth manager, showing feedback');
+            this.showFeedback('Please log in to download models', 'error');
+        }
+        return;
+    }
+    
+    // Show format modal directly
     const modal = document.getElementById('downloadFormatModal');
     if (modal) {
         modal.style.display = 'flex';
-        modal.style.opacity = '1';  // Add this
-        modal.style.visibility = 'visible';  // Add this
+        modal.style.opacity = '1';
+        modal.style.visibility = 'visible';
         modal.classList.add('active');
         
-        // Ensure content is visible too
         const modalContent = modal.querySelector('.download-modal-content');
         if (modalContent) {
             modalContent.style.opacity = '1';
@@ -1261,11 +1277,18 @@ async handleDownload() {
         }
     }
 }
-
-   async downloadAsset(format) {
-    console.log('📥 Downloading format:', format);
+ async downloadAsset(format) {
+    console.log('Downloading format:', format);
     
     this.closeDownloadModal();
+    
+    const isAuthenticated = await this.checkAuthentication();
+    if (!isAuthenticated) {
+        if (window.authManager) {
+            window.authManager.showLoginModal();
+        }
+        return;
+    }
     
     try {
         this.showFeedback('Preparing download...', 'info');
@@ -1285,59 +1308,110 @@ async handleDownload() {
             headers['Authorization'] = `Bearer ${authToken}`;
         }
         
-        const response = await fetch(downloadUrl, {
-            method: 'GET',
-            credentials: 'include',
-            headers: headers
-        });
+        // Get download URL from server (server should return JSON)
+        console.log(`Fetching download URL from: ${downloadUrl}`);
         
+        let response;
+        try {
+            response = await fetch(downloadUrl, {
+                method: 'GET',
+                credentials: 'include',
+                headers: headers
+            });
+        } catch (fetchError) {
+            console.error('Failed to fetch from server:', fetchError);
+            throw new Error(`Server request failed: ${fetchError.message}`);
+        }
+
+        let blob;
+
         if (!response.ok) {
-            throw new Error(`Download failed: ${response.status}`);
+            console.error(`Server returned error status: ${response.status}`);
+            let errorMessage = `Download failed: ${response.status}`;
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorMessage;
+            } catch (e) {
+                // Couldn't parse error response
+            }
+            throw new Error(errorMessage);
+        }
+
+        // Server returns JSON with the download URL
+        let data;
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            console.error('Failed to parse JSON response:', jsonError);
+            console.error('Response might be a redirect - server needs to be updated to return JSON');
+            throw new Error('Server must return JSON with downloadUrl, not redirect');
         }
         
-        const blob = await response.blob();
+        const fileUrl = data.downloadUrl;
         
-        // Check if running on mobile (Capacitor)
-        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            console.log('📱 Mobile download detected, saving to device...');
+        if (!fileUrl) {
+            throw new Error('No download URL in response');
+        }
+        
+        console.log(`Got download URL for ${format}:`, {
+            url: fileUrl,
+            isCloudinary: data.isCloudinary,
+            isProxy: data.isProxy,
+            isMeshy: data.isMeshy
+        });
+        
+        // Fetch the file - use 'omit' credentials for Cloudinary
+        console.log(`Fetching file with credentials: ${data.isCloudinary ? 'omit' : 'include'}`);
+        
+        let fileResponse;
+        try {
+            fileResponse = await fetch(fileUrl, {
+                method: 'GET',
+                mode: 'cors',
+                credentials: data.isCloudinary ? 'omit' : 'include'
+            });
+        } catch (downloadError) {
+            console.error('Failed to download file:', downloadError);
+            throw new Error(`File download failed: ${downloadError.message}`);
+        }
+        
+        if (!fileResponse.ok) {
+            console.error(`File server returned error: ${fileResponse.status}`);
+            throw new Error(`File download failed: ${fileResponse.status}`);
+        }
+        
+        blob = await fileResponse.blob();
+        console.log(`Successfully downloaded ${format} (${(blob.size / 1024 / 1024).toFixed(2)} MB)`);
+        
+        const fileName = `${this.currentAsset.name || 'model'}.${format}`;
+        
+        // Mobile vs Web download handling
+        if (typeof window.Capacitor !== 'undefined' && window.Capacitor.isNativePlatform()) {
+            // Mobile download
+            const { Filesystem, Directory } = window.Capacitor.Plugins;
             
-            try {
-                // Import Filesystem plugin
-                const { Filesystem, Directory } = Capacitor.Plugins;
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = async () => {
+                const base64String = reader.result.split(',')[1];
+                const date = new Date().toISOString().split('T')[0];
+                const fullFileName = `${this.currentAsset.name || 'model'}_${date}.${format}`;
                 
-                // Convert blob to base64
-                const reader = new FileReader();
-                reader.readAsDataURL(blob);
-                reader.onloadend = async () => {
-                    const base64String = reader.result.split(',')[1];
-                    
-                    // Generate filename with readable date
-                    const date = new Date().toISOString().split('T')[0];
-                    const fileName = `${this.currentAsset.name || 'model'}_${date}.${format}`;
-                    
-                    // Save to Documents directory
-                    const result = await Filesystem.writeFile({
-                        path: `Threely/${fileName}`, // Creates Threely folder in Documents
-                        data: base64String,
-                        directory: Directory.Documents,
-                        recursive: true // Create directory if it doesn't exist
-                    });
-                    
-                    console.log('✅ File saved to:', result.uri);
-                    this.showFeedback(`Saved to Documents/Threely/${fileName}`, 'success', 4000);
-                };
+                const result = await Filesystem.writeFile({
+                    path: `Threely/${fullFileName}`,
+                    data: base64String,
+                    directory: Directory.Documents,
+                    recursive: true
+                });
                 
-            } catch (fsError) {
-                console.error('❌ Filesystem error:', fsError);
-                this.showFeedback('Failed to save file', 'error');
-            }
-            
+                this.showFeedback(`Saved to Documents/Threely/${fullFileName}`, 'success', 4000);
+            };
         } else {
-            // Web browser
+            // Web download
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${this.currentAsset.name || 'asset'}.${format}`;
+            a.download = fileName;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -1347,17 +1421,105 @@ async handleDownload() {
         }
         
     } catch (error) {
-        console.error('❌ Download error:', error);
+        console.error('Download error:', error);
         this.showFeedback('Download failed. Please try again.', 'error');
     }
 }
 
-    async handleShare() {
+// Helper method to show download options on mobile
+async showMobileDownloadOptions(fileName) {
+    return new Promise((resolve) => {
+        // Create a simple modal asking if user wants to share
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50000;
+            padding: 2rem;
+        `;
+        
+        modal.innerHTML = `
+            <div style="
+                background: rgba(10,10,10,0.95);
+                border-radius: 16px;
+                padding: 2rem;
+                max-width: 320px;
+                text-align: center;
+                border: 1px solid rgba(0,188,212,0.3);
+            ">
+                <h3 style="color: white; font-family: 'Sora', sans-serif; margin-bottom: 1rem;">File Saved!</h3>
+                <p style="color: rgba(255,255,255,0.7); margin-bottom: 2rem; line-height: 1.4;">
+                    ${fileName} has been saved to your device. Would you like to share it?
+                </p>
+                <div style="display: flex; gap: 1rem;">
+                    <button id="shareBtn" style="
+                        flex: 1;
+                        background: #00bcd4;
+                        color: white;
+                        border: none;
+                        padding: 0.8rem;
+                        border-radius: 8px;
+                        font-weight: 600;
+                    ">Share</button>
+                    <button id="closeBtn" style="
+                        flex: 1;
+                        background: rgba(255,255,255,0.1);
+                        color: white;
+                        border: 1px solid rgba(255,255,255,0.2);
+                        padding: 0.8rem;
+                        border-radius: 8px;
+                    ">Close</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        modal.querySelector('#shareBtn').onclick = () => {
+            document.body.removeChild(modal);
+            resolve(true);
+        };
+        
+        modal.querySelector('#closeBtn').onclick = () => {
+            document.body.removeChild(modal);
+            resolve(false);
+        };
+        
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+            if (document.body.contains(modal)) {
+                document.body.removeChild(modal);
+                resolve(false);
+            }
+        }, 5000);
+    });
+}
+
+async handleShare() {
+    // Check authentication first
+    const isAuthenticated = await this.checkAuthentication();
+    if (!isAuthenticated) {
+        console.log('User not authenticated for sharing');
+        if (window.authManager) {
+            window.authManager.showLoginModal();
+        } else {
+            this.showFeedback('Please log in to share models', 'error');
+        }
+        return;
+    }
+    
     try {
         this.showFeedback('Creating export package...', 'info');
         
-        // Import JSZip
-        const JSZip = (await import('jszip')).default;
+        // Check if JSZip is available
+        if (typeof JSZip === 'undefined') {
+            throw new Error('JSZip library not loaded');
+        }
+        
         const zip = new JSZip();
         
         const apiUrl = this.getApiBaseUrl();
@@ -1371,124 +1533,169 @@ async handleDownload() {
         // Create a folder in the zip
         const modelFolder = zip.folder(modelName);
         
-        // Download all formats
-        const downloadPromises = formats.map(async (format) => {
-            try {
-                let downloadUrl;
-                if (this.currentAsset.meshyTaskId) {
-                    downloadUrl = `${apiUrl}/assets/meshy/${this.currentAsset.meshyTaskId}/download?format=${format}`;
-                } else {
-                    downloadUrl = `${apiUrl}/assets/${this.currentAssetId}/download?format=${format}`;
-                }
-                
-                const response = await fetch(downloadUrl, {
-                    method: 'GET',
-                    credentials: 'include',
-                    headers: headers
-                });
-                
-                if (response.ok) {
-                    const blob = await response.blob();
-                    modelFolder.file(`${modelName}.${format}`, blob);
-                    console.log(`✅ Added ${format} to zip`);
-                    return true;
-                }
-            } catch (error) {
-                console.warn(`Failed to add ${format}:`, error);
-                return false;
-            }
+     // Replace the downloadPromises section in handleShare with this:
+const downloadPromises = formats.map(async (format) => {
+    try {
+        let downloadUrl;
+        if (this.currentAsset.meshyTaskId) {
+            downloadUrl = `${apiUrl}/assets/meshy/${this.currentAsset.meshyTaskId}/download?format=${format}`;
+        } else {
+            downloadUrl = `${apiUrl}/assets/${this.currentAssetId}/download?format=${format}`;
+        }
+        
+        // Get download URL from server (server should return JSON)
+        console.log(`Fetching download URL from: ${downloadUrl}`);
+        
+        let response;
+        try {
+            response = await fetch(downloadUrl, {
+                method: 'GET',
+                credentials: 'include',
+                headers: headers
+            });
+        } catch (fetchError) {
+            console.error(`Failed to fetch ${format} from server:`, fetchError);
+            return false;
+        }
+        
+        let blob;
+        
+        if (!response.ok) {
+            console.error(`Server error for ${format}: ${response.status}`);
+            return false;
+        }
+
+        // Server returns JSON with the download URL
+        let data;
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            console.error(`Failed to parse JSON for ${format}:`, jsonError);
+            return false;
+        }
+        
+        const fileUrl = data.downloadUrl;
+        
+        if (!fileUrl) {
+            console.error(`No download URL for ${format}`);
+            return false;
+        }
+        
+        console.log(`Got download URL for ${format}:`, {
+            url: fileUrl,
+            isCloudinary: data.isCloudinary
         });
+        
+        // Fetch the file - use 'omit' credentials for Cloudinary
+        let fileResponse;
+        try {
+            fileResponse = await fetch(fileUrl, {
+                method: 'GET',
+                mode: 'cors',
+                credentials: data.isCloudinary ? 'omit' : 'include'
+            });
+        } catch (downloadError) {
+            console.error(`Failed to download ${format}:`, downloadError);
+            return false;
+        }
+        
+        if (!fileResponse.ok) {
+            console.error(`File server error for ${format}: ${fileResponse.status}`);
+            return false;
+        }
+        
+        blob = await fileResponse.blob();
+        console.log(`Downloaded ${format} (${(blob.size / 1024 / 1024).toFixed(2)} MB)`);
+        
+        if (blob) {
+            modelFolder.file(`${modelName}.${format}`, blob);
+            console.log(`Added ${format} to zip`);
+            return true;
+        }
+        
+    } catch (error) {
+        console.warn(`Failed to add ${format}:`, error);
+        return false;
+    }
+});
         
         await Promise.all(downloadPromises);
         
-        // Add a README file with asset info
-        const readme = `
-3D Model: ${modelName}
-Exported from: Threely App
-Date: ${new Date().toLocaleDateString()}
-
-Included Formats:
-- GLB: Universal 3D format (recommended for web)
-- FBX: Autodesk format (for game engines)
-- OBJ: Wavefront format (for 3D software)
-- USDZ: Apple AR format (for iOS devices)
-
-Model Statistics:
-- Views: ${this.currentAsset.views || 0}
-- Downloads: ${this.currentAsset.downloads || 0}
-- Polygons: ${this.currentAsset.polygons || this.currentAsset.polycount || 'N/A'}
-
-Tags: ${this.currentAsset.tags?.join(', ') || 'None'}
-
-Thank you for using Threely!
-        `;
-        
-        modelFolder.file('README.txt', readme);
-        
+        // Remove the README file creation - just generate the zip
         // Generate the zip file
         const zipBlob = await zip.generateAsync({ type: 'blob' });
         const zipFileName = `${modelName}_threely_export.zip`;
         
-        // Check platform
-        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            // Mobile: Open email with attachment
-            this.openEmailWithAttachment(zipBlob, zipFileName, modelName);
-        } else {
-            // Web: Download the zip
-            const url = window.URL.createObjectURL(zipBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = zipFileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            
-            this.showFeedback('Export package downloaded!', 'success');
-        }
+        // Always open email with attachment (works for both mobile and web)
+        this.openEmailWithAttachment(zipBlob, zipFileName, modelName);
         
     } catch (error) {
-        console.error('❌ Export error:', error);
+        console.error('Export error:', error);
         this.showFeedback('Export failed. Please try again.', 'error');
     }
 }
 
 async openEmailWithAttachment(zipBlob, fileName, modelName) {
     try {
-        // For Capacitor, we need to save the file first, then share it
-        const { Filesystem, Directory } = Capacitor.Plugins;
-        
-        // Convert blob to base64
-        const reader = new FileReader();
-        reader.readAsDataURL(zipBlob);
-        reader.onloadend = async () => {
-            const base64String = reader.result.split(',')[1];
+        // Check if running in Capacitor environment
+       if (typeof window.Capacitor !== 'undefined' && window.Capacitor.isNativePlatform()) {
+            // Mobile: Use Capacitor Share plugin
+            const { Filesystem, Directory, Share } = window.Capacitor.Plugins;
             
-            // Save temporarily
-            const result = await Filesystem.writeFile({
-                path: fileName,
-                data: base64String,
-                directory: Directory.Cache
-            });
+            // Convert blob to base64
+            const reader = new FileReader();
+            reader.readAsDataURL(zipBlob);
+            reader.onloadend = async () => {
+                const base64String = reader.result.split(',')[1];
+                
+                // Save temporarily
+                const result = await Filesystem.writeFile({
+                    path: fileName,
+                    data: base64String,
+                    directory: Directory.Cache
+                });
+                
+                // Use Capacitor Share plugin
+                await Share.share({
+                    title: `3D Model Export: ${modelName}`,
+                    text: `Here's your 3D model "${modelName}" exported from Threely app. The ZIP file contains multiple formats (GLB, FBX, OBJ, USDZ).`,
+                    url: result.uri,
+                    dialogTitle: 'Share your 3D model'
+                });
+                
+                this.showFeedback('Opening share options...', 'success');
+            };
             
-            // Use Capacitor Share plugin
-            const { Share } = Capacitor.Plugins;
+        } else {
+            // Web: Create mailto link and download file
+            const emailSubject = encodeURIComponent(`3D Model Export: ${modelName}`);
+            const emailBody = encodeURIComponent(`Hi,\n\nI'm sharing my 3D model "${modelName}" exported from Threely app.\n\nThe attached ZIP file contains the model in multiple formats:\n- GLB: Universal 3D format\n- FBX: Game engine format\n- OBJ: 3D software format\n- USDZ: Apple AR format\n\nBest regards`);
             
-            await Share.share({
-                title: `3D Model Export: ${modelName}`,
-                text: `Here's your 3D model "${modelName}" exported from Threely app. The ZIP file contains GLB, FBX, OBJ, and USDZ formats.`,
-                url: result.uri,
-                dialogTitle: 'Share your 3D model'
-            });
+            // Create a download link for the user to save the file first
+            const url = window.URL.createObjectURL(zipBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
             
-            this.showFeedback('Opening share options...', 'success');
-        };
+            // Then open email client
+            setTimeout(() => {
+                window.location.href = `mailto:?subject=${emailSubject}&body=${emailBody}`;
+            }, 1000);
+            
+            this.showFeedback('File downloaded. Email client will open shortly.', 'success', 4000);
+        }
         
     } catch (error) {
-        console.error('❌ Email share error:', error);
+        console.error('Email share error:', error);
         this.showFeedback('Could not open share options', 'error');
     }
 }
+
+
 
 toggleInfo() {
     const infoOverlay = document.getElementById('assetInfoOverlay');
@@ -1503,8 +1710,15 @@ toggleInfo() {
         }
     }
 }
- async checkAuthentication() {
+async checkAuthentication() {
     try {
+        // Use the global auth manager if available
+        if (window.authManager) {
+            await window.authManager.waitForAuthCheck();
+            return window.authManager.isAuthenticated();
+        }
+        
+        // Fallback: direct API check
         const apiUrl = this.getApiBaseUrl();
         const authToken = localStorage.getItem('authToken');
         
@@ -1524,7 +1738,7 @@ toggleInfo() {
         
         return response.ok;
     } catch (error) {
-        console.error('❌ Auth check error:', error);
+        console.error('Auth check error:', error);
         return false;
     }
 }

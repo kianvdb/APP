@@ -647,7 +647,7 @@
         
         const loadingText = document.getElementById('loadingText');
         if (loadingText && loadingText.textContent.includes('3D')) {
-            loadingText.textContent = `Loading 3D environment... ${percent}%`;
+            loadingText.textContent = `Loading 3D environment...`;
         }
     }
     

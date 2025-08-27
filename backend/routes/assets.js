@@ -1441,8 +1441,6 @@ router.get('/:id/formats', optionalAuthMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Failed to get available formats' });
   }
 });
-// FIXED: GET /api/assets/:id/download - Download asset file with admin permissions and proxy support
-// FIXED: GET /api/assets/:id/download - Download asset file with admin permissions and working Cloudinary downloads
 router.get('/:id/download', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
@@ -1490,7 +1488,7 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
     console.log('  - Is Public:', asset.isPublic);
     console.log('  - User ID:', asset.userId || 'None');
     
-    // CRITICAL FIX: Check if user is admin FIRST
+    // Check if user is admin FIRST
     const isAdmin = req.user && req.user.isAdmin;
     console.log('👑 Is user admin?', isAdmin);
     
@@ -1516,9 +1514,10 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
     
     // Get the model file for the requested format
     let modelFile = null;
+    let downloadUrl = null;
     let downloadMethod = null;
     
-    console.log('🔍 Determining download method...');
+    console.log('🔍 Determining download URL...');
     
     // Method 1: Check new modelFiles structure
     if (asset.modelFiles && asset.modelFiles[format]) {
@@ -1526,31 +1525,31 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
       downloadMethod = `modelFiles.${format}`;
       console.log(`✅ Method 1: Found ${format} in modelFiles:`, {
         hasUrl: !!modelFile.url,
-        url: modelFile.url,
-        fullObject: modelFile
+        url: modelFile.url
       });
       
-      // CRITICAL FIX: Validate URL exists
-      if (!modelFile.url) {
+      if (modelFile.url) {
+        downloadUrl = modelFile.url;
+      } else {
         console.log('❌ Model file found but URL is missing, trying fallback...');
-        modelFile = null; // Reset to try other methods
+        modelFile = null;
       }
     }
     
-    // Method 2: Check legacy modelFile for GLB (if Method 1 failed)
-    if (!modelFile && format === 'glb' && asset.modelFile && asset.modelFile.url) {
+    // Method 2: Check legacy modelFile for GLB
+    if (!downloadUrl && format === 'glb' && asset.modelFile && asset.modelFile.url) {
       modelFile = asset.modelFile;
+      downloadUrl = asset.modelFile.url;
       downloadMethod = 'legacy modelFile';
-      console.log('✅ Method 2: Found GLB in legacy modelFile:', modelFile.url);
+      console.log('✅ Method 2: Found GLB in legacy modelFile:', downloadUrl);
       
-      // CRITICAL FIX: If modelFiles.glb exists but has no URL, fix it
+      // Fix modelFiles.glb if needed
       if (asset.modelFiles && asset.modelFiles.glb && !asset.modelFiles.glb.url) {
         console.log('🔧 Fixing modelFiles.glb URL from legacy modelFile...');
         asset.modelFiles.glb.url = modelFile.url;
         asset.modelFiles.glb.publicId = modelFile.publicId || asset.modelFiles.glb.publicId;
         asset.modelFiles.glb.size = modelFile.size || asset.modelFiles.glb.size;
         
-        // Save the fix
         try {
           await asset.save();
           console.log('✅ Fixed and saved modelFiles.glb URL');
@@ -1560,35 +1559,30 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
       }
     }
     
-    // NEW: Check if the found URL is a proxy URL (already set up for CORS bypass)
-    if (modelFile && modelFile.url && modelFile.url.startsWith('/api/proxyModel/')) {
-      console.log('✅ Found proxy URL, no additional redirect needed');
-      console.log('🔗 Proxy URL:', modelFile.url);
-      // Proxy URLs are relative, so just redirect to them
-      return res.redirect(modelFile.url);
+    // Handle proxy URLs
+    if (downloadUrl && downloadUrl.startsWith('/api/proxyModel/')) {
+      console.log('✅ Found relative proxy URL, making it absolute');
+      const protocol = req.protocol;
+      const host = req.get('host');
+      downloadUrl = `${protocol}://${host}${downloadUrl}`;
     }
     
-    // NEW: Check if the found URL is a Meshy URL that needs proxying
-    if (modelFile && modelFile.url && 
-        (modelFile.url.includes('meshy.ai') || modelFile.url.includes('assets.meshy.ai')) && 
-        asset.meshyTaskId) {
-      console.log('⚠️ Found Meshy URL in saved asset, needs proxy');
-      console.log('🔄 Redirecting to proxy endpoint for CORS bypass');
-      const proxyUrl = `/api/proxyModel/${asset.meshyTaskId}?format=${format}`;
-      console.log('🔄 Proxy URL:', proxyUrl);
-      return res.redirect(proxyUrl);
+    // Handle Meshy URLs that need proxying
+    if (downloadUrl && (downloadUrl.includes('meshy.ai') || downloadUrl.includes('assets.meshy.ai')) && asset.meshyTaskId) {
+      console.log('⚠️ Found Meshy URL, converting to proxy URL');
+      const protocol = req.protocol;
+      const host = req.get('host');
+      downloadUrl = `${protocol}://${host}/api/proxyModel/${asset.meshyTaskId}?format=${format}`;
     }
     
-    // Method 3: Check if we need proxy (only for completely unsaved Meshy assets)
-    if (!modelFile && asset.meshyTaskId && ['glb', 'fbx', 'obj', 'usdz'].includes(format)) {
-      // Double-check: if it's a saved asset, it should have modelFiles
+    // Method 3: Check if we need proxy for unsaved Meshy assets
+    if (!downloadUrl && asset.meshyTaskId && ['glb', 'fbx', 'obj', 'usdz'].includes(format)) {
       if (!asset.modelFiles || Object.keys(asset.modelFiles).length === 0) {
-        // This is an unsaved Meshy asset, use proxy
         downloadMethod = 'meshy proxy (unsaved)';
-        console.log('✅ Method 3: Unsaved Meshy asset detected, redirecting to proxy endpoint');
-        const proxyUrl = `/api/proxyModel/${asset.meshyTaskId}?format=${format}`;
-        console.log('🔄 Redirecting to:', proxyUrl);
-        return res.redirect(proxyUrl);
+        console.log('✅ Method 3: Unsaved Meshy asset detected, creating proxy URL');
+        const protocol = req.protocol;
+        const host = req.get('host');
+        downloadUrl = `${protocol}://${host}/api/proxyModel/${asset.meshyTaskId}?format=${format}`;
       } else {
         console.log('❌ Method 3: Meshy asset has saved files, continuing to find them...');
       }
@@ -1596,20 +1590,13 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
     
     console.log('📋 Download method determined:', downloadMethod);
     
-    if (!modelFile || !modelFile.url) {
-      console.log('❌ Model file not found or URL missing for format:', format);
+    if (!downloadUrl) {
+      console.log('❌ Download URL not found for format:', format);
       console.log('🔍 Detailed asset structure:');
       console.log('  - Asset name:', asset.name);
       console.log('  - Asset ID:', asset._id);
-      console.log('  - Has modelFile:', !!asset.modelFile);
-      console.log('  - ModelFile structure:', JSON.stringify(asset.modelFile, null, 2));
-      console.log('  - Has modelFiles:', !!asset.modelFiles);
-      console.log('  - ModelFiles structure:', JSON.stringify(asset.modelFiles, null, 2));
-      console.log('  - Available formats:', asset.availableFormats);
-      console.log('  - Is Meshy:', !!asset.meshyTaskId);
       console.log('  - Requested format:', format);
       
-      // Check if format is available
       const availableFormats = asset.availableFormats || ['glb'];
       if (!availableFormats.includes(format)) {
         console.log('❌ Format not available:', format, 'Available:', availableFormats);
@@ -1632,23 +1619,18 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
         debug: {
           assetName: asset.name,
           requestedFormat: format,
-          downloadMethod: downloadMethod,
-          modelFileExists: !!modelFile,
-          modelFileUrl: modelFile?.url,
-          modelFileStructure: modelFile
+          downloadMethod: downloadMethod
         }
       });
     }
     
-    console.log('✅ Model file found with valid URL:', modelFile.url);
+    console.log('✅ Download URL found:', downloadUrl);
     
     // Increment download count
     const oldDownloads = asset.downloads || 0;
     asset.downloads = oldDownloads + 1;
     await asset.save();
     console.log('📊 Download count incremented:', oldDownloads, '→', asset.downloads);
-    
-    console.log('🔗 Processing model URL for', format.toUpperCase() + ':', modelFile.url);
     
     // Set appropriate content type based on format
     const contentTypes = {
@@ -1661,235 +1643,22 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
     const contentType = contentTypes[format] || 'application/octet-stream';
     console.log('📄 Content type for', format + ':', contentType);
     
-    // Handle different URL types
-    if (modelFile.url.includes('cloudinary.com')) {
-      console.log('☁️ Handling Cloudinary URL...');
-      
-      try {
-        // First, try the direct URL without modifications to check if file exists
-        const directUrl = modelFile.url;
-        console.log('🔍 Checking if file exists at:', directUrl);
-        
-        try {
-          const checkResponse = await axios.head(directUrl, {
-            timeout: 5000,
-            validateStatus: null
-          });
-          
-          console.log('📋 File check response:', {
-            status: checkResponse.status,
-            headers: checkResponse.headers
-          });
-          
-          if (checkResponse.status === 404) {
-            console.error('❌ File does not exist on Cloudinary');
-            return res.status(404).json({ 
-              error: 'File not found',
-              message: 'The 3D model file no longer exists on the storage server.',
-              assetName: asset.name,
-              format: format.toUpperCase()
-            });
-          }
-        } catch (checkError) {
-          console.warn('⚠️ Could not check file existence:', checkError.message);
-        }
-        
-        // Try different download methods in order
-        let downloadSuccess = false;
-        
-        // Method 1: Try with fl_attachment flag (standard Cloudinary method)
-        if (!downloadSuccess) {
-          try {
-            let downloadUrl = modelFile.url;
-            
-            // Add attachment flag to Cloudinary URL
-            if (downloadUrl.includes('/upload/')) {
-              const parts = downloadUrl.split('/upload/');
-              downloadUrl = parts[0] + '/upload/fl_attachment/' + parts[1];
-            } else {
-              downloadUrl = downloadUrl.includes('?') 
-                ? downloadUrl + '&fl=attachment' 
-                : downloadUrl + '?fl=attachment';
-            }
-            
-            console.log('📥 Method 1: Trying download with fl_attachment:', downloadUrl);
-            
-            const response = await axios({
-              method: 'GET',
-              url: downloadUrl,
-              responseType: 'stream',
-              timeout: 30000,
-              headers: {
-                'User-Agent': 'DALMA-AI-Server/1.0'
-              },
-              validateStatus: (status) => status < 500
-            });
-            
-            if (response.status === 200) {
-              console.log('✅ Method 1 successful: Streaming with fl_attachment');
-              
-              res.setHeader('Content-Type', contentType);
-              res.setHeader('Content-Disposition', `attachment; filename="${asset.name.replace(/[^a-zA-Z0-9-_]/g, '_')}.${format}"`);
-              res.setHeader('Cache-Control', 'no-cache');
-              
-              if (response.headers['content-length']) {
-                res.setHeader('Content-Length', response.headers['content-length']);
-              }
-              
-              response.data.pipe(res);
-              downloadSuccess = true;
-              console.log('✅ Streaming file to client with fl_attachment');
-            } else {
-              console.log('❌ Method 1 failed with status:', response.status);
-            }
-          } catch (method1Error) {
-            console.log('❌ Method 1 failed:', method1Error.message);
-          }
-        }
-        
-        // Method 2: Try direct URL without fl_attachment
-        if (!downloadSuccess) {
-          try {
-            console.log('📥 Method 2: Trying direct URL without fl_attachment');
-            
-            const response = await axios({
-              method: 'GET',
-              url: modelFile.url, // Use original URL without modifications
-              responseType: 'stream',
-              timeout: 30000,
-              headers: {
-                'User-Agent': 'DALMA-AI-Server/1.0'
-              }
-            });
-            
-            console.log('✅ Method 2 successful: Got file from direct URL');
-            
-            // Set headers to force download
-            res.setHeader('Content-Type', contentType);
-            res.setHeader('Content-Disposition', `attachment; filename="${asset.name.replace(/[^a-zA-Z0-9-_]/g, '_')}.${format}"`);
-            res.setHeader('Cache-Control', 'no-cache');
-            
-            if (response.headers['content-length']) {
-              res.setHeader('Content-Length', response.headers['content-length']);
-            }
-            
-            response.data.pipe(res);
-            downloadSuccess = true;
-            console.log('✅ Streaming file to client from direct URL');
-            
-          } catch (method2Error) {
-            console.log('❌ Method 2 failed:', method2Error.message);
-          }
-        }
-        
-        // Method 3: If streaming fails, try to download and send as buffer
-        if (!downloadSuccess) {
-          try {
-            console.log('📥 Method 3: Downloading file as buffer');
-            
-            const response = await axios({
-              method: 'GET',
-              url: modelFile.url,
-              responseType: 'arraybuffer',
-              timeout: 60000,
-              headers: {
-                'User-Agent': 'DALMA-AI-Server/1.0'
-              },
-              maxContentLength: 100 * 1024 * 1024, // 100MB max
-              maxBodyLength: 100 * 1024 * 1024
-            });
-            
-            console.log('✅ Method 3 successful: Got file as buffer, size:', response.data.length);
-            
-            // Send as download
-            res.setHeader('Content-Type', contentType);
-            res.setHeader('Content-Disposition', `attachment; filename="${asset.name.replace(/[^a-zA-Z0-9-_]/g, '_')}.${format}"`);
-            res.setHeader('Content-Length', response.data.length);
-            res.setHeader('Cache-Control', 'no-cache');
-            
-            res.send(Buffer.from(response.data));
-            downloadSuccess = true;
-            console.log('✅ Sent file as buffer');
-            
-          } catch (method3Error) {
-            console.log('❌ Method 3 failed:', method3Error.message);
-          }
-        }
-        
-        // Method 4: Last resort - redirect directly to Cloudinary URL
-        if (!downloadSuccess && !res.headersSent) {
-          console.log('📥 Method 4: Redirecting directly to Cloudinary URL');
-          console.log('🔗 Redirect URL:', modelFile.url);
-          
-          // Add a download parameter to the URL
-          const redirectUrl = modelFile.url.includes('?') 
-            ? modelFile.url + '&download=1' 
-            : modelFile.url + '?download=1';
-          
-          return res.redirect(redirectUrl);
-        }
-        
-        if (!downloadSuccess && !res.headersSent) {
-          console.error('❌ All download methods failed');
-          return res.status(500).json({ 
-            error: 'Failed to download file',
-            message: 'Unable to download the file. The file exists but cannot be retrieved for download.',
-            assetName: asset.name,
-            format: format.toUpperCase(),
-            suggestion: 'Try refreshing the page and downloading again, or contact support if the issue persists.'
-          });
-        }
-        
-      } catch (error) {
-        console.error('❌ Unexpected error in Cloudinary handler:', error.message);
-        console.error('📍 Stack:', error.stack);
-        
-        if (!res.headersSent) {
-          return res.status(500).json({ 
-            error: 'Download failed',
-            message: 'An unexpected error occurred while downloading the file.',
-            details: error.message
-          });
-        }
-      }
-      
-    } else if (modelFile.url.includes('meshy.ai') || modelFile.url.includes('assets.meshy.ai')) {
-      // This case should have been caught earlier, but as a safety net
-      console.log('⚠️ Meshy URL detected late in process');
-      if (asset.meshyTaskId) {
-        console.log('🔄 Redirecting to proxy for Meshy URL');
-        return res.redirect(`/api/proxyModel/${asset.meshyTaskId}?format=${format}`);
-      } else {
-        console.log('❌ Meshy URL found but no task ID available');
-        return res.status(500).json({ 
-          error: 'Meshy URL requires proxy but task ID not found' 
-        });
-      }
-    } else if (modelFile.url.startsWith('/api/')) {
-      // Relative API URL (like proxy URLs)
-      console.log('🔗 Handling relative API URL...');
-      console.log('🔄 Redirecting to:', modelFile.url);
-      return res.redirect(modelFile.url);
-    } else if (modelFile.url.startsWith('http')) {
-      // Direct URL from other services
-      console.log('🔗 Handling direct HTTP URL...');
-      console.log('🔄 Redirecting to:', modelFile.url);
-      return res.redirect(modelFile.url);
-    } else if (modelFile.url.includes('memory://')) {
-      console.log('❌ Memory URL not downloadable:', modelFile.url);
-      return res.status(404).json({ 
-        error: 'File not available for download (stored in memory only)',
-        debug: {
-          assetName: asset.name,
-          modelFileUrl: modelFile.url
-        }
-      });
-    } else {
-      // Unknown URL format
-      console.log('⚠️ Unknown URL format, attempting direct redirect...');
-      console.log('🔄 Redirecting to:', modelFile.url);
-      return res.redirect(modelFile.url);
-    }
+    // IMPORTANT: Return JSON response instead of redirecting
+    const responseData = {
+      downloadUrl: downloadUrl,
+      format: format,
+      filename: `${asset.name || 'model'}.${format}`,
+      isCloudinary: downloadUrl.includes('cloudinary.com'),
+      isMeshy: downloadUrl.includes('meshy.ai') || downloadUrl.includes('/api/proxyModel/'),
+      isProxy: downloadUrl.includes('/api/proxyModel/'),
+      contentType: contentType,
+      assetName: asset.name,
+      assetId: asset._id
+    };
+    
+    console.log('📤 Returning JSON response:', responseData);
+    
+    return res.json(responseData);
     
   } catch (error) {
     console.error('❌ CRITICAL DOWNLOAD ERROR:', error.message);
@@ -1901,12 +1670,54 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
       stack: error.stack
     });
     res.status(500).json({ 
-      error: 'Failed to download asset', 
+      error: 'Failed to process download request', 
       details: error.message,
       debug: {
         errorName: error.name,
         errorCode: error.code
       }
+    });
+  }
+});
+
+// Add this new route for Meshy proxy downloads if you want a dedicated endpoint
+router.get('/meshy/:taskId/download', authMiddleware, async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { format = 'glb' } = req.query;
+    
+    console.log('📥 Meshy download request for taskId:', taskId, 'format:', format);
+    
+    // Build the full proxy URL
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const downloadUrl = `${protocol}://${host}/api/proxyModel/${taskId}?format=${format}`;
+    
+    // Return JSON with the proxy URL
+    const responseData = {
+      downloadUrl: downloadUrl,
+      format: format,
+      filename: `model.${format}`,
+      isCloudinary: false,
+      isMeshy: true,
+      isProxy: true,
+      contentType: {
+        glb: 'model/gltf-binary',
+        fbx: 'application/octet-stream',  
+        obj: 'application/octet-stream',
+        usdz: 'model/vnd.usdz+zip'
+      }[format] || 'application/octet-stream'
+    };
+    
+    console.log('📤 Returning Meshy JSON response:', responseData);
+    
+    return res.json(responseData);
+    
+  } catch (error) {
+    console.error('Meshy download error:', error);
+    res.status(500).json({ 
+      error: 'Failed to process Meshy download request', 
+      details: error.message
     });
   }
 });

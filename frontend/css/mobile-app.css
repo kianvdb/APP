@@ -2455,7 +2455,6 @@ button, .button, .btn {
     box-shadow: 0 0 20px rgba(0, 188, 212, 0.3);
 }
 
-/* Asset Info Overlay */
 .asset-info-overlay {
     position: absolute;
     top: 1rem;
@@ -2472,9 +2471,14 @@ button, .button, .btn {
     font-family: 'Inter', sans-serif;
     box-shadow: 0 8px 32px rgba(0, 188, 212, 0.2);
     opacity: 0;
-    animation: fadeInSlideUp 0.5s ease-out 1s forwards;
+    /* Remove the animation delay initially */
+    /* animation: fadeInSlideUp 0.5s ease-out 1s forwards; */
 }
 
+/* Add a class that triggers the animation when asset is loaded */
+.asset-info-overlay.loaded {
+    animation: fadeInSlideUp 0.5s ease-out 0.3s forwards;
+}
 @keyframes fadeInSlideUp {
     from {
         opacity: 0;
