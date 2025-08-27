@@ -1277,7 +1277,7 @@ async handleDownload() {
         }
     }
 }
- async downloadAsset(format) {
+async downloadAsset(format) {
     console.log('Downloading format:', format);
     
     this.closeDownloadModal();
@@ -1308,9 +1308,9 @@ async handleDownload() {
             headers['Authorization'] = `Bearer ${authToken}`;
         }
         
-        // Get download URL from server (server should return JSON)
-        console.log(`Fetching download URL from: ${downloadUrl}`);
+        console.log(`Fetching from: ${downloadUrl}`);
         
+        // First, try to fetch the resource
         let response;
         try {
             response = await fetch(downloadUrl, {
@@ -1323,71 +1323,70 @@ async handleDownload() {
             throw new Error(`Server request failed: ${fetchError.message}`);
         }
 
-        let blob;
-
         if (!response.ok) {
-            console.error(`Server returned error status: ${response.status}`);
-            let errorMessage = `Download failed: ${response.status}`;
-            try {
-                const errorData = await response.json();
-                errorMessage = errorData.error || errorMessage;
-            } catch (e) {
-                // Couldn't parse error response
+            // Handle 404 specifically
+            if (response.status === 404) {
+                // Try to get error details
+                let errorMessage = `${format.toUpperCase()} format not available`;
+                try {
+                    const errorData = await response.json();
+                    if (errorData.availableFormats) {
+                        errorMessage = `${format.toUpperCase()} not available. Try: ${errorData.availableFormats.join(', ').toUpperCase()}`;
+                    } else if (errorData.error) {
+                        errorMessage = errorData.error;
+                    }
+                } catch (e) {
+                    // Couldn't parse error response
+                }
+                throw new Error(errorMessage);
             }
-            throw new Error(errorMessage);
+            throw new Error(`Download failed (${response.status})`);
         }
 
-        // Server returns JSON with the download URL
-        let data;
-        try {
-            data = await response.json();
-        } catch (jsonError) {
-            console.error('Failed to parse JSON response:', jsonError);
-            console.error('Response might be a redirect - server needs to be updated to return JSON');
-            throw new Error('Server must return JSON with downloadUrl, not redirect');
-        }
+        // Check Content-Type to determine response format
+        const contentType = response.headers.get('content-type');
+        console.log('Response Content-Type:', contentType);
         
-        const fileUrl = data.downloadUrl;
+        let blob;
         
-        if (!fileUrl) {
-            throw new Error('No download URL in response');
-        }
-        
-        console.log(`Got download URL for ${format}:`, {
-            url: fileUrl,
-            isCloudinary: data.isCloudinary,
-            isProxy: data.isProxy,
-            isMeshy: data.isMeshy
-        });
-        
-        // Fetch the file - use 'omit' credentials for Cloudinary
-        console.log(`Fetching file with credentials: ${data.isCloudinary ? 'omit' : 'include'}`);
-        
-        let fileResponse;
-        try {
-            fileResponse = await fetch(fileUrl, {
+        if (contentType && contentType.includes('application/json')) {
+            // Server returned JSON with download URL
+            console.log('Server returned JSON response');
+            const data = await response.json();
+            
+            const fileUrl = data.downloadUrl;
+            if (!fileUrl) {
+                throw new Error('No download URL in response');
+            }
+            
+            console.log(`Got download URL: ${fileUrl}`);
+            
+            // Fetch the actual file
+            const fileResponse = await fetch(fileUrl, {
                 method: 'GET',
                 mode: 'cors',
                 credentials: data.isCloudinary ? 'omit' : 'include'
             });
-        } catch (downloadError) {
-            console.error('Failed to download file:', downloadError);
-            throw new Error(`File download failed: ${downloadError.message}`);
+            
+            if (!fileResponse.ok) {
+                throw new Error(`File download failed: ${fileResponse.status}`);
+            }
+            
+            blob = await fileResponse.blob();
+            
+        } else {
+            // Server returned the file directly (for Cloudinary proxy)
+            console.log('Server returned file directly');
+            blob = await response.blob();
         }
         
-        if (!fileResponse.ok) {
-            console.error(`File server returned error: ${fileResponse.status}`);
-            throw new Error(`File download failed: ${fileResponse.status}`);
-        }
-        
-        blob = await fileResponse.blob();
-        console.log(`Successfully downloaded ${format} (${(blob.size / 1024 / 1024).toFixed(2)} MB)`);
+        console.log(`Downloaded ${format} (${(blob.size / 1024 / 1024).toFixed(2)} MB)`);
         
         const fileName = `${this.currentAsset.name || 'model'}.${format}`;
         
-        // Mobile vs Web download handling
+        // Mobile vs Web download handling (rest of your existing code)
         if (typeof window.Capacitor !== 'undefined' && window.Capacitor.isNativePlatform()) {
-            // Mobile download
+            // Mobile download code...
             const { Filesystem, Directory } = window.Capacitor.Plugins;
             
             const reader = new FileReader();
@@ -1407,7 +1406,7 @@ async handleDownload() {
                 this.showFeedback(`Saved to Documents/Threely/${fullFileName}`, 'success', 4000);
             };
         } else {
-            // Web download
+            // Web download code...
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -1422,7 +1421,7 @@ async handleDownload() {
         
     } catch (error) {
         console.error('Download error:', error);
-        this.showFeedback('Download failed. Please try again.', 'error');
+        this.showFeedback(error.message || 'Download failed', 'error');
     }
 }
 
@@ -1534,6 +1533,7 @@ async handleShare() {
         const modelFolder = zip.folder(modelName);
         
      // Replace the downloadPromises section in handleShare with this:
+// In handleShare method, replace the download section:
 const downloadPromises = formats.map(async (format) => {
     try {
         let downloadUrl;
@@ -1543,69 +1543,40 @@ const downloadPromises = formats.map(async (format) => {
             downloadUrl = `${apiUrl}/assets/${this.currentAssetId}/download?format=${format}`;
         }
         
-        // Get download URL from server (server should return JSON)
-        console.log(`Fetching download URL from: ${downloadUrl}`);
+        console.log(`Fetching ${format} from: ${downloadUrl}`);
         
-        let response;
-        try {
-            response = await fetch(downloadUrl, {
-                method: 'GET',
-                credentials: 'include',
-                headers: headers
-            });
-        } catch (fetchError) {
-            console.error(`Failed to fetch ${format} from server:`, fetchError);
-            return false;
-        }
-        
-        let blob;
-        
-        if (!response.ok) {
-            console.error(`Server error for ${format}: ${response.status}`);
-            return false;
-        }
-
-        // Server returns JSON with the download URL
-        let data;
-        try {
-            data = await response.json();
-        } catch (jsonError) {
-            console.error(`Failed to parse JSON for ${format}:`, jsonError);
-            return false;
-        }
-        
-        const fileUrl = data.downloadUrl;
-        
-        if (!fileUrl) {
-            console.error(`No download URL for ${format}`);
-            return false;
-        }
-        
-        console.log(`Got download URL for ${format}:`, {
-            url: fileUrl,
-            isCloudinary: data.isCloudinary
+        const response = await fetch(downloadUrl, {
+            method: 'GET',
+            credentials: 'include',
+            headers: headers
         });
         
-        // Fetch the file - use 'omit' credentials for Cloudinary
-        let fileResponse;
-        try {
-            fileResponse = await fetch(fileUrl, {
+        if (!response.ok) {
+            console.warn(`${format} not available (${response.status})`);
+            return false;
+        }
+        
+        // Check Content-Type
+        const contentType = response.headers.get('content-type');
+        let blob;
+        
+        if (contentType && contentType.includes('application/json')) {
+            // JSON response with URL
+            const data = await response.json();
+            if (!data.downloadUrl) return false;
+            
+            const fileResponse = await fetch(data.downloadUrl, {
                 method: 'GET',
                 mode: 'cors',
                 credentials: data.isCloudinary ? 'omit' : 'include'
             });
-        } catch (downloadError) {
-            console.error(`Failed to download ${format}:`, downloadError);
-            return false;
+            
+            if (!fileResponse.ok) return false;
+            blob = await fileResponse.blob();
+        } else {
+            // Direct file response
+            blob = await response.blob();
         }
-        
-        if (!fileResponse.ok) {
-            console.error(`File server error for ${format}: ${fileResponse.status}`);
-            return false;
-        }
-        
-        blob = await fileResponse.blob();
-        console.log(`Downloaded ${format} (${(blob.size / 1024 / 1024).toFixed(2)} MB)`);
         
         if (blob) {
             modelFolder.file(`${modelName}.${format}`, blob);
